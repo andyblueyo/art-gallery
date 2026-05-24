@@ -1,0 +1,239 @@
+"use client";
+
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { getInitials } from "@/lib/initials";
+import { isValidHandle, normalizeHandle } from "@/lib/handle";
+import type { Profile } from "@/lib/types";
+
+const BIO_MAX = 160;
+
+interface ProfileEditorProps {
+  profile: Profile;
+  onSaved: (profile: Profile) => void;
+  onCancel: () => void;
+}
+
+export function ProfileEditor({
+  profile,
+  onSaved,
+  onCancel,
+}: ProfileEditorProps) {
+  const [displayName, setDisplayName] = useState(profile.display_name);
+  const [handle, setHandle] = useState(profile.handle);
+  const [bio, setBio] = useState(profile.bio);
+  const [location, setLocation] = useState(profile.location);
+  const [instagramUrl, setInstagramUrl] = useState(profile.instagram_url);
+  const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    };
+  }, [avatarPreview]);
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith("image/")) return;
+    if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    setAvatarPreview(URL.createObjectURL(file));
+  }
+
+  async function uploadAvatar(file: File): Promise<string | null> {
+    const supabase = createClient();
+    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const path = `${profile.id}/avatar.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(path, file, { upsert: true, contentType: file.type });
+
+    if (uploadError) {
+      console.warn("Avatar upload failed:", uploadError.message);
+      return null;
+    }
+
+    const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+    return data.publicUrl;
+  }
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSaving(true);
+
+    const normalized = normalizeHandle(handle);
+    if (!isValidHandle(normalized)) {
+      setError("Handle must be 3–30 URL-safe characters.");
+      setSaving(false);
+      return;
+    }
+
+    const supabase = createClient();
+
+    try {
+      if (normalized !== profile.handle) {
+        const { data: taken } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("handle", normalized)
+          .neq("id", profile.id)
+          .maybeSingle();
+
+        if (taken) {
+          setError("That handle is already taken.");
+          setSaving(false);
+          return;
+        }
+      }
+
+      let nextAvatarUrl = avatarUrl;
+      const avatarFile = fileRef.current?.files?.[0];
+      if (avatarFile) {
+        const uploaded = await uploadAvatar(avatarFile);
+        if (uploaded) nextAvatarUrl = uploaded;
+      }
+
+      const updates = {
+        display_name: displayName.trim(),
+        handle: normalized,
+        bio: bio.slice(0, BIO_MAX),
+        location: location.trim(),
+        instagram_url: instagramUrl.trim(),
+        avatar_url: nextAvatarUrl,
+      };
+
+      const { data, error: updateError } = await supabase
+        .from("profiles")
+        .update(updates)
+        .eq("id", profile.id)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+      onSaved(data as Profile);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save profile.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const previewSrc = avatarPreview || avatarUrl;
+  const initials = getInitials(displayName || handle);
+
+  return (
+    <form
+      onSubmit={handleSave}
+      className="mt-5 space-y-4 border-t border-[#d8ceb8] pt-5"
+    >
+      <div className="flex items-center gap-4">
+        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border-2 border-[#c8a040] bg-[#ede7da]">
+          {previewSrc ? (
+            <Image
+              src={previewSrc}
+              alt=""
+              fill
+              className="object-cover"
+              unoptimized
+            />
+          ) : (
+            <span className="flex h-full w-full items-center justify-center font-serif text-sm text-brown">
+              {initials}
+            </span>
+          )}
+        </div>
+        <div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarChange}
+            className="text-xs text-brown-muted file:mr-3 file:rounded file:border-0 file:bg-[#c8a040]/20 file:px-3 file:py-1.5 file:text-sm file:text-brown"
+          />
+          <p className="mt-1 text-xs text-brown-muted">JPG or PNG, square works best</p>
+        </div>
+      </div>
+
+      <FormField label="display name" value={displayName} onChange={setDisplayName} />
+      <FormField label="handle" value={handle} onChange={setHandle} hint="artpenny.com/handle" />
+      <label className="block">
+        <span className="text-xs font-medium uppercase tracking-wide text-brown-muted">
+          bio
+        </span>
+        <textarea
+          value={bio}
+          onChange={(e) => setBio(e.target.value.slice(0, BIO_MAX))}
+          rows={3}
+          maxLength={BIO_MAX}
+          className="mt-1 w-full resize-none rounded-lg border border-[#d8ceb8] bg-white/60 px-3 py-2.5 text-brown focus:border-[#c8a040] focus:outline-none focus:ring-1 focus:ring-[#c8a040]/40"
+        />
+        <span className="mt-1 block text-right text-xs text-brown-muted">
+          {bio.length}/{BIO_MAX}
+        </span>
+      </label>
+      <FormField label="location" value={location} onChange={setLocation} />
+      <FormField
+        label="instagram"
+        value={instagramUrl}
+        onChange={setInstagramUrl}
+        placeholder="https://instagram.com/you"
+      />
+
+      {error && (
+        <p className="text-sm text-red-700 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+      )}
+
+      <div className="flex gap-3 pt-1">
+        <button
+          type="submit"
+          disabled={saving}
+          className="rounded-lg bg-[#c8a040] px-5 py-2 text-sm font-medium text-[#1a1208] hover:bg-[#e0c060] disabled:opacity-50"
+        >
+          {saving ? "saving…" : "save"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-lg border border-[#d8ceb8] px-5 py-2 text-sm text-brown-muted hover:text-brown"
+        >
+          cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function FormField({
+  label,
+  value,
+  onChange,
+  hint,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  hint?: string;
+  placeholder?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="text-xs font-medium uppercase tracking-wide text-brown-muted">
+        {label}
+      </span>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="mt-1 w-full rounded-lg border border-[#d8ceb8] bg-white/60 px-3 py-2.5 text-brown focus:border-[#c8a040] focus:outline-none focus:ring-1 focus:ring-[#c8a040]/40"
+      />
+      {hint && <span className="mt-1 block text-xs text-brown-muted">{hint}</span>}
+    </label>
+  );
+}
