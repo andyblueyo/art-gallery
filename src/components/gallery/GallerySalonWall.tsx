@@ -119,43 +119,15 @@ export function GallerySalonWall({
             const art = artworks[item.artIndex];
             if (!art) return null;
             const frameFile = art.frame_file || DEFAULT_FRAME_FILE;
+            const isLarger = index % 3 === 2;
+            const baseWidth = 280;
+            const width = isLarger ? baseWidth * 1.2 : baseWidth;
             return (
-              <FramedArtwork
-                key={`${frameFile}-${item.artIndex}-${index}`}
-                frame_file={frameFile}
-                artSrc={art.src}
-                width={Math.min(item.width, 280)}
-                title={art.title}
-                medium={art.medium}
-                artistName={artist.name}
-                fileType={art.fileType}
-                innerPadding={item.innerPadding}
-                style={{ transform: `rotate(${item.rot}deg)` }}
-              />
-            );
-          })}
-        </main>
-      ) : (
-        <main className="relative z-10 h-[100dvh] w-full overflow-hidden">
-          {layout.map((item, index) => {
-            const art = artworks[item.artIndex];
-            if (!art) return null;
-            const frameFile = art.frame_file || DEFAULT_FRAME_FILE;
-            return (
-              <div
-                key={`${frameFile}-${item.artIndex}-${index}`}
-                className="absolute"
-                style={{
-                  left: item.left,
-                  top: item.top,
-                  transform: `rotate(${item.rot}deg)`,
-                  transformOrigin: "center center",
-                }}
-              >
+              <div key={`${frameFile}-${item.artIndex}-${index}`} style={{ transform: isLarger ? 'scale(1.2)' : 'scale(1)' }}>
                 <FramedArtwork
                   frame_file={frameFile}
                   artSrc={art.src}
-                  width={item.width}
+                  width={Math.min(width, 280)}
                   title={art.title}
                   medium={art.medium}
                   artistName={artist.name}
@@ -165,6 +137,35 @@ export function GallerySalonWall({
               </div>
             );
           })}
+        </main>
+      ) : (
+        <main className="relative z-10 w-full overflow-y-auto px-6 py-12 pb-28 pt-24">
+          <div className="grid gap-10 auto-rows-max lg:grid-cols-3 md:grid-cols-2">
+            {layout.map((item, index) => {
+              const art = artworks[item.artIndex];
+              if (!art) return null;
+              const frameFile = art.frame_file || DEFAULT_FRAME_FILE;
+              const isLarger = index % 3 === 2;
+              return (
+                <div
+                  key={`${frameFile}-${item.artIndex}-${index}`}
+                  className="flex items-center justify-center"
+                  style={{ transform: isLarger ? 'scale(1.2)' : 'scale(1)' }}
+                >
+                  <FramedArtwork
+                    frame_file={frameFile}
+                    artSrc={art.src}
+                    width={280}
+                    title={art.title}
+                    medium={art.medium}
+                    artistName={artist.name}
+                    fileType={art.fileType}
+                    innerPadding={item.innerPadding}
+                  />
+                </div>
+              );
+            })}
+          </div>
         </main>
       )}
 
