@@ -51,29 +51,3 @@ export function getFramePadding(frameFile: string): InnerPadding | undefined {
   return FRAME_PADDING[frameFile];
 }
 
-export const MIKA_ARTIST: WallArtist = {
-  name: "mika chen",
-  handle: "mika",
-  bio: "watercolor & ink · brooklyn, ny · i paint quiet moments and city edges",
-  instagram: "instagram.com/mika.makes",
-  pieceCount: 38,
-  followers: 214,
-};
-
-const ART_TITLES = [
-  { title: "Afternoon Light", medium: "watercolor" },
-  { title: "The Market", medium: "ink" },
-  { title: "Rooftop Garden", medium: "watercolor" },
-  { title: "Sunday Morning", medium: "ink wash" },
-  { title: "Harbor Mist", medium: "watercolor" },
-  { title: "Kitchen Table", medium: "gouache" },
-  { title: "City Rain", medium: "ink" },
-  { title: "Window Seat", medium: "watercolor" },
-  { title: "Late Ferry", medium: "ink" },
-  { title: "Golden Hour", medium: "watercolor" },
-];
-
-export const MIKA_ARTWORKS: WallArtwork[] = ART_TITLES.map((meta, i) => ({
-  ...meta,
-  src: `https://picsum.photos/seed/mika-${i + 1}/400/500`,
-}));

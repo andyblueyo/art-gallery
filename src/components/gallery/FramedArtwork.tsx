@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState } from "react";
 
 export type InnerPadding = {
@@ -42,6 +41,8 @@ export function FramedArtwork({
   className = "",
   style,
 }: FramedArtworkProps) {
+  console.log("FramedArtwork rendering:", { artSrc, frameSrc, width });
+
   const [frameAspect, setFrameAspect] = useState<number | null>(null);
   const [hovered, setHovered] = useState(false);
 
@@ -56,12 +57,13 @@ export function FramedArtwork({
   }, [frameSrc]);
 
   const height = frameAspect ? width * frameAspect : undefined;
-  const isExternalArt = artSrc.startsWith("http");
 
   return (
     <div
-      className={`group relative select-none ${className}`}
+      className={`group select-none ${className}`}
       style={{
+        position: "relative",
+        background: "transparent",
         width,
         height: height ?? "auto",
         ...style,
@@ -72,57 +74,67 @@ export function FramedArtwork({
       onBlur={() => setHovered(false)}
     >
       <div
-        className="relative w-full transition-transform duration-300 ease-out group-hover:scale-[1.03] group-focus-within:scale-[1.03]"
+        className="w-full transition-transform duration-300 ease-out group-hover:scale-[1.03] group-focus-within:scale-[1.03]"
         style={{
+          position: "relative",
+          background: "transparent",
           height: height ?? width * 1.3,
           transformOrigin: "center center",
         }}
       >
         <div
-          className="absolute overflow-hidden"
           style={{
+            position: "absolute",
             top: `${innerPadding.top}%`,
+            left: `${innerPadding.left}%`,
             right: `${innerPadding.right}%`,
             bottom: `${innerPadding.bottom}%`,
-            left: `${innerPadding.left}%`,
+            overflow: "hidden",
             zIndex: 1,
+            backgroundColor: "transparent",
           }}
         >
           {fileType === "pdf" ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#f5f0e8] p-2 text-center">
+            <div className="flex h-full w-full flex-col items-center justify-center bg-[#f5f0e8] p-2 text-center">
               <PdfDocIcon />
               <span className="mt-1 line-clamp-2 text-[10px] leading-tight text-[#6b5d4f]">
                 {title}
               </span>
             </div>
-          ) : isExternalArt ? (
+          ) : (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={artSrc}
               alt={title}
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-          ) : (
-            <Image
-              src={artSrc}
-              alt={title}
-              fill
-              className="object-cover"
-              sizes={`${width}px`}
-              unoptimized
+              onError={(e) => {
+                console.error("[FramedArtwork] art image failed to load", {
+                  artSrc,
+                  title,
+                  event: e,
+                });
+              }}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
             />
           )}
         </div>
 
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src={frameSrc}
           alt=""
-          fill
-          className="pointer-events-none object-contain"
-          style={{ zIndex: 2 }}
-          sizes={`${width}px`}
-          unoptimized
           aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            zIndex: 2,
+            pointerEvents: "none",
+          }}
         />
       </div>
 

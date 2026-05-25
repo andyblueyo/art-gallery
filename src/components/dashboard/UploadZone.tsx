@@ -37,6 +37,7 @@ export function UploadZone({
   onOptimisticFail,
 }: UploadZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const isUploadingRef = useRef(false);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [title, setTitle] = useState("");
@@ -93,6 +94,11 @@ export function UploadZone({
 
   async function handleUpload() {
     if (!file || !title.trim()) return;
+    if (isUploadingRef.current) {
+      console.warn("[upload] handleUpload re-entry blocked — already uploading");
+      return;
+    }
+    isUploadingRef.current = true;
     setUploading(true);
     setError(null);
     setSuccess(false);
@@ -120,6 +126,26 @@ export function UploadZone({
 
     try {
       const supabase = createClient();
+
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.getUser();
+      if (sessionError) {
+        console.error("[upload] auth.getUser error:", sessionError);
+        throw sessionError;
+      }
+      const sessionUserId = sessionData.user?.id;
+      console.log("[upload] session user id:", sessionUserId, "prop artistId:", artistId);
+      if (!sessionUserId) {
+        throw new Error("Not signed in — no Supabase session on the browser client.");
+      }
+      if (sessionUserId !== artistId) {
+        console.error(
+          "[upload] artistId prop does not match session user — RLS will reject insert",
+          { sessionUserId, artistId }
+        );
+      }
+      const effectiveArtistId = sessionUserId;
+
       const artworkId = crypto.randomUUID();
       let uploadBody: Blob | File = file;
       let ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
@@ -131,30 +157,43 @@ export function UploadZone({
         ext = "pdf";
       }
 
-      const storagePath = `${artistId}/${artworkId}.${ext}`;
-      const { error: storageError } = await supabase.storage
+      const storagePath = `${effectiveArtistId}/${artworkId}.${ext}`;
+      console.log("[upload] uploading to storage:", storagePath);
+      const { data: storageData, error: storageError } = await supabase.storage
         .from("artworks")
         .upload(storagePath, uploadBody, {
           contentType: fileType === "pdf" ? "application/pdf" : "image/jpeg",
           upsert: false,
         });
 
-      if (storageError) throw storageError;
+      if (storageError) {
+        console.error("[upload] storage upload error:", storageError);
+        throw storageError;
+      }
+      console.log("[upload] storage upload ok:", storageData);
 
       const { data: urlData } = supabase.storage
         .from("artworks")
         .getPublicUrl(storagePath);
+      console.log("[upload] getPublicUrl result:", urlData);
+
+      const fileUrl = urlData?.publicUrl ?? "";
+      if (!fileUrl) {
+        console.error("[upload] file_url is empty — refusing to insert");
+        throw new Error("Could not resolve public URL for uploaded file.");
+      }
 
       const row = {
         id: artworkId,
-        artist_id: artistId,
+        artist_id: effectiveArtistId,
         title: title.trim(),
         medium: medium.trim(),
         description: "",
-        file_url: urlData.publicUrl,
+        file_url: fileUrl,
         file_type: fileType,
         display_order: nextDisplayOrder,
       };
+      console.log("[upload] inserting artwork row:", row);
 
       const { data, error: insertError } = await supabase
         .from("artworks")
@@ -162,17 +201,23 @@ export function UploadZone({
         .select()
         .single();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error("[upload] artworks insert error:", insertError);
+        throw insertError;
+      }
+      console.log("[upload] insert ok:", data);
 
       onUploaded({ ...(data as DashboardArtwork), heart_count: 0 }, tempId);
       setSuccess(true);
       clearForm();
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
+      console.error("[upload] failed:", err);
       onOptimisticFail(tempId);
-      setError(err instanceof Error ? err.message : "Upload failed.");
+      setError(formatUploadError(err));
     } finally {
       setUploading(false);
+      isUploadingRef.current = false;
     }
   }
 
@@ -264,8 +309,13 @@ export function UploadZone({
 
           <button
             type="button"
-            onClick={handleUpload}
-            disabled={!canSubmit}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (isUploadingRef.current) return;
+              handleUpload();
+            }}
+            disabled={!canSubmit || uploading}
             className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-[#c8a040] px-6 py-2.5 text-sm font-medium text-[#1a1208] hover:bg-[#e0c060] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {uploading && <Spinner />}
@@ -281,12 +331,39 @@ export function UploadZone({
         </p>
       )}
       {error && (
-        <p className="text-sm text-red-700 bg-red-50 rounded-lg px-3 py-2">
+        <pre className="whitespace-pre-wrap break-words text-xs text-red-700 bg-red-50 rounded-lg px-3 py-2 font-mono">
           {error}
-        </p>
+        </pre>
       )}
     </section>
   );
+}
+
+function formatUploadError(err: unknown): string {
+  if (err && typeof err === "object") {
+    const e = err as {
+      message?: string;
+      error?: string;
+      code?: string;
+      details?: string;
+      hint?: string;
+      statusCode?: string | number;
+    };
+    const parts = [
+      e.message || e.error,
+      e.code ? `code: ${e.code}` : null,
+      e.statusCode ? `status: ${e.statusCode}` : null,
+      e.details ? `details: ${e.details}` : null,
+      e.hint ? `hint: ${e.hint}` : null,
+    ].filter(Boolean);
+    if (parts.length) return parts.join(" | ");
+    try {
+      return JSON.stringify(err);
+    } catch {
+      return String(err);
+    }
+  }
+  return String(err);
 }
 
 function Spinner() {

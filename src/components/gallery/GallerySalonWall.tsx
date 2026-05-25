@@ -73,6 +73,11 @@ export function GallerySalonWall({
     );
   }
 
+  console.log(
+    "wallArtworks being rendered:",
+    artworks.map((a) => a.src)
+  );
+
   return (
     <div className="gallery-salon-wall relative min-h-[100dvh] w-full overflow-x-hidden bg-[#ddd4b4]">
       <div className="gallery-salon-wall__texture pointer-events-none absolute inset-0" />
