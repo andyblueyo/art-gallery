@@ -5,6 +5,7 @@ import type { Artwork } from "@/lib/types";
 import { FramedArtwork } from "./FramedArtwork";
 import { ArtistBubble, type ArtistBubbleData } from "./ArtistBubble";
 import { GallerySeeAllGrid } from "./GallerySeeAllGrid";
+import { GalleryEditorCanvas } from "./GalleryEditorCanvas";
 import {
   type GalleryLayoutItem,
   type WallArtwork,
@@ -18,6 +19,9 @@ interface GallerySalonWallProps {
   galleryUrl: string;
   totalPieceCount: number;
   allArtworks?: Artwork[];
+  isOwner?: boolean;
+  profileId?: string;
+  layoutMode?: string;
 }
 
 export function GallerySalonWall({
@@ -27,12 +31,17 @@ export function GallerySalonWall({
   galleryUrl,
   totalPieceCount,
   allArtworks = [],
+  isOwner = false,
+  profileId = "",
+  layoutMode = "auto",
 }: GallerySalonWallProps) {
   const [copied, setCopied] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showAllGrid, setShowAllGrid] = useState(false);
+  const [editMode, setEditMode] = useState(false);
 
   const hasMoreOnGrid = totalPieceCount > layout.length;
+  const isCustomLayout = layoutMode === "custom";
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -43,6 +52,7 @@ export function GallerySalonWall({
   }, []);
 
   useEffect(() => {
+    if (editMode) return; // editor manages overflow
     if (isMobile || showAllGrid) {
       document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
@@ -54,7 +64,7 @@ export function GallerySalonWall({
       document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
     };
-  }, [isMobile, showAllGrid]);
+  }, [isMobile, showAllGrid, editMode]);
 
   const handleShare = useCallback(async () => {
     const url =
@@ -73,89 +83,87 @@ export function GallerySalonWall({
     );
   }
 
-  console.log(
-    "wallArtworks being rendered:",
-    artworks.map((a) => a.src)
-  );
-
   return (
-    <div className="gallery-salon-wall relative min-h-[100dvh] w-full overflow-x-hidden bg-[#ddd4b4]">
-      <div className="gallery-salon-wall__texture pointer-events-none absolute inset-0" />
-      <div className="gallery-salon-wall__vignette pointer-events-none absolute inset-0" />
-
-      <header className="pointer-events-none fixed inset-x-0 top-0 z-30 flex items-start justify-between px-4 py-4 sm:px-6">
-        <div className="pointer-events-auto rounded-lg bg-[rgba(18,12,6,0.35)] px-4 py-2 backdrop-blur-md">
-          <span className="font-serif text-lg tracking-wide text-[#c8a040]/85">
-            artpenny
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={handleShare}
-          className="pointer-events-auto rounded-lg border border-[#c8a040]/30 bg-[rgba(18,12,6,0.35)] px-4 py-2 text-sm text-[#f5e6c8]/90 backdrop-blur-md transition-colors hover:border-[#c8a040]/60 hover:bg-[rgba(18,12,6,0.5)]"
-        >
-          share gallery
-        </button>
-      </header>
-
-      {copied && (
-        <div
-          role="status"
-          className="fixed right-4 top-[4.5rem] z-50 rounded-lg border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-4 py-2 text-sm text-[#c8a040] shadow-lg"
-        >
-          copied ✦
-        </div>
+    <>
+      {/* ── Editor overlay ───────────────────────────────────── */}
+      {editMode && (
+        <GalleryEditorCanvas
+          artworks={allArtworks}
+          profileId={profileId}
+          onCancel={() => setEditMode(false)}
+          onSaved={() => setEditMode(false)}
+        />
       )}
 
-      {layout.length === 0 ? (
-        <main className="relative z-10 flex min-h-[100dvh] items-center justify-center px-6 pt-24">
-          <p className="text-center font-serif text-lg text-[#f5e6c8]/80">
-            This gallery is waiting for its first piece.
-          </p>
-        </main>
-      ) : isMobile ? (
-        <main className="relative z-10 flex flex-col items-center gap-10 px-4 pb-28 pt-24">
-          {layout.map((item, index) => {
-            const art = artworks[item.artIndex];
-            if (!art) return null;
-            const frameFile = art.frame_file || DEFAULT_FRAME_FILE;
-            const isLarger = index % 3 === 2;
-            const baseWidth = 280;
-            const width = isLarger ? baseWidth * 1.2 : baseWidth;
-            return (
-              <div key={`${frameFile}-${item.artIndex}-${index}`} style={{ transform: isLarger ? 'scale(1.2)' : 'scale(1)' }}>
-                <FramedArtwork
-                  frame_file={frameFile}
-                  artSrc={art.src}
-                  width={Math.min(width, 280)}
-                  title={art.title}
-                  medium={art.medium}
-                  artistName={artist.name}
-                  fileType={art.fileType}
-                  innerPadding={item.innerPadding}
-                />
-              </div>
-            );
-          })}
-        </main>
-      ) : (
-        <main className="relative z-10 w-full overflow-y-auto px-6 py-12 pb-28 pt-24">
-          <div className="grid gap-10 auto-rows-max lg:grid-cols-3 md:grid-cols-2">
+      {/* ── Gallery view ─────────────────────────────────────── */}
+      <div className="gallery-salon-wall relative min-h-[100dvh] w-full overflow-x-hidden bg-[#ddd4b4]">
+        <div className="gallery-salon-wall__texture pointer-events-none absolute inset-0" />
+        <div className="gallery-salon-wall__vignette pointer-events-none absolute inset-0" />
+
+        <header className="pointer-events-none fixed inset-x-0 top-0 z-30 flex items-start justify-between px-4 py-4 sm:px-6">
+          <div className="pointer-events-auto rounded-lg bg-[rgba(18,12,6,0.35)] px-4 py-2 backdrop-blur-md">
+            <span className="font-serif text-lg tracking-wide text-[#c8a040]/85">
+              artpenny
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {isOwner && (
+              <button
+                type="button"
+                onClick={() => setEditMode(true)}
+                className="pointer-events-auto rounded-lg border border-[#c8a040]/50 bg-[rgba(18,12,6,0.55)] px-4 py-2 text-sm text-[#c8a040] backdrop-blur-md transition-colors hover:border-[#c8a040] hover:bg-[rgba(18,12,6,0.75)]"
+              >
+                Edit Layout
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleShare}
+              className="pointer-events-auto rounded-lg border border-[#c8a040]/30 bg-[rgba(18,12,6,0.35)] px-4 py-2 text-sm text-[#f5e6c8]/90 backdrop-blur-md transition-colors hover:border-[#c8a040]/60 hover:bg-[rgba(18,12,6,0.5)]"
+            >
+              share gallery
+            </button>
+          </div>
+        </header>
+
+        {copied && (
+          <div
+            role="status"
+            className="fixed right-4 top-[4.5rem] z-50 rounded-lg border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-4 py-2 text-sm text-[#c8a040] shadow-lg"
+          >
+            copied ✦
+          </div>
+        )}
+
+        {/* ── Custom layout ──────────────────────────────────── */}
+        {isCustomLayout && allArtworks.length > 0 ? (
+          <CustomLayoutView artworks={allArtworks} artistName={artist.name} />
+        ) : layout.length === 0 ? (
+          <main className="relative z-10 flex min-h-[100dvh] items-center justify-center px-6 pt-24">
+            <p className="text-center font-serif text-lg text-[#f5e6c8]/80">
+              This gallery is waiting for its first piece.
+            </p>
+          </main>
+        ) : isMobile ? (
+          /* Mobile auto layout */
+          <main className="relative z-10 flex flex-col items-center gap-10 px-4 pb-28 pt-24">
             {layout.map((item, index) => {
               const art = artworks[item.artIndex];
               if (!art) return null;
               const frameFile = art.frame_file || DEFAULT_FRAME_FILE;
               const isLarger = index % 3 === 2;
+              const baseWidth = 280;
+              const width = isLarger ? baseWidth * 1.2 : baseWidth;
               return (
                 <div
                   key={`${frameFile}-${item.artIndex}-${index}`}
-                  className="flex items-center justify-center"
-                  style={{ transform: isLarger ? 'scale(1.2)' : 'scale(1)' }}
+                  style={{ transform: isLarger ? "scale(1.2)" : "scale(1)" }}
                 >
                   <FramedArtwork
                     frame_file={frameFile}
                     artSrc={art.src}
-                    width={280}
+                    width={Math.min(width, 280)}
                     title={art.title}
                     medium={art.medium}
                     artistName={artist.name}
@@ -165,21 +173,108 @@ export function GallerySalonWall({
                 </div>
               );
             })}
+          </main>
+        ) : (
+          /* Desktop auto layout */
+          <main className="relative z-10 w-full overflow-y-auto px-6 py-12 pb-28 pt-24">
+            <div className="grid auto-rows-max gap-10 md:grid-cols-2 lg:grid-cols-3">
+              {layout.map((item, index) => {
+                const art = artworks[item.artIndex];
+                if (!art) return null;
+                const frameFile = art.frame_file || DEFAULT_FRAME_FILE;
+                const isLarger = index % 3 === 2;
+                return (
+                  <div
+                    key={`${frameFile}-${item.artIndex}-${index}`}
+                    className="flex items-center justify-center"
+                    style={{ transform: isLarger ? "scale(1.2)" : "scale(1)" }}
+                  >
+                    <FramedArtwork
+                      frame_file={frameFile}
+                      artSrc={art.src}
+                      width={280}
+                      title={art.title}
+                      medium={art.medium}
+                      artistName={artist.name}
+                      fileType={art.fileType}
+                      innerPadding={item.innerPadding}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </main>
+        )}
+
+        {!isCustomLayout && hasMoreOnGrid && (
+          <button
+            type="button"
+            onClick={() => setShowAllGrid(true)}
+            className="fixed bottom-6 left-1/2 z-30 -translate-x-1/2 rounded-full border border-[#c8a040]/50 bg-[rgba(18,12,6,0.85)] px-5 py-2.5 text-sm text-[#f5e6c8] shadow-lg backdrop-blur-sm transition-colors hover:border-[#c8a040] hover:bg-[rgba(18,12,6,0.95)]"
+          >
+            see all work ({totalPieceCount})
+          </button>
+        )}
+
+        <ArtistBubble artist={artist} />
+      </div>
+    </>
+  );
+}
+
+// ── Custom layout view (read-only) ──────────────────────────────
+function CustomLayoutView({
+  artworks,
+  artistName,
+}: {
+  artworks: Artwork[];
+  artistName: string;
+}) {
+  const positioned = artworks.filter(a => a.position_x != null);
+
+  if (positioned.length === 0) {
+    return (
+      <main className="relative z-10 flex min-h-[100dvh] items-center justify-center px-6 pt-24">
+        <p className="text-center font-serif text-lg text-[#f5e6c8]/80">
+          This gallery is waiting for its first piece.
+        </p>
+      </main>
+    );
+  }
+
+  return (
+    <main className="relative z-10 h-[100dvh] w-full overflow-hidden pt-14">
+      {positioned.map((art, i) => {
+        const xPct = art.position_x!;
+        const yPct = art.position_y!;
+        const rotation = art.rotation ?? 0;
+        const scale = art.scale ?? 1;
+        const zIndex = art.z_index ?? (i + 1);
+
+        return (
+          <div
+            key={art.id}
+            style={{
+              position: "absolute",
+              left: `${xPct}%`,
+              top: `${yPct}%`,
+              zIndex,
+              transform: `rotate(${rotation}deg) scale(${scale})`,
+              transformOrigin: "top left",
+            }}
+          >
+            <FramedArtwork
+              frame_file={art.frame_file || DEFAULT_FRAME_FILE}
+              artSrc={art.file_url}
+              width={220}
+              title={art.title}
+              medium={art.medium}
+              artistName={artistName}
+              fileType={art.file_type}
+            />
           </div>
-        </main>
-      )}
-
-      {hasMoreOnGrid && (
-        <button
-          type="button"
-          onClick={() => setShowAllGrid(true)}
-          className="fixed bottom-6 left-1/2 z-30 -translate-x-1/2 rounded-full border border-[#c8a040]/50 bg-[rgba(18,12,6,0.85)] px-5 py-2.5 text-sm text-[#f5e6c8] shadow-lg backdrop-blur-sm transition-colors hover:border-[#c8a040] hover:bg-[rgba(18,12,6,0.95)]"
-        >
-          see all work ({totalPieceCount})
-        </button>
-      )}
-
-      <ArtistBubble artist={artist} />
-    </div>
+        );
+      })}
+    </main>
   );
 }

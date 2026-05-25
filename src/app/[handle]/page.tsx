@@ -9,6 +9,8 @@ import {
   profileToWallArtist,
 } from "@/lib/gallery-wall-map";
 import { buildGalleryLayout, GALLERY_WALL_MAX } from "@/lib/gallery-layout";
+import { createClient } from "@/lib/supabase/server";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 interface PageProps {
   params: { handle: string };
@@ -51,6 +53,13 @@ export default async function PublicGalleryPage({ params }: PageProps) {
     artworkCount: gallery.artworks.length,
   });
 
+  let isOwner = false;
+  if (isSupabaseConfigured()) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    isOwner = !!user && user.id === gallery.profile.id;
+  }
+
   const galleryUrl = await getGalleryUrl(gallery.profile.handle);
   const wallPieces = gallery.artworks.slice(0, GALLERY_WALL_MAX);
   const layout = buildGalleryLayout(wallPieces.length);
@@ -78,6 +87,9 @@ export default async function PublicGalleryPage({ params }: PageProps) {
         galleryUrl={galleryUrl}
         totalPieceCount={gallery.artworks.length}
         allArtworks={gallery.artworks}
+        isOwner={isOwner}
+        profileId={gallery.profile.id}
+        layoutMode={gallery.profile.layout_mode ?? "auto"}
       />
     </>
   );

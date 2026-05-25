@@ -8,6 +8,7 @@ export interface Profile {
   avatar_url: string;
   view_count: number;
   created_at: string;
+  layout_mode?: string | null;
 }
 
 export interface Artwork {
@@ -22,6 +23,11 @@ export interface Artwork {
   display_order: number;
   heart_count?: number;
   created_at: string;
+  position_x?: number | null;
+  position_y?: number | null;
+  rotation?: number | null;
+  scale?: number | null;
+  z_index?: number | null;
 }
 
 /** Artwork row with optional optimistic upload state */
