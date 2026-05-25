@@ -1,6 +1,7 @@
 import type { Artwork, Profile } from "@/lib/types";
 import type { ArtistBubbleData } from "@/components/gallery/ArtistBubble";
 import type { WallArtwork } from "@/lib/gallery-wall-data";
+import { DEFAULT_FRAME_FILE } from "@/lib/frames";
 
 export function profileToWallArtist(
   profile: Profile,
@@ -27,5 +28,6 @@ export function artworksToWallArtworks(artworks: Artwork[]): WallArtwork[] {
     medium: a.medium,
     src: a.file_url,
     fileType: a.file_type,
+    frame_file: a.frame_file || DEFAULT_FRAME_FILE,
   }));
 }

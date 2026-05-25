@@ -6,10 +6,10 @@ import { FramedArtwork } from "./FramedArtwork";
 import { ArtistBubble, type ArtistBubbleData } from "./ArtistBubble";
 import { GallerySeeAllGrid } from "./GallerySeeAllGrid";
 import {
-  getFramePadding,
   type GalleryLayoutItem,
   type WallArtwork,
 } from "@/lib/gallery-wall-data";
+import { DEFAULT_FRAME_FILE } from "@/lib/frames";
 
 interface GallerySalonWallProps {
   artist: ArtistBubbleData;
@@ -118,17 +118,18 @@ export function GallerySalonWall({
           {layout.map((item, index) => {
             const art = artworks[item.artIndex];
             if (!art) return null;
+            const frameFile = art.frame_file || DEFAULT_FRAME_FILE;
             return (
               <FramedArtwork
-                key={`${item.frameFile}-${item.artIndex}-${index}`}
-                frameSrc={`/frames/${item.frameFile}`}
+                key={`${frameFile}-${item.artIndex}-${index}`}
+                frame_file={frameFile}
                 artSrc={art.src}
                 width={Math.min(item.width, 280)}
                 title={art.title}
                 medium={art.medium}
                 artistName={artist.name}
                 fileType={art.fileType}
-                innerPadding={item.innerPadding ?? getFramePadding(item.frameFile)}
+                innerPadding={item.innerPadding}
                 style={{ transform: `rotate(${item.rot}deg)` }}
               />
             );
@@ -139,9 +140,10 @@ export function GallerySalonWall({
           {layout.map((item, index) => {
             const art = artworks[item.artIndex];
             if (!art) return null;
+            const frameFile = art.frame_file || DEFAULT_FRAME_FILE;
             return (
               <div
-                key={`${item.frameFile}-${item.artIndex}-${index}`}
+                key={`${frameFile}-${item.artIndex}-${index}`}
                 className="absolute"
                 style={{
                   left: item.left,
@@ -151,16 +153,14 @@ export function GallerySalonWall({
                 }}
               >
                 <FramedArtwork
-                  frameSrc={`/frames/${item.frameFile}`}
+                  frame_file={frameFile}
                   artSrc={art.src}
                   width={item.width}
                   title={art.title}
                   medium={art.medium}
                   artistName={artist.name}
                   fileType={art.fileType}
-                  innerPadding={
-                    item.innerPadding ?? getFramePadding(item.frameFile)
-                  }
+                  innerPadding={item.innerPadding}
                 />
               </div>
             );

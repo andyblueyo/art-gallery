@@ -14,6 +14,7 @@ export interface WallArtwork {
   medium: string;
   src: string;
   fileType?: "image" | "pdf";
+  frame_file: string;
 }
 
 export interface GalleryLayoutItem {

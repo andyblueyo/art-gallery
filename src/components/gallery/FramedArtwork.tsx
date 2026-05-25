@@ -1,23 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getFrameConfig, type FrameInnerPadding } from "@/lib/frames";
 
-export type InnerPadding = {
-  top: number;
-  right: number;
-  bottom: number;
-  left: number;
-};
-
-const DEFAULT_INNER_PADDING: InnerPadding = {
-  top: 14,
-  right: 13,
-  bottom: 14,
-  left: 13,
-};
+export type InnerPadding = FrameInnerPadding;
 
 export interface FramedArtworkProps {
-  frameSrc: string;
+  frame_file: string;
   artSrc: string;
   width: number;
   title: string;
@@ -30,17 +19,22 @@ export interface FramedArtworkProps {
 }
 
 export function FramedArtwork({
-  frameSrc,
+  frame_file,
   artSrc,
   width,
   title,
   medium,
   artistName,
   fileType = "image",
-  innerPadding = DEFAULT_INNER_PADDING,
+  innerPadding,
   className = "",
   style,
 }: FramedArtworkProps) {
+  const frameConfig = getFrameConfig(frame_file);
+  const frameSrc = `/frames/${frameConfig.file}`;
+  const padding = innerPadding ?? frameConfig.innerPadding;
+  const shape = frameConfig.shape;
+
   console.log("FramedArtwork rendering:", { artSrc, frameSrc, width });
 
   const [frameAspect, setFrameAspect] = useState<number | null>(null);
@@ -85,13 +79,14 @@ export function FramedArtwork({
         <div
           style={{
             position: "absolute",
-            top: `${innerPadding.top}%`,
-            left: `${innerPadding.left}%`,
-            right: `${innerPadding.right}%`,
-            bottom: `${innerPadding.bottom}%`,
+            top: `${padding.top}%`,
+            left: `${padding.left}%`,
+            right: `${padding.right}%`,
+            bottom: `${padding.bottom}%`,
             overflow: "hidden",
             zIndex: 1,
             backgroundColor: "transparent",
+            borderRadius: shape === "rect" ? 0 : "50%",
           }}
         >
           {fileType === "pdf" ? (

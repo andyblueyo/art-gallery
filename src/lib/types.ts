@@ -18,6 +18,7 @@ export interface Artwork {
   description: string;
   file_url: string;
   file_type: "image" | "pdf";
+  frame_file?: string | null;
   display_order: number;
   heart_count?: number;
   created_at: string;
