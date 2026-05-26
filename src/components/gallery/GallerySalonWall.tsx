@@ -56,19 +56,13 @@ export function GallerySalonWall({
   }, []);
 
   useEffect(() => {
-    if (editMode) return; // editor manages overflow
-    if (isMobile || showAllGrid) {
-      document.documentElement.style.overflow = "";
-      document.body.style.overflow = "";
-      return;
-    }
-    document.documentElement.style.overflow = "hidden";
-    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
     return () => {
       document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
     };
-  }, [isMobile, showAllGrid, editMode]);
+  }, []);
 
   const handleShare = useCallback(async () => {
     const url =
@@ -209,7 +203,7 @@ export function GallerySalonWall({
           </main>
         ) : (
           /* Desktop auto layout */
-          <main className="relative z-10 w-full overflow-y-auto px-6 py-12 pb-28 pt-24">
+          <main className="relative z-10 w-full px-6 py-12 pb-28 pt-24">
             <div className="grid auto-rows-max gap-10 md:grid-cols-2 lg:grid-cols-3">
               {layout.map((item, index) => {
                 const art = artworks[item.artIndex];
@@ -310,7 +304,7 @@ function CustomLayoutView({
   }
 
   return (
-    <main ref={containerRef} className="relative z-10 h-[100dvh] w-full overflow-hidden pt-14">
+    <main ref={containerRef} className="relative z-10 min-h-[100dvh] w-full overflow-visible pt-14">
       {positioned.map((art, i) => {
         const xPct = art.position_x!;
         const yPct = art.position_y!;
