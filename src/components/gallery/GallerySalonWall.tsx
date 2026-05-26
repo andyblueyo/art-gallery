@@ -258,11 +258,15 @@ function CustomLayoutView({
   artistName: string;
 }) {
   const [hoveredId, setHoveredId] = React.useState<string | null>(null);
-  const [tooltipPos, setTooltipPos] = React.useState<{left: number, top: number} | null>(null);
+  const [tooltipPos, setTooltipPos] = React.useState<{ left: number; top: number } | null>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const itemRefsMap = React.useRef(new Map<string, React.RefObject<HTMLDivElement>>());
+  const scrollRef = React.useRef<HTMLDivElement>(null);
 
-  const positioned = artworks.filter(a => a.position_x != null);
+  const CANVAS_W = 1400;
+  const CANVAS_H = 1200;
+
+  const positioned = artworks.filter((a) => a.position_x != null);
 
   const getOrCreateRef = (artId: string) => {
     let ref = itemRefsMap.current.get(artId);
@@ -275,17 +279,14 @@ function CustomLayoutView({
 
   const handleMouseEnter = (art: Artwork) => {
     setHoveredId(art.id);
-
     const artRef = getOrCreateRef(art.id);
     if (!artRef.current || !containerRef.current) return;
-
     const artRect = artRef.current.getBoundingClientRect();
     const containerRect = containerRef.current.getBoundingClientRect();
-
-    const left = artRect.left - containerRect.left + artRect.width / 2;
-    const top = artRect.bottom - containerRect.top + 12;
-
-    setTooltipPos({left, top});
+    setTooltipPos({
+      left: artRect.left - containerRect.left + artRect.width / 2,
+      top: artRect.bottom - containerRect.top + 12,
+    });
   };
 
   const handleMouseLeave = () => {
@@ -304,66 +305,199 @@ function CustomLayoutView({
   }
 
   return (
-    <main ref={containerRef} className="relative z-10 min-h-[100dvh] w-full overflow-visible pt-14">
-      {positioned.map((art, i) => {
-        const xPct = art.position_x!;
-        const yPct = art.position_y!;
-        const rotation = art.rotation ?? 0;
-        const scale = art.scale ?? 1;
-        const zIndex = art.z_index ?? (i + 1);
-        const baseWidth = 220;
-        const baseHeight = 220 * 1.3;
+    <>
+    {/* Outer scroll container — full viewport, scrollable in both axes on mobile */}
+    <div
+      ref={scrollRef} 
+      className="relative z-10 w-full pt-14"
+      style={{
+        // On mobile: allow 2D panning. On desktop: normal doc scroll takes over.
+        overflowX: "auto",
+        overflowY: "auto",
+        WebkitOverflowScrolling: "touch",
+      }}
+    >
+      {/* Fixed-size canvas */}
+      <div
+        ref={containerRef}
+        style={{
+          position: "relative",
+          width: `${CANVAS_W}px`,
+          height: `${CANVAS_H}px`,
+          // On desktop (≥1400px) center the canvas; on smaller screens it scrolls
+          margin: "0 auto",
+        }}
+      >
+        {positioned.map((art, i) => {
+          const xPct = art.position_x!;
+          const yPct = art.position_y!;
+          const rotation = art.rotation ?? 0;
+          const scale = art.scale ?? 1;
+          const zIndex = art.z_index ?? i + 1;
+          const baseWidth = 220;
+          const artRef = getOrCreateRef(art.id);
 
-        const artRef = getOrCreateRef(art.id);
-
-        return (
-          <React.Fragment key={art.id}>
-            {/* Artwork */}
-            <div
-              ref={artRef}
-              style={{
-                position: "absolute",
-                left: `${xPct}%`,
-                top: `${yPct}%`,
-                zIndex,
-                transform: `rotate(${rotation}deg) scale(${scale})`,
-                transformOrigin: "top left",
-              }}
-              onMouseEnter={() => handleMouseEnter(art)}
-              onMouseLeave={handleMouseLeave}
-            >
-              <FramedArtwork
-                frame_file={art.frame_file || DEFAULT_FRAME_FILE}
-                artSrc={art.file_url}
-                width={baseWidth}
-                title={art.title}
-                medium={art.medium}
-                artistName={artistName}
-                fileType={art.file_type}
-                showTooltip={false}
-              />
-            </div>
-
-            {/* External tooltip - always horizontal, at visual bottom */}
-            {hoveredId === art.id && tooltipPos && (
+          return (
+            <React.Fragment key={art.id}>
               <div
+                ref={artRef}
                 style={{
                   position: "absolute",
-                  left: `${tooltipPos.left}px`,
-                  top: `${tooltipPos.top}px`,
-                  transform: 'translateX(-50%)',
-                  zIndex: 9999,
+                  left: `${xPct}%`,
+                  top: `${yPct}%`,
+                  zIndex,
+                  transform: `rotate(${rotation}deg) scale(${scale})`,
+                  transformOrigin: "top left",
                 }}
-                className="pointer-events-none whitespace-nowrap rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-3 py-2 text-center shadow-lg"
+                onMouseEnter={() => handleMouseEnter(art)}
+                onMouseLeave={handleMouseLeave}
               >
-                <p className="font-serif text-sm text-[#f5e6c8]">{art.title}</p>
-                <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{art.medium}</p>
+                <FramedArtwork
+                  frame_file={art.frame_file || DEFAULT_FRAME_FILE}
+                  artSrc={art.file_url}
+                  width={baseWidth}
+                  title={art.title}
+                  medium={art.medium}
+                  artistName={artistName}
+                  fileType={art.file_type}
+                  showTooltip={false}
+                />
               </div>
-            )}
-          </React.Fragment>
-        );
-      })}
-    </main>
+
+              {hoveredId === art.id && tooltipPos && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: `${tooltipPos.left}px`,
+                    top: `${tooltipPos.top}px`,
+                    transform: "translateX(-50%)",
+                    zIndex: 9999,
+                  }}
+                  className="pointer-events-none whitespace-nowrap rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-3 py-2 text-center shadow-lg"
+                >
+                  <p className="font-serif text-sm text-[#f5e6c8]">{art.title}</p>
+                  <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{art.medium}</p>
+                </div>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    </div>
+         {/* ← this closes the scroll div */}
+
+      <GalleryMinimap artworks={artworks} scrollRef={scrollRef} />
+    </>
   );
 }
+
+// ── Minimap ──────────────────────────────────────────────────────
+function GalleryMinimap({
+  artworks,
+  scrollRef,
+}: {
+  artworks: Artwork[];
+  scrollRef: React.RefObject<HTMLDivElement>;
+}) {
+  const CANVAS_W = 1400;
+  const CANVAS_H = 1200;
+  const MAP_W = 80;
+  const MAP_H = 48;
+
+  const [vp, setVp] = React.useState({ left: 0, top: 0, width: MAP_W, height: MAP_H });
+  const [idle, setIdle] = React.useState(false);
+  const idleTimer = React.useRef<ReturnType<typeof setTimeout>>();
+
+  React.useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const update = () => {
+      const scaleX = MAP_W / CANVAS_W;
+      const scaleY = MAP_H / CANVAS_H;
+      setVp({
+        left: el.scrollLeft * scaleX,
+        top: el.scrollTop * scaleY,
+        width: Math.min(MAP_W, el.clientWidth * scaleX),
+        height: Math.min(MAP_H, el.clientHeight * scaleY),
+      });
+      setIdle(false);
+      clearTimeout(idleTimer.current);
+      idleTimer.current = setTimeout(() => setIdle(true), 1500);
+    };
+
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      el.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+      clearTimeout(idleTimer.current);
+    };
+  }, [scrollRef]);
+
+  const positioned = artworks.filter(a => a.position_x != null);
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        bottom: 24,
+        right: 24,
+        zIndex: 50,
+        opacity: idle ? 0.3 : 1,
+        transition: "opacity 0.4s ease",
+        background: "rgba(18,12,6,0.75)",
+        borderRadius: 8,
+        border: "0.5px solid rgba(200,160,64,0.4)",
+        padding: "8px 10px",
+        backdropFilter: "blur(4px)",
+      }}
+    >
+      <p style={{ fontSize: 9, color: "rgba(200,160,64,0.6)", margin: "0 0 5px", letterSpacing: "0.05em" }}>
+        YOU ARE HERE
+      </p>
+      <div
+        style={{
+          position: "relative",
+          width: MAP_W,
+          height: MAP_H,
+          background: "#ddd4b4",
+          borderRadius: 3,
+          overflow: "hidden",
+        }}
+      >
+        {positioned.map(art => (
+          <div
+            key={art.id}
+            style={{
+              position: "absolute",
+              left: `${art.position_x!}%`,
+              top: `${art.position_y!}%`,
+              width: 7,
+              height: 7,
+              borderRadius: "50%",
+              background: "rgba(200,160,64,0.75)",
+              transform: "translate(-50%, -50%)",
+            }}
+          />
+        ))}
+        <div
+          style={{
+            position: "absolute",
+            left: vp.left,
+            top: vp.top,
+            width: vp.width,
+            height: vp.height,
+            border: "1.5px solid #c8a040",
+            background: "rgba(200,160,64,0.15)",
+            borderRadius: 2,
+            pointerEvents: "none",
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
 
