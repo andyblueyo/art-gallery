@@ -44,9 +44,10 @@ interface Props {
   profileId: string;
   onCancel: () => void;
   onSaved: () => void;
+  onReset?: () => void;
 }
 
-export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved }: Props) {
+export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved, onReset }: Props) {
   const router = useRouter();
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -266,7 +267,7 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved }: 
           </span>
         )}
 
-        {/* Cancel / Save */}
+        {/* Cancel / Reset / Save */}
         <div className="flex shrink-0 items-center gap-2">
           {saveError && (
             <span className="text-xs text-red-400">save failed</span>
@@ -277,6 +278,14 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved }: 
           >
             Cancel
           </button>
+          {onReset && (
+            <button
+              onClick={onReset}
+              className="rounded-lg border border-[#c8a040]/30 px-3 py-1.5 text-sm text-[#f5e6c8]/80 hover:border-[#c8a040]/60 transition-colors"
+            >
+              Reset Layout
+            </button>
+          )}
           <button
             onClick={handleSave}
             disabled={isSaving}

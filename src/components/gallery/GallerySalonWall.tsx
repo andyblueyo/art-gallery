@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import React from "react";
+import { useRouter } from "next/navigation";
 import type { Artwork } from "@/lib/types";
 import { FramedArtwork } from "./FramedArtwork";
 import { ArtistBubble, type ArtistBubbleData } from "./ArtistBubble";
@@ -12,6 +13,7 @@ import {
   type WallArtwork,
 } from "@/lib/gallery-wall-data";
 import { DEFAULT_FRAME_FILE } from "@/lib/frames";
+import { createClient } from "@/lib/supabase/client";
 
 interface GallerySalonWallProps {
   artist: ArtistBubbleData;
@@ -36,6 +38,7 @@ export function GallerySalonWall({
   profileId = "",
   layoutMode = "auto",
 }: GallerySalonWallProps) {
+  const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showAllGrid, setShowAllGrid] = useState(false);
@@ -75,6 +78,34 @@ export function GallerySalonWall({
     setTimeout(() => setCopied(false), 2200);
   }, [galleryUrl]);
 
+  const handleReset = useCallback(async () => {
+    try {
+      const supabase = createClient();
+      await Promise.all(
+        allArtworks.map(art =>
+          supabase
+            .from("artworks")
+            .update({
+              position_x: null,
+              position_y: null,
+              rotation: null,
+              scale: null,
+              z_index: null,
+            })
+            .eq("id", art.id)
+        )
+      );
+      await supabase
+        .from("profiles")
+        .update({ layout_mode: "auto" })
+        .eq("id", profileId);
+      setEditMode(false);
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to reset layout:", error);
+    }
+  }, [allArtworks, profileId, router]);
+
   if (showAllGrid && allArtworks.length > 0) {
     return (
       <GallerySeeAllGrid
@@ -93,6 +124,7 @@ export function GallerySalonWall({
           profileId={profileId}
           onCancel={() => setEditMode(false)}
           onSaved={() => setEditMode(false)}
+          onReset={handleReset}
         />
       )}
 
@@ -232,7 +264,40 @@ function CustomLayoutView({
   artistName: string;
 }) {
   const [hoveredId, setHoveredId] = React.useState<string | null>(null);
+  const [tooltipPos, setTooltipPos] = React.useState<{left: number, top: number} | null>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const itemRefsMap = React.useRef(new Map<string, React.RefObject<HTMLDivElement>>());
+
   const positioned = artworks.filter(a => a.position_x != null);
+
+  const getOrCreateRef = (artId: string) => {
+    let ref = itemRefsMap.current.get(artId);
+    if (!ref) {
+      ref = React.createRef<HTMLDivElement>();
+      itemRefsMap.current.set(artId, ref);
+    }
+    return ref;
+  };
+
+  const handleMouseEnter = (art: Artwork) => {
+    setHoveredId(art.id);
+
+    const artRef = getOrCreateRef(art.id);
+    if (!artRef.current || !containerRef.current) return;
+
+    const artRect = artRef.current.getBoundingClientRect();
+    const containerRect = containerRef.current.getBoundingClientRect();
+
+    const left = artRect.left - containerRect.left + artRect.width / 2;
+    const top = artRect.bottom - containerRect.top + 12;
+
+    setTooltipPos({left, top});
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredId(null);
+    setTooltipPos(null);
+  };
 
   if (positioned.length === 0) {
     return (
@@ -245,7 +310,7 @@ function CustomLayoutView({
   }
 
   return (
-    <main className="relative z-10 h-[100dvh] w-full overflow-hidden pt-14">
+    <main ref={containerRef} className="relative z-10 h-[100dvh] w-full overflow-hidden pt-14">
       {positioned.map((art, i) => {
         const xPct = art.position_x!;
         const yPct = art.position_y!;
@@ -255,21 +320,13 @@ function CustomLayoutView({
         const baseWidth = 220;
         const baseHeight = 220 * 1.3;
 
-        // Calculate rotated bounding box for tooltip positioning
-        const radians = (rotation * Math.PI) / 180;
-        const cos = Math.abs(Math.cos(radians));
-        const sin = Math.abs(Math.sin(radians));
-        const rotatedWidth = (baseWidth * cos + baseHeight * sin) * scale;
-        const rotatedHeight = (baseWidth * sin + baseHeight * cos) * scale;
-        
-        // Bottom-center of the rotated artwork
-        const tooltipLeft = `calc(${xPct}% + ${(baseWidth * scale) / 2}px)`;
-        const tooltipTop = `calc(${yPct}% + ${(baseHeight * scale * 0.8)}px)`;
+        const artRef = getOrCreateRef(art.id);
 
         return (
           <React.Fragment key={art.id}>
             {/* Artwork */}
             <div
+              ref={artRef}
               style={{
                 position: "absolute",
                 left: `${xPct}%`,
@@ -278,8 +335,8 @@ function CustomLayoutView({
                 transform: `rotate(${rotation}deg) scale(${scale})`,
                 transformOrigin: "top left",
               }}
-              onMouseEnter={() => setHoveredId(art.id)}
-              onMouseLeave={() => setHoveredId(null)}
+              onMouseEnter={() => handleMouseEnter(art)}
+              onMouseLeave={handleMouseLeave}
             >
               <FramedArtwork
                 frame_file={art.frame_file || DEFAULT_FRAME_FILE}
@@ -292,14 +349,14 @@ function CustomLayoutView({
                 showTooltip={false}
               />
             </div>
-            
+
             {/* External tooltip - always horizontal, at visual bottom */}
-            {hoveredId === art.id && (
+            {hoveredId === art.id && tooltipPos && (
               <div
                 style={{
                   position: "absolute",
-                  left: tooltipLeft,
-                  top: tooltipTop,
+                  left: `${tooltipPos.left}px`,
+                  top: `${tooltipPos.top}px`,
                   transform: 'translateX(-50%)',
                   zIndex: 9999,
                 }}
