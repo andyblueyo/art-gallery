@@ -16,6 +16,8 @@ export interface FramedArtworkProps {
   innerPadding?: InnerPadding;
   className?: string;
   style?: React.CSSProperties;
+  rotation?: number; 
+  showTooltip?: boolean;
 }
 
 export function FramedArtwork({
@@ -29,6 +31,8 @@ export function FramedArtwork({
   innerPadding,
   className = "",
   style,
+  rotation = 0,
+  showTooltip = true,  
 }: FramedArtworkProps) {
   const frameConfig = getFrameConfig(frame_file);
   const frameSrc = `/frames/${frameConfig.file}`;
@@ -132,10 +136,38 @@ export function FramedArtwork({
           }}
         />
       </div>
+      {showTooltip && (
+  <div
+    role="tooltip"
+    style={{
+      position: 'absolute',
+      left: '50%',
+      top: '100%',
+      marginTop: 12,
+      transform: `translateX(-50%) rotate(${-rotation}deg)`,
+      transformOrigin: 'center top',
+      zIndex: 20,
+    }}
+    className={`pointer-events-none whitespace-nowrap rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-3 py-2 text-center shadow-lg transition-all duration-200 ${
+      hovered
+        ? "opacity-100"
+        : "opacity-0"
+    }`}
+  >
+    <p className="font-serif text-sm text-[#f5e6c8]">{title}</p>
+    <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">
+      {medium}
+    </p>
+    <span className="sr-only">by {artistName}</span>
+  </div>
+)}
 
-      <div
+      {/* <div
         role="tooltip"
-        className={`pointer-events-none absolute left-1/2 top-full z-20 mt-3 -translate-x-1/2 whitespace-nowrap rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-3 py-2 text-center shadow-lg transition-all duration-200 ${
+        style={{
+          transform: `translateX(-50%) rotate(${-rotation}deg)`,  // ← COUNTER-ROTATE
+        }}
+        className={`pointer-events-none absolute left-1/2 top-full z-20 mt-3 whitespace-nowrap rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-3 py-2 text-center shadow-lg transition-all duration-200 ${
           hovered
             ? "translate-y-0 opacity-100"
             : "-translate-y-1 opacity-0"
@@ -146,7 +178,7 @@ export function FramedArtwork({
           {medium}
         </p>
         <span className="sr-only">by {artistName}</span>
-      </div>
+      </div> */}
     </div>
   );
 }

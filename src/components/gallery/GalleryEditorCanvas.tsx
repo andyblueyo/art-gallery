@@ -289,6 +289,7 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved }: 
 
       {/* Texture */}
       <div className="gallery-salon-wall__texture pointer-events-none absolute inset-0" />
+      
 
       {/* ── Canvas ──────────────────────────────────────────────── */}
       <div
@@ -343,6 +344,8 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved }: 
                       borderRadius: 6,
                       pointerEvents: "none",
                       zIndex: 10,
+                      transform: `scale(${item.scale})`,
+                      transformOrigin: "top left",  
                     }}
                   />
                 )}
@@ -362,10 +365,13 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved }: 
                     medium={item.medium}
                     artistName=""
                     fileType={item.fileType}
+                    rotation={item.rotation}
+                    showTooltip={false}  
                   />
                 </div>
               </div>
             </Draggable>
+            
           );
         })}
 
