@@ -263,8 +263,8 @@ function CustomLayoutView({
         const rotatedHeight = (baseWidth * sin + baseHeight * cos) * scale;
         
         // Bottom-center of the rotated artwork
-        const tooltipLeft = `calc(${xPct}% + ${rotatedWidth / 2}px)`;
-        const tooltipTop = `calc(${yPct}% + ${rotatedHeight}px + 12px)`;
+        const tooltipLeft = `calc(${xPct}% + ${(baseWidth * scale) / 2}px)`;
+        const tooltipTop = `calc(${yPct}% + ${(baseHeight * scale * 0.8)}px)`;
 
         return (
           <React.Fragment key={art.id}>
@@ -316,100 +316,3 @@ function CustomLayoutView({
   );
 }
 
-
-
-
-
-
-
-// function CustomLayoutView({
-//   artworks,
-//   artistName,
-// }: {
-//   artworks: Artwork[];
-//   artistName: string;
-// }) {
-//   const [hoveredId, setHoveredId] = React.useState<string | null>(null);
-//   const positioned = artworks.filter(a => a.position_x != null);
-
-//   if (positioned.length === 0) {
-//     return (
-//       <main className="relative z-10 flex min-h-[100dvh] items-center justify-center px-6 pt-24">
-//         <p className="text-center font-serif text-lg text-[#f5e6c8]/80">
-//           This gallery is waiting for its first piece.
-//         </p>
-//       </main>
-//     );
-//   }
-
-//   return (
-//     <main className="relative z-10 h-[100dvh] w-full overflow-hidden pt-14">
-//       {positioned.map((art, i) => {
-//         const xPct = art.position_x!;
-//         const yPct = art.position_y!;
-//         const rotation = art.rotation ?? 0;
-//         const scale = art.scale ?? 1;
-//         const zIndex = art.z_index ?? (i + 1);
-//         const baseWidth = 220;
-//         const baseHeight = 220 * 1.3;
-
-//                 // Calculate rotated bounding box for tooltip positioning
-//                 const radians = (rotation * Math.PI) / 180;
-//                 const cos = Math.abs(Math.cos(radians));
-//                 const sin = Math.abs(Math.sin(radians));
-//                 const rotatedWidth = (baseWidth * cos + baseHeight * sin) * scale;
-//                 const rotatedHeight = (baseWidth * sin + baseHeight * cos) * scale;
-                
-//                 // Bottom-center of the rotated artwork
-//                 const tooltipLeft = `calc(${xPct}% + ${rotatedWidth / 2}px)`;
-//                 const tooltipTop = `calc(${yPct}% + ${rotatedHeight}px + 12px)`;
-
-//                 return (
-//                   <React.Fragment key={art.id}>
-//                     {/* Artwork */}
-//                     <div
-//                       style={{
-//                         position: "absolute",
-//                         left: `${xPct}%`,
-//                         top: `${yPct}%`,
-//                         zIndex,
-//                         transform: `rotate(${rotation}deg) scale(${scale})`,
-//                         transformOrigin: "top left",
-//                       }}
-//                       onMouseEnter={() => setHoveredId(art.id)}
-//                       onMouseLeave={() => setHoveredId(null)}
-//                     >
-//                       <FramedArtwork
-//                         frame_file={art.frame_file || DEFAULT_FRAME_FILE}
-//                         artSrc={art.file_url}
-//                         width={baseWidth}
-//                         title={art.title}
-//                         medium={art.medium}
-//                         artistName={artistName}
-//                         fileType={art.file_type}
-//                         showTooltip={false}  {/* Hide internal tooltip */}
-//                       />
-//                     </div>
-                    
-//                     {/* External tooltip - always horizontal, at visual bottom */}
-//                     {hoveredId === art.id && (
-//                       <div
-//                         style={{
-//                           position: "absolute",
-//                           left: tooltipLeft,
-//                           top: tooltipTop,
-//                           transform: 'translateX(-50%)',
-//                           zIndex: 9999,
-//                         }}
-//                         className="pointer-events-none whitespace-nowrap rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-3 py-2 text-center shadow-lg"
-//                       >
-//                         <p className="font-serif text-sm text-[#f5e6c8]">{art.title}</p>
-//                         <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{art.medium}</p>
-//                       </div>
-//                     )}
-//                   </React.Fragment>
-//                 );
-//       })}
-//     </main>
-//   );
-// }

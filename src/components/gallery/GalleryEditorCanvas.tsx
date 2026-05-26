@@ -6,7 +6,7 @@ import type { DraggableData, DraggableEvent } from "react-draggable";
 import { FramedArtwork } from "./FramedArtwork";
 import { createClient } from "@/lib/supabase/client";
 import type { Artwork } from "@/lib/types";
-import { DEFAULT_FRAME_FILE } from "@/lib/frames";
+import { DEFAULT_FRAME_FILE, getFrameConfig } from "@/lib/frames";
 import { useRouter } from "next/navigation";
 
 const GRID_SIZE = 20;
@@ -305,6 +305,20 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved }: 
           const artW = BASE_WIDTH * item.scale;
           const artH = BASE_WIDTH * 1.35 * item.scale;
 
+          // Bounding box: rotate all 4 corners around top-left origin (0,0)
+          const radians = (item.rotation * Math.PI) / 180;
+          const cosA = Math.cos(radians);
+          const sinA = Math.sin(radians);
+          const frameConfig = getFrameConfig(item.frame_file);
+          const sel = frameConfig.selectionScale ?? 1.0;
+          const W = BASE_WIDTH, H = (BASE_WIDTH / frameConfig.aspect) * sel, s = item.scale;
+          const pad = 8 + (BASE_WIDTH * (sel - 1)) / 2; 
+          const cx: number[] = [0, s*W*cosA, s*(W*cosA-H*sinA), s*(-H*sinA)];
+          const cy: number[] = [0, s*W*sinA, s*(W*sinA+H*cosA), s*H*cosA];
+          const minX = Math.min(...cx), maxX = Math.max(...cx);
+          const minY = Math.min(...cy), maxY = Math.max(...cy);
+          
+
           return (
             <Draggable
               key={item.id}
@@ -334,18 +348,19 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved }: 
                   setSelectedId(item.id);
                 }}
               >
-                {/* Selection ring */}
+                {/* Selection ring — exact bounding box of rotated artwork */}
                 {isSelected && (
                   <div
                     style={{
                       position: "absolute",
-                      inset: -8,
+                      left: minX - pad,
+                      top: minY - pad,
+                      width: (maxX - minX) + pad * 2,
+                      height: (maxY - minY) + pad * 2,
                       border: "2px dashed #c8a040",
                       borderRadius: 6,
                       pointerEvents: "none",
                       zIndex: 10,
-                      transform: `scale(${item.scale})`,
-                      transformOrigin: "top left",  
                     }}
                   />
                 )}
@@ -371,7 +386,6 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved }: 
                 </div>
               </div>
             </Draggable>
-            
           );
         })}
 
