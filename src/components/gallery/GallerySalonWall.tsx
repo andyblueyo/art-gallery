@@ -417,9 +417,9 @@ function GalleryMinimap({
       const scaleY = MAP_H / CANVAS_H;
       setVp({
         left: el.scrollLeft * scaleX,
-        top: el.scrollTop * scaleY,
-        width: Math.min(MAP_W, el.clientWidth * scaleX),
-        height: Math.min(MAP_H, el.clientHeight * scaleY),
+        top: window.scrollY * scaleY,
+        width: Math.min(MAP_W, window.innerWidth * scaleX),
+        height: Math.min(MAP_H, window.innerHeight * scaleY),
       });
       setIdle(false);
       clearTimeout(idleTimer.current);
@@ -428,9 +428,11 @@ function GalleryMinimap({
 
     update();
     el.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("scroll", update, { passive: true }); 
     window.addEventListener("resize", update);
     return () => {
       el.removeEventListener("scroll", update);
+      window.removeEventListener("scroll", update);  
       window.removeEventListener("resize", update);
       clearTimeout(idleTimer.current);
     };
