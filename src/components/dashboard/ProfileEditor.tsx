@@ -9,6 +9,16 @@ import type { Profile } from "@/lib/types";
 
 const BIO_MAX = 160;
 
+function normalizeInstagram(input: string): string {
+  const trimmed = input.trim();
+  if (!trimmed) return "";
+  // Remove @ prefix if present
+  const withoutAt = trimmed.startsWith("@") ? trimmed.slice(1) : trimmed;
+  // Extract username from URLs
+  const match = withoutAt.match(/(?:instagram\.com\/)?([a-zA-Z0-9_.]+)\/?$/);
+  return (match ? match[1] : withoutAt).toLowerCase();
+}
+
 interface ProfileEditorProps {
   profile: Profile;
   onSaved: (profile: Profile) => void;
@@ -29,6 +39,7 @@ export function ProfileEditor({
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [handleError, setHandleError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -59,17 +70,18 @@ export function ProfileEditor({
     }
 
     const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-    return data.publicUrl;
+    return `${data.publicUrl}?t=${Date.now()}`;
   }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setHandleError(null);
     setSaving(true);
 
     const normalized = normalizeHandle(handle);
     if (!isValidHandle(normalized)) {
-      setError("Handle must be 3–30 URL-safe characters.");
+      setHandleError("Handle must be 3–30 URL-safe characters.");
       setSaving(false);
       return;
     }
@@ -86,7 +98,7 @@ export function ProfileEditor({
           .maybeSingle();
 
         if (taken) {
-          setError("That handle is already taken.");
+          setHandleError("That handle is already taken.");
           setSaving(false);
           return;
         }
@@ -104,7 +116,7 @@ export function ProfileEditor({
         handle: normalized,
         bio: bio.slice(0, BIO_MAX),
         location: location.trim(),
-        instagram_url: instagramUrl.trim(),
+        instagram_url: normalizeInstagram(instagramUrl),
         avatar_url: nextAvatarUrl,
       };
 
@@ -161,7 +173,14 @@ export function ProfileEditor({
       </div>
 
       <FormField label="display name" value={displayName} onChange={setDisplayName} />
-      <FormField label="handle" value={handle} onChange={setHandle} hint="artpenny.com/handle" />
+      <FormField
+        label="handle"
+        value={handle}
+        onChange={(v) => { setHandle(v); if (handleError) setHandleError(null); }}
+        hint={handleError ? undefined : "artpenny.com/handle"}
+        hasError={!!handleError}
+        errorMessage={handleError ?? undefined}
+      />
       <label className="block">
         <span className="text-xs font-medium uppercase tracking-wide text-brown-muted">
           bio
@@ -182,7 +201,9 @@ export function ProfileEditor({
         label="instagram"
         value={instagramUrl}
         onChange={setInstagramUrl}
-        placeholder="https://instagram.com/you"
+        onBlur={() => setInstagramUrl(normalizeInstagram(instagramUrl))}
+        hint={instagramUrl ? `instagram.com/${normalizeInstagram(instagramUrl)}` : undefined}
+        placeholder="https://instagram.com/badartrat"
       />
 
       {error && (
@@ -215,12 +236,18 @@ function FormField({
   onChange,
   hint,
   placeholder,
+  onBlur,
+  hasError,
+  errorMessage,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   hint?: string;
   placeholder?: string;
+  onBlur?: () => void;
+  hasError?: boolean;
+  errorMessage?: string;
 }) {
   return (
     <label className="block">
@@ -230,10 +257,14 @@ function FormField({
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
         placeholder={placeholder}
-        className="mt-1 w-full rounded-lg border border-[#d8ceb8] bg-white/60 px-3 py-2.5 text-brown focus:border-[#c8a040] focus:outline-none focus:ring-1 focus:ring-[#c8a040]/40"
+        className={`mt-1 w-full rounded-lg border bg-white/60 px-3 py-2.5 text-brown focus:outline-none focus:ring-1 ${hasError ? "border-red-500 focus:border-red-500 focus:ring-red-500/40" : "border-[#d8ceb8] focus:border-[#c8a040] focus:ring-[#c8a040]/40"}`}
       />
       {hint && <span className="mt-1 block text-xs text-brown-muted">{hint}</span>}
+      {hasError && errorMessage && (
+        <span className="mt-1 block text-xs text-red-700">{errorMessage}</span>
+      )}
     </label>
   );
 }

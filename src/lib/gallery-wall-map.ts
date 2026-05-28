@@ -16,6 +16,8 @@ export function profileToWallArtist(
     name: profile.display_name || profile.handle,
     handle: profile.handle,
     bio: profile.bio || "",
+    location: profile.location || "",
+    avatarUrl: profile.avatar_url || "",
     instagram,
     pieceCount,
     followers,

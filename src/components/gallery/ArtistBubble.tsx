@@ -7,7 +7,9 @@ export interface ArtistBubbleData {
   name: string;
   handle: string;
   bio: string;
+  location: string;
   instagram: string;
+  avatarUrl?: string;
   pieceCount: number;
   followers: number;
 }
@@ -27,8 +29,8 @@ function getInitials(name: string): string {
 }
 
 function formatInstagramUrl(instagram: string): string {
-  if (instagram.startsWith("http")) return instagram;
-  return `https://${instagram.replace(/^\/+/, "")}`;
+  if (!instagram) return "#";
+  return `https://instagram.com/${instagram}`;
 }
 
 export function ArtistBubble({ artist, siteOrigin = "artpenny.com" }: ArtistBubbleProps) {
@@ -42,10 +44,12 @@ export function ArtistBubble({ artist, siteOrigin = "artpenny.com" }: ArtistBubb
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex h-[60px] w-[60px] items-center justify-center rounded-full border-2 border-[#c8a040] bg-[#2a2018] font-serif text-sm font-medium text-[#f5e6c8] shadow-lg transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c8a040]/60"
+          className="flex h-[60px] w-[60px] items-center justify-center rounded-full border-2 border-[#c8a040] bg-[#2a2018] font-serif text-sm font-medium text-[#f5e6c8] shadow-lg transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c8a040]/60 overflow-hidden"
           aria-label="Open artist profile"
         >
-          {initials}
+          {artist.avatarUrl ? (
+            <img src={artist.avatarUrl} alt="" className="h-full w-full object-cover" />
+          ) : initials}
         </button>
       </div>
     );
@@ -54,27 +58,31 @@ export function ArtistBubble({ artist, siteOrigin = "artpenny.com" }: ArtistBubb
   return (
     <div className="fixed bottom-5 left-5 z-40 w-[min(100vw-2.5rem,340px)]">
       <div className="rounded-2xl border-2 border-[#c8a040] bg-[rgba(18,12,6,0.95)] p-5 shadow-2xl backdrop-blur-sm animate-in-fade">
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          className="absolute right-3 top-3 rounded p-1 text-[#c8a040]/60 transition-colors hover:text-[#c8a040]"
-          aria-label="Close artist profile"
-        >
-          <span className="text-lg leading-none">×</span>
-        </button>
-
-        <h2 className="pr-6 font-serif text-2xl capitalize leading-tight text-[#f5e6c8]">
-          {artist.name}
-        </h2>
-        <p className="mt-1 text-sm text-[#c8a040]/75">
-          {siteOrigin}/{artist.handle}
-        </p>
-        <div className="mt-3">
-          <HumanMadeBadge className="text-badge-green-light" />
-        </div>
+      <div className="flex items-start gap-3">
+  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border-2 border-[#c8a040] bg-[#2a2018]">
+    {artist.avatarUrl ? (
+      <img src={artist.avatarUrl} alt="" className="h-full w-full object-cover" />
+    ) : (
+      <span className="flex h-full w-full items-center justify-center font-serif text-sm text-[#f5e6c8]">{initials}</span>
+    )}
+  </div>
+  <div className="flex-1 min-w-0">
+    <div className="flex items-center justify-between">
+      <h2 className="font-serif text-xl capitalize leading-tight text-[#f5e6c8]">{artist.name}</h2>
+      <button type="button" onClick={() => setOpen(false)} className="rounded p-1 text-[#c8a040]/60 transition-colors hover:text-[#c8a040]" aria-label="Close artist profile">
+        <span className="text-lg leading-none">×</span>
+      </button>
+    </div>
+    <p className="text-sm text-[#c8a040]/75">{siteOrigin}/{artist.handle}</p>
+    <div className="mt-1"><HumanMadeBadge className="text-badge-green-light" /></div>
+  </div>
+</div>
         <p className="mt-3 text-sm leading-relaxed text-[#e8dcc8]/85">
           {artist.bio}
         </p>
+        {artist.location && (
+          <p className="mt-1 text-xs text-[#c8a040]/60">{artist.location}</p>
+        )}
         <p className="mt-4 text-xs tracking-wide text-[#c8a040]/60">
           {artist.pieceCount} pieces · {artist.followers} followers
         </p>
@@ -93,12 +101,6 @@ export function ArtistBubble({ artist, siteOrigin = "artpenny.com" }: ArtistBubb
           >
             Instagram
           </a>
-        </div>
-
-        <div className="mt-5 flex justify-center border-t border-[#c8a040]/20 pt-4">
-          <div className="flex h-[52px] w-[52px] items-center justify-center rounded-full border-2 border-[#c8a040] bg-[#2a2018] font-serif text-base font-medium text-[#f5e6c8]">
-            {initials}
-          </div>
         </div>
       </div>
     </div>
