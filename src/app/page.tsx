@@ -33,7 +33,7 @@ export default function HomePage() {
         </div>
 
         <p style={{ color: "#888780" }} className="text-center text-lg mb-8 max-w-2xl leading-relaxed">
-          a free space for human-made art — no algorithms, no ai images. just artists sharing work they're proud of.
+          a free space for human-made art — no algorithms, no ai images. just artists sharing work they&apos;re proud of.
         </p>
 
         <Link
