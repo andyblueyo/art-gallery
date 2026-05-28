@@ -177,7 +177,7 @@ export function ProfileEditor({
         label="handle"
         value={handle}
         onChange={(v) => { setHandle(v); if (handleError) setHandleError(null); }}
-        hint={handleError ? undefined : "artpenny.com/handle"}
+        hint={handleError ? undefined : "handle.galleryclub.online"}
         hasError={!!handleError}
         errorMessage={handleError ?? undefined}
       />

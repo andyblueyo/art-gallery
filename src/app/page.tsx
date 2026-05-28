@@ -1,86 +1,135 @@
 import Link from "next/link";
-import { Wordmark } from "@/components/layout/Wordmark";
-import { DEMO_HANDLE } from "@/lib/demo-data";
-
-const exampleGalleries = [
-  {
-    handle: DEMO_HANDLE,
-    name: "maya lin",
-    preview:
-      "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=400&q=80",
-  },
-  {
-    handle: "demo",
-    name: "Coming soon",
-    preview:
-      "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400&q=80",
-    disabled: true,
-  },
-];
+import Image from "next/image";
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-cream flex flex-col">
-      <header className="px-6 py-6">
-        <Wordmark size="lg" />
-      </header>
+    <div style={{ backgroundColor: "#F2EDE3" }} className="min-h-screen flex flex-col">
+      {/* Nav */}
+      <nav className="border-b" style={{ borderColor: "#D3CEBF", color: "#2C2A22" }}>
+        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+          <div style={{ fontFamily: "'Crooked', serif", fontSize: "24px" }}>
+            gallery club
+          </div>
+          <Link href="/login" className="text-sm hover:opacity-70 transition-opacity">
+            sign in
+          </Link>
+        </div>
+      </nav>
 
-      <main className="flex-1 flex flex-col items-center justify-center px-6 text-center pb-16">
-        <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl text-brown max-w-2xl leading-tight mb-6">
-          the most beautiful way to share your art
-        </h1>
-        <p className="text-brown-muted text-lg sm:text-xl max-w-md mb-10">
-          free portfolio galleries for human-made art
+      {/* Hero */}
+      <section className="flex-1 py-20 px-6 flex flex-col items-center justify-center">
+        <div style={{ fontFamily: "'Crooked', serif", fontSize: "64px", color: "#2C2A22" }} className="mb-8 text-center leading-tight">
+          gallery club
+        </div>
+
+        <div className="mb-12 max-w-sm">
+          <Image
+            src="/art/star.png"
+            alt="Ornate frame"
+            width={300}
+            height={300}
+            className="w-full h-auto"
+          />
+        </div>
+
+        <p style={{ color: "#888780" }} className="text-center text-lg mb-8 max-w-2xl leading-relaxed">
+          a free space for human-made art — no algorithms, no ai images. just artists sharing work they're proud of.
         </p>
+
         <Link
           href="/signup"
-          className="inline-block px-10 py-4 bg-brown text-cream rounded-lg hover:bg-brown-light transition-colors text-base font-medium"
+          style={{ backgroundColor: "#2C2A22", color: "#F2EDE3" }}
+          className="px-8 py-3 rounded-lg hover:opacity-90 transition-opacity font-medium mb-6"
         >
           create your gallery
         </Link>
-      </main>
 
-      <section className="border-t border-brown/10 py-16 px-6">
-        <p className="text-center text-sm text-brown-muted mb-8">
-          example galleries
+        <p style={{ color: "#888780" }} className="text-sm italic">
+          for artists. for art. for friends.
         </p>
-        <div className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {exampleGalleries.map((gallery) =>
-            gallery.disabled ? (
+      </section>
+
+      {/* 3-Column Pillars */}
+      <section className="py-20 px-6" style={{ borderTop: "1px solid #D3CEBF", borderBottom: "1px solid #D3CEBF" }}>
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
+          {[
+            { title: "your layout", desc: "arrange your work exactly how you want it. drag, rotate, resize. full creative control." },
+            { title: "human-made only", desc: "celebrate the artists behind each piece. no algorithms deciding what's shown." },
+            { title: "always free", desc: "no subscriptions, no fees, no upsell. just a place for artists to share." },
+          ].map((pillar, idx) => (
+            <div key={idx} className="text-center">
               <div
-                key={gallery.handle}
-                className="opacity-50 rounded-xl border border-brown/10 overflow-hidden bg-white/50"
+                style={{ fontFamily: "'Crooked', serif", fontSize: "28px", color: "#2C2A22" }}
+                className="mb-4"
               >
-                <div
-                  className="h-40 bg-cover bg-center"
-                  style={{ backgroundImage: `url(${gallery.preview})` }}
-                />
-                <div className="p-4 text-left">
-                  <p className="font-medium text-brown">{gallery.name}</p>
-                  <p className="text-xs text-brown-muted">coming soon</p>
-                </div>
+                {pillar.title}
               </div>
-            ) : (
-              <Link
-                key={gallery.handle}
-                href={`/${gallery.handle}`}
-                className="group rounded-xl border border-brown/10 overflow-hidden bg-white/50 hover:border-gold/40 transition-colors"
-              >
-                <div
-                  className="h-40 bg-cover bg-center group-hover:scale-[1.02] transition-transform duration-500"
-                  style={{ backgroundImage: `url(${gallery.preview})` }}
-                />
-                <div className="p-4 text-left">
-                  <p className="font-medium text-brown">{gallery.name}</p>
-                  <p className="text-xs text-brown-muted">
-                    @{gallery.handle}
-                  </p>
-                </div>
-              </Link>
-            )
-          )}
+              <p style={{ color: "#888780" }} className="text-sm leading-relaxed">
+                {pillar.desc}
+              </p>
+            </div>
+          ))}
         </div>
       </section>
+
+      {/* Example Galleries */}
+      <section className="py-20 px-6">
+        <div className="max-w-6xl mx-auto">
+          <p style={{ color: "#888780" }} className="text-sm text-center mb-12">
+            example galleries
+          </p>
+
+          <div className="max-w-sm mx-auto">
+            <Link
+              href="/badartrat"
+              className="block rounded-lg overflow-hidden transition-transform hover:scale-[1.02]"
+              style={{ border: "1px solid #D3CEBF" }}
+            >
+              <div className="bg-gray-200 h-48 flex items-center justify-center" style={{ backgroundColor: "#E8E3D8" }}>
+                <span style={{ color: "#888780" }} className="text-sm">
+                  Gallery preview
+                </span>
+              </div>
+              <div className="p-4" style={{ color: "#2C2A22" }}>
+                <p className="font-medium">badartrat</p>
+                <p style={{ color: "#888780" }} className="text-xs">
+                  badartrat.galleryclub.online
+                </p>
+              </div>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Coming Soon */}
+      <section className="py-20 px-6" style={{ borderTop: "1px solid #D3CEBF" }}>
+        <div className="max-w-2xl mx-auto text-center">
+          <div
+            style={{ fontFamily: "'Crooked', serif", fontSize: "48px", color: "#2C2A22" }}
+            className="mb-6"
+          >
+            collect & exchange
+          </div>
+          <p style={{ color: "#888780" }} className="text-lg leading-relaxed">
+            hang work you love in your own gallery. curate art from other artists, build a collection, exchange work with friends.
+          </p>
+          <p style={{ color: "#888780" }} className="text-sm mt-8 italic">
+            coming soon
+          </p>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-12 px-6" style={{ borderTop: "1px solid #D3CEBF" }}>
+        <div className="max-w-6xl mx-auto text-center">
+          <div style={{ fontFamily: "'Crooked', serif", fontSize: "24px", color: "#2C2A22" }} className="mb-4">
+            gallery club
+          </div>
+          <p style={{ color: "#888780" }} className="text-sm">
+            for artists. for art. for friends.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -40,7 +40,7 @@ export function ProfileHeader({
                   href={`/${profile.handle}`}
                   className="hover:text-brown transition-colors"
                 >
-                  artpenny.com/{profile.handle}
+                  {profile.handle}.galleryclub.online
                 </Link>
                 <span className="text-brown/30">·</span>
                 <HumanMadeBadge />

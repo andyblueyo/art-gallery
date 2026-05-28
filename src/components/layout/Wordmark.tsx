@@ -17,7 +17,7 @@ export function Wordmark({ className = "", size = "md" }: WordmarkProps) {
       href="/"
       className={`font-serif text-brown hover:text-gold transition-colors ${sizes[size]} ${className}`}
     >
-      artpenny
+      gallery club
     </Link>
   );
 }

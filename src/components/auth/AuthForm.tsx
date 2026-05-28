@@ -90,7 +90,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         href="/"
         className="font-serif text-2xl text-brown hover:text-gold transition-colors"
       >
-        artpenny
+        gallery club
       </Link>
       <h1 className="mt-8 font-serif text-3xl text-brown">
         {mode === "login" ? "welcome back" : "create your gallery"}
@@ -115,7 +115,7 @@ export function AuthForm({ mode }: AuthFormProps) {
               value={handle}
               onChange={setHandle}
               placeholder="mika"
-              hint="artpenny.com/your-handle"
+              hint="your-handle.galleryclub.online"
             />
           </>
         )}

@@ -33,10 +33,11 @@ function formatInstagramUrl(instagram: string): string {
   return `https://instagram.com/${instagram}`;
 }
 
-export function ArtistBubble({ artist, siteOrigin = "artpenny.com" }: ArtistBubbleProps) {
+export function ArtistBubble({ artist, siteOrigin = "galleryclub.online" }: ArtistBubbleProps) {
   const [open, setOpen] = useState(false);
   const initials = getInitials(artist.name);
   const instagramHref = formatInstagramUrl(artist.instagram);
+  const galleryUrl = `${artist.handle}.${siteOrigin}`;
 
   if (!open) {
     return (
@@ -73,7 +74,7 @@ export function ArtistBubble({ artist, siteOrigin = "artpenny.com" }: ArtistBubb
         <span className="text-lg leading-none">×</span>
       </button>
     </div>
-    <p className="text-sm text-[#c8a040]/75">{siteOrigin}/{artist.handle}</p>
+    <p className="text-sm text-[#c8a040]/75">{galleryUrl}</p>
     <div className="mt-1"><HumanMadeBadge className="text-badge-green-light" /></div>
   </div>
 </div>

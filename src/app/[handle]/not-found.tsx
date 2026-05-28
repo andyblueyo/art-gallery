@@ -14,7 +14,7 @@ export default function NotFound() {
         href="/"
         className="text-sm text-gold hover:underline underline-offset-2"
       >
-        back to artpenny
+        back to gallery club
       </Link>
     </div>
   );

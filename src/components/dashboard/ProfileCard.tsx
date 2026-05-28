@@ -37,7 +37,7 @@ export function ProfileCard({ profile, onProfileUpdate }: ProfileCardProps) {
         <div className="min-w-0 flex-1">
           <h2 className="font-serif text-xl capitalize text-brown">{displayName}</h2>
           <p className="text-sm text-[#c8a040]/90">
-            artpenny.com/{profile.handle}
+            {profile.handle}.galleryclub.online
           </p>
           {profile.bio && (
             <p className="mt-2 text-sm leading-relaxed text-brown-muted line-clamp-2">

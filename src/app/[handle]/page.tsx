@@ -30,9 +30,9 @@ export async function generateMetadata({
     title: `${name} (@${gallery.profile.handle})`,
     description:
       gallery.profile.bio ||
-      `${name}'s portfolio gallery on artpenny — human-made art.`,
+      `${name}'s portfolio gallery on gallery club — human-made art.`,
     openGraph: {
-      title: `${name} | artpenny`,
+      title: `${name} | gallery club`,
       description: gallery.profile.bio || `View ${name}'s art gallery`,
     },
   };

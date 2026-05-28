@@ -130,7 +130,7 @@ export function GallerySalonWall({
         <header className="pointer-events-none fixed inset-x-0 top-0 z-30 flex items-start justify-between px-4 py-4 sm:px-6">
           <div className="pointer-events-auto rounded-lg bg-[rgba(18,12,6,0.35)] px-4 py-2 backdrop-blur-md">
             <span className="font-serif text-lg tracking-wide text-[#c8a040]/85">
-              artpenny
+              gallery club
             </span>
           </div>
 
@@ -447,7 +447,7 @@ function GalleryMinimap({
         bottom: 24,
         right: 24,
         zIndex: 50,
-        opacity: idle ? 0.3 : 1,
+        opacity: idle ? 1 : 1,
         transition: "opacity 0.4s ease",
         background: "rgba(18,12,6,0.75)",
         borderRadius: 8,

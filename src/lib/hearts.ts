@@ -1,4 +1,4 @@
-const HEARTS_KEY = "artpenny_hearts";
+const HEARTS_KEY = "galleryclub_hearts";
 
 export function getHeartedArtworkIds(): Set<string> {
   if (typeof window === "undefined") return new Set();

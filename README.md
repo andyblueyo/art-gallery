@@ -1,6 +1,6 @@
-# artpenny
+# gallery club
 
-Free portfolio galleries for human-made art. Artists get a beautiful shareable page at `artpenny.com/[handle]`.
+Free portfolio galleries for human-made art. Artists get a beautiful shareable page at `[handle].galleryclub.online`.
 
 ## Stack
 

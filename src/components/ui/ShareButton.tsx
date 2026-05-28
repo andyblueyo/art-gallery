@@ -26,7 +26,7 @@ export function ShareButton({
   async function handleShare() {
     if (navigator.share) {
       try {
-        await navigator.share({ title: "artpenny gallery", url: shareUrl });
+        await navigator.share({ title: "gallery club", url: shareUrl });
         return;
       } catch {
         // user cancelled or share failed — fall through to copy

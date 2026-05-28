@@ -191,7 +191,7 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved, on
       {/* ── Toolbar ─────────────────────────────────────────────── */}
       <header className="relative z-10 flex h-14 shrink-0 items-center justify-between gap-2 bg-[rgba(18,12,6,0.92)] px-4 backdrop-blur-md">
         {/* Logo */}
-        <span className="shrink-0 font-serif text-[#c8a040]/85">artpenny</span>
+        <span className="shrink-0 font-serif text-[#c8a040]/85">gallery club</span>
 
         {/* Per-artwork controls (shown when something is selected) */}
         {selectedItem ? (

@@ -100,7 +100,7 @@ export function UploadZone({
       const ok =
         picked.type.startsWith("image/") || picked.type === "application/pdf";
       if (!ok) {
-        setError("Please upload a JPG, PNG, or PDF.");
+        setError("Please upload an image in an acceptable format like JPG or PNG");
         return;
       }
       if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -353,7 +353,7 @@ export function UploadZone({
               click to browse
             </span>
           </p>
-          <p className="mt-2 text-xs text-brown-muted">JPG, PNG, or PDF</p>
+          <p className="mt-2 text-xs text-brown-muted">JPG, PNG</p>
         </div>
       )}
 

@@ -1,4 +1,4 @@
-# artpenny — Project Log
+# gallery club — Project Log
 
 ## Stack
 - Next.js 14 App Router + TypeScript

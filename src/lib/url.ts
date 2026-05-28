@@ -12,5 +12,5 @@ export async function getGalleryUrl(handle: string): Promise<string> {
     return `${protocol}://${host}/${handle}`;
   }
 
-  return `https://artpenny.com/${handle}`;
+  return `https://${handle}.galleryclub.online`;
 }
