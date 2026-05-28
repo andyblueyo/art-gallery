@@ -304,6 +304,7 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved, on
       <div
         ref={canvasRef}
         className="relative flex-1 overflow-hidden"
+        style={{ minHeight: 800 }}
         onClick={() => setSelectedId(null)}
       >
         {items.map(item => {
@@ -311,8 +312,6 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved, on
           const px = (item.xPct / 100) * canvasDims.width;
           const py = (item.yPct / 100) * canvasDims.height;
           const isSelected = item.id === selectedId;
-          const artW = BASE_WIDTH * item.scale;
-          const artH = BASE_WIDTH * 1.35 * item.scale;
 
           // Bounding box: rotate all 4 corners around top-left origin (0,0)
           const radians = (item.rotation * Math.PI) / 180;
@@ -338,8 +337,8 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved, on
               bounds={{
                 left: 0,
                 top: 0,
-                right: Math.max(0, canvasDims.width - artW - 20),
-                bottom: Math.max(0, canvasDims.height - artH - 20),
+                right: Math.max(0, canvasDims.width - (maxX - minX) - 20),
+                bottom: Math.max(0, canvasDims.height - (maxX - minX) - 20),
               }}
             >
               <div

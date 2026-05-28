@@ -139,7 +139,7 @@ export function UploadZone({
       const { width, height } = e.currentTarget;
       const initial = centerCrop(
         makeAspectCrop(
-          { unit: "%", width: 80 },
+          { unit: "%", width: selectedFrame.shape === "circle" || selectedFrame.shape === "oval" ? 60 : 80 },
           selectedFrame.aspect,
           width,
           height
@@ -446,24 +446,26 @@ export function UploadZone({
                   style={{ maxHeight: 480, display: "block" }}
                 />
               </ReactCrop>
-              {pixelCrop && pixelCrop.width > 0 && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={`/frames/${selectedFrame.file}`}
-                  alt=""
-                  aria-hidden
-                  style={{
-                    position: "absolute",
-                    top: pixelCrop.y,
-                    left: pixelCrop.x,
-                    width: pixelCrop.width,
-                    height: pixelCrop.height,
-                    pointerEvents: "none",
-                    opacity: 0.7,
-                    zIndex: 5,
-                  }}
-                />
-              )}
+              {pixelCrop && pixelCrop.width > 0 && (() => {
+  const p = selectedFrame.cropPadding;
+  return (
+    <img
+      src={`/frames/${selectedFrame.file}`}
+      alt=""
+      aria-hidden
+      style={{
+        position: "absolute",
+        top:  pixelCrop.y - pixelCrop.height * selectedFrame.cropPadding.top,
+        left: pixelCrop.x - pixelCrop.width  * selectedFrame.cropPadding.left,
+        width:  pixelCrop.width  * (1 + selectedFrame.cropPadding.left + selectedFrame.cropPadding.right),
+        height: "auto",
+        pointerEvents: "none",
+        opacity: 0.6,
+        zIndex: 5,
+      }}
+    />
+  );
+})()}
             </div>
           </div>
 
