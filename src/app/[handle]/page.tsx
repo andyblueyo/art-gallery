@@ -54,10 +54,21 @@ export default async function PublicGalleryPage({ params }: PageProps) {
   });
 
   let isOwner = false;
+  let isLoggedIn = false;
   if (isSupabaseConfigured()) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    isOwner = !!user && user.id === gallery.profile.id;
+    isLoggedIn = !!user;
+
+    if (isLoggedIn && user) {
+      const { data: userProfile } = await supabase
+        .from("profiles")
+        .select("handle")
+        .eq("id", user.id)
+        .single();
+
+      isOwner = userProfile?.handle === gallery.profile.handle;
+    }
   }
 
   const galleryUrl = await getGalleryUrl(gallery.profile.handle);
@@ -88,6 +99,7 @@ export default async function PublicGalleryPage({ params }: PageProps) {
         totalPieceCount={gallery.artworks.length}
         allArtworks={gallery.artworks}
         isOwner={isOwner}
+        isLoggedIn={isLoggedIn}
         profileId={gallery.profile.id}
         layoutMode={gallery.profile.layout_mode ?? "auto"}
       />

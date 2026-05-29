@@ -4,6 +4,12 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
+const cookieDomain = (process.env.NEXT_PUBLIC_SITE_URL ?? "").includes(
+  "galleryclub.online"
+)
+  ? ".galleryclub.online"
+  : undefined;
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -11,6 +17,7 @@ export async function updateSession(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: { domain: cookieDomain },
       cookies: {
         getAll() {
           return request.cookies.getAll();

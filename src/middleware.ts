@@ -46,9 +46,12 @@ export async function middleware(request: NextRequest) {
   const originalPath = request.nextUrl.pathname;
   rewrittenUrl.pathname = `/${subdomain}${originalPath === "/" ? "" : originalPath}`;
 
-  // Run session update against the rewritten path so auth guards see the correct route
+  // Run session update against the rewritten path so auth guards see the correct route.
+  // We copy the original headers (including Cookie) so updateSession can read and
+  // refresh the session; after it runs, rewrittenRequest.headers will contain the
+  // updated cookie values (NextRequest.cookies.set mutates the underlying Cookie header).
   const rewrittenRequest = new NextRequest(rewrittenUrl, {
-    headers: request.headers,
+    headers: new Headers(request.headers),
   });
   const sessionResponse = await updateSession(rewrittenRequest);
 
@@ -57,8 +60,14 @@ export async function middleware(request: NextRequest) {
     return sessionResponse;
   }
 
-  // Rewrite to the gallery path, carrying over any refreshed session cookies
-  const rewriteResponse = NextResponse.rewrite(rewrittenUrl);
+  // Rewrite to the gallery path.  Pass { request: { headers } } so Next.js forwards
+  // the potentially-refreshed session headers to server components — without this,
+  // server components see the original (possibly stale) Cookie header and getUser()
+  // returns null for recently-refreshed tokens.
+  const rewriteResponse = NextResponse.rewrite(rewrittenUrl, {
+    request: { headers: rewrittenRequest.headers },
+  });
+  // Also copy set-cookie onto the response so the browser stores refreshed tokens
   sessionResponse.headers.forEach((value, key) => {
     if (key.toLowerCase() === "set-cookie") {
       rewriteResponse.headers.append("set-cookie", value);

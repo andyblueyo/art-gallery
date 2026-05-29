@@ -3,6 +3,15 @@ import { cookies } from "next/headers";
 
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
+// Set cookie domain to parent domain in production so auth cookies are sent to
+// subdomains (handle.galleryclub.online). Leave undefined in local dev so cookies
+// stay scoped to localhost.
+const cookieDomain = (process.env.NEXT_PUBLIC_SITE_URL ?? "").includes(
+  "galleryclub.online"
+)
+  ? ".galleryclub.online"
+  : undefined;
+
 export async function createClient() {
   const cookieStore = await cookies();
 
@@ -10,6 +19,7 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: { domain: cookieDomain },
       cookies: {
         getAll() {
           return cookieStore.getAll();

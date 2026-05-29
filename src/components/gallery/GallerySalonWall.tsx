@@ -23,6 +23,7 @@ interface GallerySalonWallProps {
   totalPieceCount: number;
   allArtworks?: Artwork[];
   isOwner?: boolean;
+  isLoggedIn?: boolean;
   profileId?: string;
   layoutMode?: string;
 }
@@ -35,9 +36,11 @@ export function GallerySalonWall({
   totalPieceCount,
   allArtworks = [],
   isOwner = false,
+  isLoggedIn = false,
   profileId = "",
   layoutMode = "auto",
 }: GallerySalonWallProps) {
+  console.log("GallerySalonWall props:", { isOwner, isLoggedIn });
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -129,9 +132,12 @@ export function GallerySalonWall({
 
         <header className="pointer-events-none fixed inset-x-0 top-0 z-30 flex items-start justify-between px-4 py-4 sm:px-6">
           <div className="pointer-events-auto rounded-lg bg-[rgba(18,12,6,0.35)] px-4 py-2 backdrop-blur-md">
-            <span className="font-serif text-lg tracking-wide text-[#c8a040]/85">
+            <a
+              href="https://galleryclub.online"
+              className="font-serif text-lg tracking-wide text-[#c8a040]/85 hover:text-[#c8a040] transition-colors"
+            >
               gallery club
-            </span>
+            </a>
           </div>
 
           <div className="flex items-center gap-2">
@@ -144,13 +150,41 @@ export function GallerySalonWall({
                 edit layout
               </button>
             )}
-            <button
-              type="button"
-              onClick={handleShare}
-              className="pointer-events-auto rounded-lg border border-[#c8a040]/30 bg-[rgba(18,12,6,0.35)] px-4 py-2 text-sm text-[#f5e6c8]/90 backdrop-blur-md transition-colors hover:border-[#c8a040]/60 hover:bg-[rgba(18,12,6,0.5)]"
-            >
-              share gallery
-            </button>
+            {isLoggedIn && !isOwner && (
+              <button
+                type="button"
+                onClick={handleShare}
+                className="pointer-events-auto rounded-lg border border-[#c8a040]/30 bg-[rgba(18,12,6,0.35)] px-4 py-2 text-sm text-[#f5e6c8]/90 backdrop-blur-md transition-colors hover:border-[#c8a040]/60 hover:bg-[rgba(18,12,6,0.5)]"
+              >
+                share gallery
+              </button>
+            )}
+            {isOwner && (
+              <button
+                type="button"
+                onClick={handleShare}
+                className="pointer-events-auto rounded-lg border border-[#c8a040]/30 bg-[rgba(18,12,6,0.35)] px-4 py-2 text-sm text-[#f5e6c8]/90 backdrop-blur-md transition-colors hover:border-[#c8a040]/60 hover:bg-[rgba(18,12,6,0.5)]"
+              >
+                share gallery
+              </button>
+            )}
+            {!isLoggedIn && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleShare}
+                  className="pointer-events-auto rounded-lg border border-[#c8a040]/30 bg-[rgba(18,12,6,0.35)] px-4 py-2 text-sm text-[#f5e6c8]/90 backdrop-blur-md transition-colors hover:border-[#c8a040]/60 hover:bg-[rgba(18,12,6,0.5)]"
+                >
+                  share gallery
+                </button>
+                <a
+                  href="https://galleryclub.online/signup"
+                  className="pointer-events-auto rounded-lg border border-[#c8a040]/30 bg-[rgba(18,12,6,0.35)] px-4 py-2 text-sm text-[#f5e6c8]/90 backdrop-blur-md transition-colors hover:border-[#c8a040]/60 hover:bg-[rgba(18,12,6,0.5)]"
+                >
+                  create your gallery
+                </a>
+              </>
+            )}
           </div>
         </header>
 
