@@ -4,7 +4,7 @@ export function HumanMadeBadge({ className = "" }: { className?: string }) {
       className={`inline-flex items-center gap-1.5 text-xs font-medium text-badge-green ${className}`}
     >
       <SparkleIcon />
-      human-made artist
+      making real art
     </span>
   );
 }

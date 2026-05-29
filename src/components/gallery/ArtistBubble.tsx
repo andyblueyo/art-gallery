@@ -69,7 +69,7 @@ export function ArtistBubble({ artist, siteOrigin = "galleryclub.online" }: Arti
   </div>
   <div className="flex-1 min-w-0">
     <div className="flex items-center justify-between">
-      <h2 className="font-serif text-xl capitalize leading-tight text-[#f5e6c8]">{artist.name}</h2>
+      <h2 className="font-serif text-xl leading-tight text-[#f5e6c8]">{artist.name}</h2>
       <button type="button" onClick={() => setOpen(false)} className="rounded p-1 text-[#c8a040]/60 transition-colors hover:text-[#c8a040]" aria-label="Close artist profile">
         <span className="text-lg leading-none">×</span>
       </button>

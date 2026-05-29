@@ -35,7 +35,7 @@ export function ProfileCard({ profile, onProfileUpdate }: ProfileCardProps) {
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className="font-serif text-xl capitalize text-brown">{displayName}</h2>
+          <h2 className="font-serif text-xl text-brown">{displayName}</h2>
           <p className="text-sm text-[#c8a040]/90">
             {profile.handle}.galleryclub.online
           </p>
