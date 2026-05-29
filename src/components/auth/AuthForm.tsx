@@ -98,7 +98,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       <p className="mt-2 text-sm text-brown-muted">
         {mode === "login"
           ? "Sign in to manage your portfolio."
-          : "Start sharing your human-made art."}
+          : "Start sharing your art."}
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">
@@ -108,13 +108,13 @@ export function AuthForm({ mode }: AuthFormProps) {
               label="display name"
               value={displayName}
               onChange={setDisplayName}
-              placeholder="mika chen"
+              placeholder="hella"
             />
             <Field
               label="handle"
               value={handle}
               onChange={setHandle}
-              placeholder="mika"
+              placeholder="badartrat"
               hint="your-handle.galleryclub.online"
             />
           </>
