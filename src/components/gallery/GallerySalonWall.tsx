@@ -141,7 +141,7 @@ export function GallerySalonWall({
                 onClick={() => setEditMode(true)}
                 className="pointer-events-auto rounded-lg border border-[#c8a040]/50 bg-[rgba(18,12,6,0.55)] px-4 py-2 text-sm text-[#c8a040] backdrop-blur-md transition-colors hover:border-[#c8a040] hover:bg-[rgba(18,12,6,0.75)]"
               >
-                Edit Layout
+                edit layout
               </button>
             )}
             <button
@@ -169,7 +169,7 @@ export function GallerySalonWall({
         ) : layout.length === 0 ? (
           <main className="relative z-10 flex min-h-[100dvh] items-center justify-center px-6 pt-24">
             <p className="text-center font-serif text-lg text-[#f5e6c8]/80">
-              This gallery is waiting for its first piece.
+              this gallery is waiting for its first piece.
             </p>
           </main>
         ) : isMobile ? (
@@ -298,7 +298,7 @@ function CustomLayoutView({
     return (
       <main className="relative z-10 flex min-h-[100dvh] items-center justify-center px-6 pt-24">
         <p className="text-center font-serif text-lg text-[#f5e6c8]/80">
-          This gallery is waiting for its first piece.
+          this gallery is waiting for its first piece.
         </p>
       </main>
     );

@@ -276,14 +276,14 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved, on
             onClick={onCancel}
             className="rounded-lg border border-[#c8a040]/30 px-3 py-1.5 text-sm text-[#f5e6c8]/80 hover:border-[#c8a040]/60 transition-colors"
           >
-            Cancel
+            cancel
           </button>
           {onReset && (
             <button
               onClick={onReset}
               className="rounded-lg border border-[#c8a040]/30 px-3 py-1.5 text-sm text-[#f5e6c8]/80 hover:border-[#c8a040]/60 transition-colors"
             >
-              Reset Layout
+              reset layout
             </button>
           )}
           <button
