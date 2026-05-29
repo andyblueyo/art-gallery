@@ -15,7 +15,7 @@ export async function getGalleryUrl(handle: string): Promise<string> {
     if (host.includes("localhost")) {
       return `${protocol}://${handle}.localhost:3000`;
     }
-    const hostname = host.split(":")[0];
+    const hostname = host.split(":")[0].replace(/^www\./, "");
     return `${protocol}://${handle}.${hostname}`;
   }
 
