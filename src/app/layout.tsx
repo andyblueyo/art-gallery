@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/react";
+
 
 export const metadata: Metadata = {
   title: {
-    default: "gallery club — free portfolio galleries for human-made art",
+    default: "gallery club — free portfolio galleries for real art",
     template: "%s | gallery club",
   },
   description:
-    "The most beautiful way to share your art. Free portfolio galleries for human-made art.",
+    "Free portfolio galleries for sharing real art with others.",
 };
 
 export default function RootLayout({
@@ -17,7 +19,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen font-sans">{children}</body>
+      <body className="min-h-screen font-sans">
+        {children}
+        <Analytics />
+        </body>
     </html>
   );
 }
