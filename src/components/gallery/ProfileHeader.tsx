@@ -36,12 +36,12 @@ export function ProfileHeader({
                 {displayName}
               </h1>
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5 text-sm text-brown-muted">
-                <Link
-                  href={`/${profile.handle}`}
+                <a
+                  href={galleryUrl}
                   className="hover:text-brown transition-colors"
                 >
                   {profile.handle}.galleryclub.online
-                </Link>
+                </a>
                 <span className="text-brown/30">·</span>
                 <HumanMadeBadge />
               </div>

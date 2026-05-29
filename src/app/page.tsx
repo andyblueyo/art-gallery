@@ -80,8 +80,8 @@ export default function HomePage() {
           </p>
 
           <div className="max-w-sm mx-auto">
-            <Link
-              href="/badartrat"
+            <a
+              href="https://badartrat.galleryclub.online"
               className="block rounded-lg overflow-hidden transition-transform hover:scale-[1.02]"
               style={{ border: "1px solid #D3CEBF" }}
             >
@@ -94,7 +94,7 @@ export default function HomePage() {
                   badartrat.galleryclub.online
                 </p>
               </div>
-            </Link>
+            </a>
           </div>
         </div>
       </section>
