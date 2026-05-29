@@ -33,7 +33,7 @@ export default function HomePage() {
         </div>
 
         <p style={{ color: "#888780" }} className="text-center text-lg mb-8 max-w-2xl leading-relaxed">
-          a free space for human-made art — no algorithms, no ai images. just artists sharing work they&apos;re proud of.
+          a space for REAL art: no algorithms, no ai images. just artists sharing work they make.
         </p>
 
         <Link
@@ -45,7 +45,7 @@ export default function HomePage() {
         </Link>
 
         <p style={{ color: "#888780" }} className="text-sm italic">
-          for artists. for art. for friends.
+          made by artists for artists.
         </p>
       </section>
 
@@ -53,9 +53,9 @@ export default function HomePage() {
       <section className="py-20 px-6" style={{ borderTop: "1px solid #D3CEBF", borderBottom: "1px solid #D3CEBF" }}>
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
           {[
-            { title: "your layout", desc: "arrange your work exactly how you want it. drag, rotate, resize. full creative control." },
-            { title: "human-made only", desc: "celebrate the artists behind each piece. no algorithms deciding what's shown." },
-            { title: "always free", desc: "no subscriptions, no fees, no upsell. just a place for artists to share." },
+            { title: "your layout", desc: "arrange your work exactly how it should be display. drag, rotate, resize. there's no grid to be constrained to." },
+            { title: "REAL art only", desc: "celebrate the artists behind each piece. no algorithms to decide what's shown." },
+            { title: "always free", desc: "no profit model, no fees, no shareholders. just a space online for artists to share." },
           ].map((pillar, idx) => (
             <div key={idx} className="text-center">
               <div
@@ -85,10 +85,8 @@ export default function HomePage() {
               className="block rounded-lg overflow-hidden transition-transform hover:scale-[1.02]"
               style={{ border: "1px solid #D3CEBF" }}
             >
-              <div className="bg-gray-200 h-48 flex items-center justify-center" style={{ backgroundColor: "#E8E3D8" }}>
-                <span style={{ color: "#888780" }} className="text-sm">
-                  Gallery preview
-                </span>
+              <div className="h-48 overflow-hidden">
+                <img src="/art/badartrat-preview.png" alt="badartrat gallery" className="w-full h-full object-cover" />
               </div>
               <div className="p-4" style={{ color: "#2C2A22" }}>
                 <p className="font-medium">badartrat</p>
@@ -111,7 +109,7 @@ export default function HomePage() {
             collect & exchange
           </div>
           <p style={{ color: "#888780" }} className="text-lg leading-relaxed">
-            hang work you love in your own gallery. curate art from other artists, build a collection, exchange work with friends.
+            hang work you love in your own gallery. curate art from other artists, build a collection, and show off the pieces that you love.
           </p>
           <p style={{ color: "#888780" }} className="text-sm mt-8 italic">
             coming soon
