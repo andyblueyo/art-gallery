@@ -2,15 +2,73 @@ import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
+const ROOT_DOMAIN = "galleryclub.online";
+
+function extractSubdomain(hostname: string): string | null {
+  if (
+    hostname === ROOT_DOMAIN ||
+    hostname === `www.${ROOT_DOMAIN}` ||
+    hostname === "localhost:3000"
+  ) {
+    return null;
+  }
+
+  const prodSuffix = `.${ROOT_DOMAIN}`;
+  if (hostname.endsWith(prodSuffix)) {
+    const candidate = hostname.slice(0, -prodSuffix.length);
+    if (candidate && candidate !== "www") return candidate;
+  }
+
+  // Local dev: <handle>.localhost:3000
+  const localSuffix = ".localhost:3000";
+  if (hostname.endsWith(localSuffix)) {
+    const candidate = hostname.slice(0, -localSuffix.length);
+    if (candidate) return candidate;
+  }
+
+  return null;
+}
+
 export async function middleware(request: NextRequest) {
   if (!isSupabaseConfigured()) {
     return NextResponse.next();
   }
-  return await updateSession(request);
+
+  const hostname = request.headers.get("host") ?? "";
+  const subdomain = extractSubdomain(hostname);
+
+  if (!subdomain) {
+    return await updateSession(request);
+  }
+
+  // Rewrite e.g. artist.galleryclub.online/ → /artist
+  const rewrittenUrl = request.nextUrl.clone();
+  const originalPath = request.nextUrl.pathname;
+  rewrittenUrl.pathname = `/${subdomain}${originalPath === "/" ? "" : originalPath}`;
+
+  // Run session update against the rewritten path so auth guards see the correct route
+  const rewrittenRequest = new NextRequest(rewrittenUrl, {
+    headers: request.headers,
+  });
+  const sessionResponse = await updateSession(rewrittenRequest);
+
+  // If the session middleware issued a redirect (e.g. login guard), honour it
+  if (sessionResponse.headers.has("location")) {
+    return sessionResponse;
+  }
+
+  // Rewrite to the gallery path, carrying over any refreshed session cookies
+  const rewriteResponse = NextResponse.rewrite(rewrittenUrl);
+  sessionResponse.headers.forEach((value, key) => {
+    if (key.toLowerCase() === "set-cookie") {
+      rewriteResponse.headers.append("set-cookie", value);
+    }
+  });
+  return rewriteResponse;
 }
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|frames|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
