@@ -63,10 +63,23 @@ export function ArtworkCard({
     try {
       const path = extractStoragePath(artwork.file_url);
       if (path) {
-        await supabase.storage.from("artworks").remove([path]);
+        const { error: storageError } = await supabase.storage
+          .from("artworks")
+          .remove([path]);
+        if (storageError) {
+          console.error("[delete] storage removal failed:", storageError);
+        }
       }
-      await supabase.from("artworks").delete().eq("id", artwork.id);
+
+      const { error: dbError } = await supabase
+        .from("artworks")
+        .delete()
+        .eq("id", artwork.id);
+      if (dbError) throw dbError;
+
       onDelete(artwork.id);
+    } catch (err) {
+      console.error("[delete] failed:", err);
     } finally {
       setDeleting(false);
       setConfirmDelete(false);

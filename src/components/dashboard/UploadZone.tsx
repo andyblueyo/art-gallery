@@ -12,6 +12,9 @@ import { createClient } from "@/lib/supabase/client";
 import { FRAMES, DEFAULT_FRAME_FILE, type FrameConfig } from "@/lib/frames";
 import type { DashboardArtwork } from "@/lib/types";
 
+const IMAGE_LIMIT = 25;
+const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
+
 const MEDIUM_SUGGESTIONS = [
   "watercolor",
   "ink",
@@ -67,6 +70,7 @@ export function UploadZone({
   const [dragOver, setDragOver] = useState(false);
 
   const isPdf = file?.type === "application/pdf";
+  const isGalleryFull = nextDisplayOrder >= IMAGE_LIMIT;
 
   const resetAll = useCallback(() => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -159,6 +163,10 @@ export function UploadZone({
     }
     try {
       const blob = await getCroppedBlob(cropImgRef.current, pixelCrop);
+      if (blob.size > MAX_UPLOAD_BYTES) {
+        setError("this image is too large to upload — try a smaller file or lower resolution");
+        return;
+      }
       if (croppedPreviewUrl) URL.revokeObjectURL(croppedPreviewUrl);
       setCroppedBlob(blob);
       setCroppedPreviewUrl(URL.createObjectURL(blob));
@@ -323,38 +331,46 @@ export function UploadZone({
       <StepIndicator step={step} isPdf={isPdf} />
 
       {step === "pick" && (
-        <div
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragOver(true);
-          }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={onDrop}
-          onClick={() => inputRef.current?.click()}
-          className={`cursor-pointer rounded-xl border-2 border-dashed px-6 py-12 text-center transition-colors ${
-            dragOver
-              ? "border-[#c8a040] bg-[#faf7f0]"
-              : "border-[#c8a040] bg-[#faf7f0]/80 hover:bg-[#faf7f0]"
-          }`}
-        >
-          <input
-            ref={inputRef}
-            type="file"
-            accept={ACCEPT}
-            className="hidden"
-            onChange={(e) => pickFile(e.target.files?.[0] ?? null)}
-          />
-          <p className="text-brown">
-            drop your artwork here or{" "}
-            <span className="text-[#c8a040] underline underline-offset-2">
-              click to browse
-            </span>
-          </p>
-          <p className="mt-2 text-xs text-brown-muted">JPG, PNG</p>
-        </div>
+        isGalleryFull ? (
+          <div className="rounded-xl border-2 border-dashed border-[#d8ceb8] bg-[#faf7f0]/40 px-6 py-12 text-center">
+            <p className="text-brown-muted">
+              your gallery is full ({IMAGE_LIMIT}/{IMAGE_LIMIT}) — remove a piece to add a new one
+            </p>
+          </div>
+        ) : (
+          <div
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={onDrop}
+            onClick={() => inputRef.current?.click()}
+            className={`cursor-pointer rounded-xl border-2 border-dashed px-6 py-12 text-center transition-colors ${
+              dragOver
+                ? "border-[#c8a040] bg-[#faf7f0]"
+                : "border-[#c8a040] bg-[#faf7f0]/80 hover:bg-[#faf7f0]"
+            }`}
+          >
+            <input
+              ref={inputRef}
+              type="file"
+              accept={ACCEPT}
+              className="hidden"
+              onChange={(e) => pickFile(e.target.files?.[0] ?? null)}
+            />
+            <p className="text-brown">
+              drop your artwork here or{" "}
+              <span className="text-[#c8a040] underline underline-offset-2">
+                click to browse
+              </span>
+            </p>
+            <p className="mt-2 text-xs text-brown-muted">JPG, PNG</p>
+          </div>
+        )
       )}
 
       {step === "frame" && file && (
@@ -607,7 +623,7 @@ async function getCroppedBlob(
       (b) =>
         b ? resolve(b) : reject(new Error("canvas.toBlob returned null")),
       "image/jpeg",
-      0.88
+      0.8
     );
   });
 }
