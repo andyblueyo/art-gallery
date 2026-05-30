@@ -16,7 +16,11 @@ export async function signIn(email: string, password: string, next: string) {
         getAll() { return cookieStore.getAll(); },
         setAll(cookiesToSet: { name: string; value: string; options?: Partial<ResponseCookie> }[]) {
           cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
+            cookieStore.set(name, value, 
+              {
+                ...options,
+                domain: ".galleryclub.online",
+              })
           );
         },
       },
