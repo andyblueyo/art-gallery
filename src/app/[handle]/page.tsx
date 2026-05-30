@@ -39,19 +39,9 @@ export async function generateMetadata({
 }
 
 export default async function PublicGalleryPage({ params }: PageProps) {
-  console.log("[page /[handle]] rendering for handle =", params.handle);
   const gallery = await getGalleryByHandle(params.handle);
 
-  if (!gallery) {
-    console.warn("[page /[handle]] no gallery found for handle:", params.handle);
-    notFound();
-  }
-
-  console.log("[page /[handle]] gallery fetched:", {
-    profileId: gallery.profile.id,
-    handle: gallery.profile.handle,
-    artworkCount: gallery.artworks.length,
-  });
+  if (!gallery) notFound();
 
   let isOwner = false;
   let isLoggedIn = false;
@@ -60,7 +50,7 @@ export default async function PublicGalleryPage({ params }: PageProps) {
     const { data: { user } } = await supabase.auth.getUser();
     isLoggedIn = !!user;
 
-    if (isLoggedIn && user) {
+    if (user) {
       const { data: userProfile } = await supabase
         .from("profiles")
         .select("handle")
@@ -75,12 +65,6 @@ export default async function PublicGalleryPage({ params }: PageProps) {
   const wallPieces = gallery.artworks.slice(0, GALLERY_WALL_MAX);
   const layout = buildGalleryLayout(wallPieces.length);
   const wallArtworks = artworksToWallArtworks(wallPieces);
-
-  console.log("[page /[handle]] passing to GallerySalonWall:", {
-    wallArtworkCount: wallArtworks.length,
-    layoutCount: layout.length,
-    firstWallArt: wallArtworks[0],
-  });
 
   const artist = profileToWallArtist(
     gallery.profile,

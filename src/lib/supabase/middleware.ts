@@ -48,12 +48,12 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // if ((pathname === "/login" || pathname === "/signup") && user) {
-  //   const dashUrl = request.nextUrl.clone();
-  //   dashUrl.pathname = "/dashboard";
-  //   dashUrl.search = "";
-  //   return NextResponse.redirect(dashUrl);
-  // }
+  if ((pathname === "/login" || pathname === "/signup") && user) {
+    const dashUrl = request.nextUrl.clone();
+    dashUrl.pathname = "/dashboard";
+    dashUrl.search = "";
+    return NextResponse.redirect(dashUrl);
+  }
 
   return supabaseResponse;
 }

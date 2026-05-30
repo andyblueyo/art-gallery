@@ -3,6 +3,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import type { ResponseCookie } from "next/dist/compiled/@edge-runtime/cookies";
+
 
 export async function signIn(email: string, password: string, next: string) {
   const cookieStore = cookies();
@@ -12,7 +14,7 @@ export async function signIn(email: string, password: string, next: string) {
     {
       cookies: {
         getAll() { return cookieStore.getAll(); },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: { name: string; value: string; options?: Partial<ResponseCookie> }[]) {
           cookiesToSet.forEach(({ name, value, options }) =>
             cookieStore.set(name, value, options)
           );

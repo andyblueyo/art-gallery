@@ -40,7 +40,6 @@ export function GallerySalonWall({
   profileId = "",
   layoutMode = "auto",
 }: GallerySalonWallProps) {
-  console.log("GallerySalonWall props:", { isOwner, isLoggedIn });
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -418,7 +417,6 @@ function CustomLayoutView({
         })}
       </div>
     </div>
-         {/* ← this closes the scroll div */}
 
       <GalleryMinimap artworks={artworks} scrollRef={scrollRef} />
     </>
