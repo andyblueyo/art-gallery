@@ -1,7 +1,38 @@
 import Link from "next/link";
 import Image from "next/image";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { getGalleryUrl } from "@/lib/url";
 
-export default function HomePage() {
+async function signOut() {
+  "use server";
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/");
+}
+
+export default async function HomePage() {
+  let isLoggedIn = false;
+  let galleryUrl: string | null = null;
+
+  if (isSupabaseConfigured()) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    isLoggedIn = !!user;
+
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("handle")
+        .eq("id", user.id)
+        .single();
+      if (profile?.handle) {
+        galleryUrl = await getGalleryUrl(profile.handle);
+      }
+    }
+  }
+
   return (
     <div style={{ backgroundColor: "#F2EDE3" }} className="min-h-screen flex flex-col">
       {/* Nav */}
@@ -10,9 +41,17 @@ export default function HomePage() {
           <div style={{ fontFamily: "'Crooked', serif", fontSize: "24px" }}>
             gallery club
           </div>
-          <Link href="/login" className="text-sm hover:opacity-70 transition-opacity">
-            sign in
-          </Link>
+          {isLoggedIn ? (
+            <form action={signOut}>
+              <button type="submit" className="text-sm hover:opacity-70 transition-opacity">
+                sign out
+              </button>
+            </form>
+          ) : (
+            <Link href="/login" className="text-sm hover:opacity-70 transition-opacity">
+              sign in
+            </Link>
+          )}
         </div>
       </nav>
 
@@ -36,13 +75,23 @@ export default function HomePage() {
           a space for REAL art: no algorithms, no ai images. just artists sharing work they make.
         </p>
 
-        <Link
-          href="/signup"
-          style={{ backgroundColor: "#2C2A22", color: "#F2EDE3" }}
-          className="px-8 py-3 rounded-lg hover:opacity-90 transition-opacity font-medium mb-6"
-        >
-          create your gallery
-        </Link>
+        {galleryUrl ? (
+          <a
+            href={galleryUrl}
+            style={{ backgroundColor: "#2C2A22", color: "#F2EDE3" }}
+            className="px-8 py-3 rounded-lg hover:opacity-90 transition-opacity font-medium mb-6"
+          >
+            view my gallery
+          </a>
+        ) : (
+          <Link
+            href="/signup"
+            style={{ backgroundColor: "#2C2A22", color: "#F2EDE3" }}
+            className="px-8 py-3 rounded-lg hover:opacity-90 transition-opacity font-medium mb-6"
+          >
+            create your gallery
+          </Link>
+        )}
 
         <p style={{ color: "#888780" }} className="text-sm italic">
           made by artists for artists.

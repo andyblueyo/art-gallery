@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { isValidHandle, normalizeHandle } from "@/lib/handle";
+import { signIn } from "@/app/login/actions";
 
 type Mode = "login" | "signup";
 
@@ -13,7 +14,6 @@ interface AuthFormProps {
 }
 
 export function AuthForm({ mode }: AuthFormProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/dashboard";
 
@@ -29,16 +29,12 @@ export function AuthForm({ mode }: AuthFormProps) {
     setError(null);
     setLoading(true);
 
-    const supabase = createClient();
-
     try {
       if (mode === "login") {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (signInError) throw signInError;
+        const result = await signIn(email, password, next);
+        if (result?.error) throw new Error(result.error);
       } else {
+        const supabase = createClient();
         const normalized = normalizeHandle(handle);
         if (!isValidHandle(normalized)) {
           throw new Error(
@@ -73,10 +69,8 @@ export function AuthForm({ mode }: AuthFormProps) {
         });
 
         if (profileError) throw profileError;
+        window.location.href = "/dashboard";
       }
-
-      router.push(next);
-      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
