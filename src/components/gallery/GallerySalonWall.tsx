@@ -142,6 +142,14 @@ export function GallerySalonWall({
 
           <div className="flex items-center gap-2">
             {isOwner && (
+              <a
+                href="https://galleryclub.online/dashboard"
+                className="pointer-events-auto rounded-lg border border-[#c8a040]/30 bg-[rgba(18,12,6,0.35)] px-4 py-2 text-sm text-[#f5e6c8]/90 backdrop-blur-md transition-colors hover:border-[#c8a040]/60 hover:bg-[rgba(18,12,6,0.5)]"
+              >
+                dashboard
+              </a>
+            )}
+            {isOwner && (
               <button
                 type="button"
                 onClick={() => setEditMode(true)}

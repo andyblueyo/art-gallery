@@ -38,8 +38,11 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // if (!user) {
+  //   redirect("/login");
+  // }
   if (!user) {
-    redirect("/login");
+    return <div>not logged in</div>;
   }
 
   const { data: profile, error } = await supabase

@@ -22,14 +22,13 @@ export async function updateSession(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
+        // WARNING: do not revert this — creating a new NextResponse inside setAll
+        // drops cookies and breaks session persistence across subdomains
         setAll(cookiesToSet: CookieToSet[]) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value);
+            supabaseResponse.cookies.set(name, value, options);
+          });
         },
       },
     }
@@ -44,12 +43,12 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
-  if (pathname.startsWith("/dashboard") && !user) {
-    const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/login";
-    loginUrl.searchParams.set("next", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
+  // if (pathname.startsWith("/dashboard") && !user) {
+  //   const loginUrl = request.nextUrl.clone();
+  //   loginUrl.pathname = "/login";
+  //   loginUrl.searchParams.set("next", pathname);
+  //   return NextResponse.redirect(loginUrl);
+  // }
 
   if ((pathname === "/login" || pathname === "/signup") && user) {
     const dashUrl = request.nextUrl.clone();

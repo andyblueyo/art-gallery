@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { signIn } from "@/app/login/actions";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { isValidHandle, normalizeHandle } from "@/lib/handle";
@@ -13,7 +14,6 @@ interface AuthFormProps {
 }
 
 export function AuthForm({ mode }: AuthFormProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/dashboard";
 
@@ -29,17 +29,19 @@ export function AuthForm({ mode }: AuthFormProps) {
     setError(null);
     setLoading(true);
 
-    const supabase = createClient();
 
     try {
       if (mode === "login") {
+        const supabase = createClient();
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (signInError) throw signInError;
+        window.location.replace("/dashboard");
       } else {
         const normalized = normalizeHandle(handle);
+        const supabase = createClient();
         if (!isValidHandle(normalized)) {
           throw new Error(
             "Handle must be 3–30 characters, lowercase letters, numbers, and hyphens only."
@@ -75,8 +77,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         if (profileError) throw profileError;
       }
 
-      router.push(next);
-      router.refresh();
+      window.location.href = "/dashboard";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
