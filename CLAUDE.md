@@ -19,3 +19,17 @@
 - Do not run the dev server to test
 - Do not install packages without asking first
 - Make the minimum changes needed to fix the issue
+
+# Critical Files — Do Not Modify
+
+## src/lib/supabase/client.ts
+Must use singleton pattern. Do NOT remove the `let client` variable.
+
+## src/lib/supabase/middleware.ts
+The `setAll` function must NOT create a new NextResponse. See WARNING comment in file.
+
+## src/components/auth/AuthForm.tsx
+Login uses a server action from `src/app/login/actions.ts`. Do NOT revert to client-side signInWithPassword.
+
+## src/app/login/actions.ts
+This file must exist. Do NOT delete it.
