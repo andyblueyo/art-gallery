@@ -172,10 +172,11 @@ export function ProfileEditor({
         </div>
       </div>
 
-      <FormField label="display name" value={displayName} onChange={setDisplayName} />
+      <FormField label="display name" value={displayName} onChange={setDisplayName} maxLength={50}/>
       <FormField
         label="handle"
         value={handle}
+        maxLength={30} 
         onChange={(v) => { setHandle(v); if (handleError) setHandleError(null); }}
         hint={handleError ? undefined : "handle.galleryclub.online"}
         hasError={!!handleError}
@@ -196,11 +197,12 @@ export function ProfileEditor({
           {bio.length}/{BIO_MAX}
         </span>
       </label>
-      <FormField label="location" value={location} onChange={setLocation} />
+      <FormField label="location" value={location} onChange={setLocation} maxLength={60}/>
       <FormField
         label="instagram"
         value={instagramUrl}
         onChange={setInstagramUrl}
+        maxLength={30}
         onBlur={() => setInstagramUrl(normalizeInstagram(instagramUrl))}
         hint={instagramUrl ? `instagram.com/${normalizeInstagram(instagramUrl)}` : undefined}
         placeholder="https://instagram.com/badartrat"
@@ -239,6 +241,7 @@ function FormField({
   onBlur,
   hasError,
   errorMessage,
+  maxLength,
 }: {
   label: string;
   value: string;
@@ -248,6 +251,7 @@ function FormField({
   onBlur?: () => void;
   hasError?: boolean;
   errorMessage?: string;
+  maxLength?: number;
 }) {
   return (
     <label className="block">
@@ -259,6 +263,7 @@ function FormField({
         onChange={(e) => onChange(e.target.value)}
         onBlur={onBlur}
         placeholder={placeholder}
+        maxLength={maxLength}
         className={`mt-1 w-full rounded-lg border bg-white/60 px-3 py-2.5 text-brown focus:outline-none focus:ring-1 ${hasError ? "border-red-500 focus:border-red-500 focus:ring-red-500/40" : "border-[#d8ceb8] focus:border-[#c8a040] focus:ring-[#c8a040]/40"}`}
       />
       {hint && <span className="mt-1 block text-xs text-brown-muted">{hint}</span>}
