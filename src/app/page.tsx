@@ -1,7 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
+import { createClient } from "@/lib/supabase/server";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   return (
     <div style={{ backgroundColor: "#F2EDE3" }} className="min-h-screen flex flex-col">
       {/* Nav */}
@@ -10,9 +13,15 @@ export default function HomePage() {
           <div style={{ fontFamily: "'Crooked', serif", fontSize: "24px" }}>
             gallery club
           </div>
+          {user ? (
+          <Link href="/dashboard" className="text-sm hover:opacity-70 transition-opacity">
+            my dashboard →
+          </Link>
+            ) : (
           <Link href="/login" className="text-sm hover:opacity-70 transition-opacity">
             sign in
           </Link>
+        )}
         </div>
       </nav>
 
@@ -36,13 +45,17 @@ export default function HomePage() {
           a space for REAL art: no algorithms, no ai images. just artists sharing work they make.
         </p>
 
-        <Link
-          href="/signup"
-          style={{ backgroundColor: "#2C2A22", color: "#F2EDE3" }}
-          className="px-8 py-3 rounded-lg hover:opacity-90 transition-opacity font-medium mb-6"
-        >
-          create your gallery
-        </Link>
+        {user ? (
+          <Link href="/dashboard" style={{ backgroundColor: "#2C2A22", color: "#F2EDE3" }}
+            className="px-8 py-3 rounded-lg hover:opacity-90 transition-opacity font-medium mb-6">
+            view my gallery →
+          </Link>
+          ) : (
+          <Link href="/signup" style={{ backgroundColor: "#2C2A22", color: "#F2EDE3" }}
+            className="px-8 py-3 rounded-lg hover:opacity-90 transition-opacity font-medium mb-6">
+            create your gallery
+          </Link>
+        )}
 
         <p style={{ color: "#888780" }} className="text-sm italic">
           made by artists for artists.
