@@ -30,10 +30,13 @@ export async function generateMetadata({
     title: `${name} (@${gallery.profile.handle})`,
     description:
       gallery.profile.bio ||
-      `${name}'s portfolio gallery on gallery club — human-made art.`,
+      `${name}'s gallery on galleryclub.online`,
     openGraph: {
       title: `${name} | gallery club`,
       description: gallery.profile.bio || `View ${name}'s art gallery`,
+    },
+    icons: {
+      icon: gallery.profile.avatar_url || '/favicon.ico',
     },
   };
 }
