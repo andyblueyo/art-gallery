@@ -34,7 +34,7 @@ export default function TermsPage() {
 
             <section>
               <h2 style={{ fontFamily: "'Crooked', serif", fontSize: "28px", color: "#2C2A22" }} className="mb-4">
-                what's not allowed
+                what&apos;s not allowed
               </h2>
               <p className="mb-4">
                 do not upload content that is:
