@@ -489,7 +489,7 @@ function GalleryMinimap({
         background: "rgba(18,12,6,0.75)",
         borderRadius: 8,
         border: "0.5px solid rgba(200,160,64,0.4)",
-        padding: "10px 10px 8px",
+        padding: "8px 10px",
         backdropFilter: "blur(4px)",
       }}
     >
@@ -511,8 +511,8 @@ function GalleryMinimap({
             key={art.id}
             style={{
               position: "absolute",
-              left: `${art.position_x!}%`,
-              top: `${art.position_y!}%`,
+              left: `${4 + art.position_x! * 0.92}%`,
+              top: `${4 + art.position_y! * 0.92}%`,
               width: 7,
               height: 7,
               borderRadius: "50%",
