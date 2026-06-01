@@ -489,7 +489,7 @@ function GalleryMinimap({
         background: "rgba(18,12,6,0.75)",
         borderRadius: 8,
         border: "0.5px solid rgba(200,160,64,0.4)",
-        padding: "8px 10px",
+        padding: "10px 10px 8px",
         backdropFilter: "blur(4px)",
       }}
     >
