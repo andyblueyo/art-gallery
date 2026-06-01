@@ -192,7 +192,7 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved, on
       {/* ── Toolbar ─────────────────────────────────────────────── */}
       <header className="relative z-10 flex h-14 shrink-0 items-center justify-between gap-2 bg-[rgba(18,12,6,0.92)] px-4 backdrop-blur-md">
         {/* Logo */}
-        <span className="shrink-0 font-serif text-[#c8a040]/85">gallery club</span>
+        <span className="hidden sm:block shrink-0 font-serif text-[#c8a040]/85">gallery club</span>
 
         {/* Per-artwork controls (shown when something is selected) */}
         {selectedItem ? (
@@ -275,24 +275,25 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved, on
           )}
           <button
             onClick={onCancel}
-            className="rounded-lg border border-[#c8a040]/30 px-3 py-1.5 text-sm text-[#f5e6c8]/80 hover:border-[#c8a040]/60 transition-colors"
+            className="rounded-lg border border-[#c8a040]/30 px-2 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm text-[#f5e6c8]/80 hover:border-[#c8a040]/60 transition-colors"
           >
             cancel
           </button>
           {onReset && (
             <button
               onClick={onReset}
-              className="rounded-lg border border-[#c8a040]/30 px-3 py-1.5 text-sm text-[#f5e6c8]/80 hover:border-[#c8a040]/60 transition-colors"
+              className="rounded-lg border border-[#c8a040]/30 px-2 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm text-[#f5e6c8]/80 hover:border-[#c8a040]/60 transition-colors"
             >
-              reset layout
+              <span className="sm:hidden">reset</span>
+              <span className="hidden sm:inline">reset layout</span>
             </button>
           )}
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="rounded-lg bg-[#c8a040] px-4 py-1.5 text-sm font-medium text-[#120c06] hover:bg-[#d4ac48] disabled:opacity-60 transition-colors"
+            className="rounded-lg bg-[#c8a040] px-2 py-1 text-xs sm:px-4 sm:py-1.5 sm:text-sm font-medium text-[#120c06] hover:bg-[#d4ac48] disabled:opacity-60 transition-colors"
           >
-            {isSaving ? "Saving…" : "Save Layout"}
+            {isSaving ? "Saving…" : <><span className="sm:hidden">Save</span><span className="hidden sm:inline">Save Layout</span></>}
           </button>
         </div>
       </header>
