@@ -221,13 +221,10 @@ export function GallerySalonWall({
               const art = artworks[item.artIndex];
               if (!art) return null;
               const frameFile = art.frame_file || DEFAULT_FRAME_FILE;
-              const isLarger = index % 3 === 2;
-              const baseWidth = 280;
-              const width = isLarger ? baseWidth * 1.2 : baseWidth;
+              const width = 280;
               return (
                 <div
                   key={`${frameFile}-${item.artIndex}-${index}`}
-                  style={{ transform: isLarger ? "scale(1.2)" : "scale(1)" }}
                 >
                   <FramedArtwork
                     frame_file={frameFile}
@@ -251,12 +248,10 @@ export function GallerySalonWall({
                 const art = artworks[item.artIndex];
                 if (!art) return null;
                 const frameFile = art.frame_file || DEFAULT_FRAME_FILE;
-                const isLarger = index % 3 === 2;
                 return (
                   <div
                     key={`${frameFile}-${item.artIndex}-${index}`}
                     className="flex items-center justify-center"
-                    style={{ transform: isLarger ? "scale(1.2)" : "scale(1)" }}
                   >
                     <FramedArtwork
                       frame_file={frameFile}
