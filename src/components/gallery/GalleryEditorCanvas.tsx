@@ -269,7 +269,7 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved, on
         )}
 
         {/* Cancel / Reset / Save */}
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2 sm:w-auto w-full justify-start">
           {saveError && (
             <span className="text-xs text-red-400">save failed</span>
           )}
@@ -293,7 +293,7 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved, on
             disabled={isSaving}
             className="rounded-lg bg-[#c8a040] px-2 py-1 text-xs sm:px-4 sm:py-1.5 sm:text-sm font-medium text-[#120c06] hover:bg-[#d4ac48] disabled:opacity-60 transition-colors"
           >
-            {isSaving ? "Saving…" : <><span className="sm:hidden">Save</span><span className="hidden sm:inline">Save Layout</span></>}
+            {isSaving ? "Saving…" : <><span className="sm:hidden">save</span><span className="hidden sm:inline">save layout</span></>}
           </button>
         </div>
       </header>
@@ -303,12 +303,13 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved, on
       
 
       {/* ── Canvas ──────────────────────────────────────────────── */}
-      <div
-        ref={canvasRef}
-        className="relative overflow-auto"
-        style={{ width: 1400, height: 1200 }}
-        onClick={() => setSelectedId(null)}
-      >
+      <div className="flex-1 overflow-auto">
+        <div
+          ref={canvasRef}
+          className="relative"
+          style={{ width: 1400, height: 1200 }}
+          onClick={() => setSelectedId(null)}
+        >
         {items.map(item => {
           const nodeRef = getNodeRef(item.id);
           const px = (item.xPct / 100) * canvasDims.width;
@@ -406,6 +407,7 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved, on
             </p>
           </div>
         )}
+      </div>
       </div>
 
       {/* Mobile: scale slider when selected */}
