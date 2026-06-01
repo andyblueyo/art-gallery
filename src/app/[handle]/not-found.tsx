@@ -11,7 +11,7 @@ export default function NotFound() {
         doesn&apos;t exist.
       </p>
       <Link
-        href="/"
+        href="https://galleryclub.online"
         className="text-sm text-gold hover:underline underline-offset-2"
       >
         back to gallery club

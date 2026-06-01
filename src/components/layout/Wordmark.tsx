@@ -14,7 +14,7 @@ const sizes = {
 export function Wordmark({ className = "", size = "md" }: WordmarkProps) {
   return (
     <Link
-      href="/"
+      href="https://galleryclub.online"
       className={`font-serif text-brown hover:text-gold transition-colors ${sizes[size]} ${className}`}
     >
       gallery club
