@@ -51,10 +51,11 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved, on
   const router = useRouter();
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  const [canvasDims, setCanvasDims] = useState(() => ({
-    width: typeof window !== "undefined" ? window.innerWidth : 1200,
-    height: typeof window !== "undefined" ? Math.max(window.innerHeight - 56, 400) : 744,
-  }));
+  // const [canvasDims, setCanvasDims] = useState(() => ({
+  //   width: typeof window !== "undefined" ? window.innerWidth : 1200,
+  //   height: typeof window !== "undefined" ? Math.max(window.innerHeight - 56, 400) : 744,
+  // }));
+  const [canvasDims] = useState({ width: 1400, height: 1200 });
 
   const [items, setItems] = useState<CanvasItem[]>(() =>
     artworks.map((art, i) => {
@@ -97,16 +98,16 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved, on
     return () => mq.removeEventListener("change", update);
   }, []);
 
-  useEffect(() => {
-    function updateDims() {
-      if (!canvasRef.current) return;
-      const rect = canvasRef.current.getBoundingClientRect();
-      setCanvasDims({ width: rect.width, height: rect.height });
-    }
-    updateDims();
-    window.addEventListener("resize", updateDims);
-    return () => window.removeEventListener("resize", updateDims);
-  }, []);
+  // useEffect(() => {
+  //   function updateDims() {
+  //     if (!canvasRef.current) return;
+  //     const rect = canvasRef.current.getBoundingClientRect();
+  //     setCanvasDims({ width: rect.width, height: rect.height });
+  //   }
+  //   updateDims();
+  //   window.addEventListener("resize", updateDims);
+  //   return () => window.removeEventListener("resize", updateDims);
+  // }, []);
 
   // Lock body scroll while editor is open
   useEffect(() => {
@@ -303,8 +304,8 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved, on
       {/* ── Canvas ──────────────────────────────────────────────── */}
       <div
         ref={canvasRef}
-        className="relative flex-1 overflow-hidden"
-        style={{ minHeight: 800 }}
+        className="relative overflow-auto"
+        style={{ width: 1400, height: 1200 }}
         onClick={() => setSelectedId(null)}
       >
         {items.map(item => {
