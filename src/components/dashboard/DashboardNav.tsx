@@ -36,7 +36,7 @@ export function DashboardNav({ handle }: DashboardNavProps) {
 
   return (
     <nav className="flex items-center justify-between border-b border-[#d8ceb8] pb-5">
-      <Link href="/dashboard" className="font-serif text-xl text-[#2a2018]">
+      <Link href="https://galleryclub.online" className="font-serif text-xl text-[#2a2018]">
         gallery club
       </Link>
       <div className="flex items-center gap-4 sm:gap-6">
