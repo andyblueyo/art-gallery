@@ -38,22 +38,32 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // if (!user) {
-  //   redirect("/login");
-  // }
-  if (!user) {
-    return <div>not logged in</div>;
+  if (!user && !process.env.NEXT_PUBLIC_SKIP_AUTH) {
+    redirect("/login");
   }
 
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const { data: profile, error } = process.env.NEXT_PUBLIC_SKIP_AUTH 
+  ? { data: null, error: null }
+  : await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user?.id ?? "")
+      .single();
 
-  if (error || !profile) {
-    redirect("/signup");
-  }
+    const effectiveProfile = profile ?? (process.env.NEXT_PUBLIC_SKIP_AUTH ? {
+      id: "",
+      handle: "localdev",
+      display_name: "Local Dev",
+      bio: "",
+      location: "",
+      instagram_url: "",
+      avatar_url: "",
+      layout_mode: "auto",
+    } : null);
+    
+    if (!effectiveProfile && !process.env.NEXT_PUBLIC_SKIP_AUTH) {
+      redirect("/signup");
+    }
 
-  return <Dashboard userId={user.id} initialProfile={profile as Profile} />;
+  return <Dashboard userId={user?.id ?? ""} initialProfile={effectiveProfile as Profile} />;
 }
