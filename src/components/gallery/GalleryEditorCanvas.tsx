@@ -269,7 +269,7 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved, on
         )}
 
         {/* Cancel / Reset / Save */}
-        <div className="flex shrink-0 items-center gap-2 sm:w-auto w-full justify-start">
+        <div className="flex shrink-0 items-center gap-2">
           {saveError && (
             <span className="text-xs text-red-400">save failed</span>
           )}
@@ -293,7 +293,7 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved, on
             disabled={isSaving}
             className="rounded-lg bg-[#c8a040] px-2 py-1 text-xs sm:px-4 sm:py-1.5 sm:text-sm font-medium text-[#120c06] hover:bg-[#d4ac48] disabled:opacity-60 transition-colors"
           >
-            {isSaving ? "Saving…" : <><span className="sm:hidden">save</span><span className="hidden sm:inline">save layout</span></>}
+            {isSaving ? "saving…" : <><span className="sm:hidden">save</span><span className="hidden sm:inline">save layout</span></>}
           </button>
         </div>
       </header>
