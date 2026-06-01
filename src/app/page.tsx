@@ -2,9 +2,21 @@ import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 
+import { redirect } from "next/navigation";
+
+async function signOut() {
+  "use server";
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/login");
+}
+
 export default async function HomePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  const handle = user
+  ? (await supabase.from("profiles").select("handle").eq("id", user.id).single()).data?.handle
+  : null;
   return (
     <div style={{ backgroundColor: "#F2EDE3" }} className="min-h-screen flex flex-col">
       {/* Nav */}
@@ -14,9 +26,16 @@ export default async function HomePage() {
             gallery club
           </div>
           {user ? (
-          <Link href="/dashboard" className="text-sm hover:opacity-70 transition-opacity">
-            my dashboard →
-          </Link>
+            <div className="flex items-center gap-6">
+              <Link href="/dashboard" className="text-sm hover:opacity-70 transition-opacity">
+                my dashboard 
+              </Link>
+              <form action={signOut}>
+                <button type="submit" className="text-sm hover:opacity-70 transition-opacity">
+                  sign out
+                </button>
+              </form>
+          </div>
             ) : (
           <Link href="/login" className="text-sm hover:opacity-70 transition-opacity">
             sign in
@@ -46,9 +65,9 @@ export default async function HomePage() {
         </p>
 
         {user ? (
-          <Link href="/dashboard" style={{ backgroundColor: "#2C2A22", color: "#F2EDE3" }}
+          <Link href={`https://${handle}.galleryclub.online`} style={{ backgroundColor: "#2C2A22", color: "#F2EDE3" }}
             className="px-8 py-3 rounded-lg hover:opacity-90 transition-opacity font-medium mb-6">
-            view my gallery →
+            view my gallery
           </Link>
           ) : (
           <Link href="/signup" style={{ backgroundColor: "#2C2A22", color: "#F2EDE3" }}
