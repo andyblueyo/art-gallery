@@ -511,8 +511,8 @@ function GalleryMinimap({
             key={art.id}
             style={{
               position: "absolute",
-              left: `${6 + art.position_x! * 0.88}%`,
-              top: `${6 + art.position_y! * 0.88}%`,
+              left: `${8 + art.position_x! * 0.84}%`,
+              top: `${8 + art.position_y! * 0.84}%`,
               width: 7,
               height: 7,
               borderRadius: "50%",
