@@ -158,6 +158,14 @@ export default async function HomePage() {
           <p style={{ color: "#888780" }} className="text-sm">
             for artists. for art. for friends.
           </p>
+          <div style={{ color: "#888780" }} className="text-xs mt-6 flex items-center justify-center gap-4">
+            <Link href="/terms" className="hover:opacity-70 transition-opacity">
+              terms
+            </Link>
+            <Link href="/privacy" className="hover:opacity-70 transition-opacity">
+              privacy
+            </Link>
+          </div>
         </div>
       </footer>
     </div>
