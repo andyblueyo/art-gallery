@@ -58,8 +58,7 @@ export function HeartButton({
   }
 
   return (
-    <div className="flex items-center gap-1.5 group">
-      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5">
+    <div className="flex items-center gap-1.5">
       <button
         onClick={handleClick}
         aria-label={hearted ? "Remove from favorites" : "Add to favorites"}
@@ -83,7 +82,6 @@ export function HeartButton({
           {count}
         </span>
       )}
-      </div>
     </div>
   );
 }
