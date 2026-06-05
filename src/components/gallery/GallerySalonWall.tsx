@@ -433,7 +433,7 @@ function CustomLayoutView({
                   showTooltip={false}
                 />
                 {isLoggedIn && (
-                  <div style={{ position: "absolute", bottom: 4, right: 4, zIndex: 10 }}>
+                  <div style={{ position: "absolute", bottom: 4, right: 4, zIndex: 10, transform: `scale(${1 / scale})`, transformOrigin: "bottom right" }}>
                     <HeartButton
                       pieceId={art.id}
                       isOwner={isOwner}
