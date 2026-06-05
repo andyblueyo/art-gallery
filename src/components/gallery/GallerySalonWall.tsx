@@ -407,6 +407,12 @@ function CustomLayoutView({
           const baseWidth = 220;
           const artRef = getOrCreateRef(art.id);
 
+          // Offset to place the heart button near the bottom-right corner of the
+          // rendered frame. baseWidth * scale gives the visual right edge;
+          // × 1.35 approximates the typical frame aspect for the bottom edge.
+          const heartOffsetX = Math.round(baseWidth * scale - 44);
+          const heartOffsetY = Math.round(baseWidth * scale * 1.35 - 44);
+
           return (
             <React.Fragment key={art.id}>
               <div
@@ -432,17 +438,31 @@ function CustomLayoutView({
                   fileType={art.file_type}
                   showTooltip={false}
                 />
-                {isLoggedIn && (
-                  <div style={{ position: "absolute", bottom: 4, right: 4, zIndex: 10, transform: `scale(${1 / scale})`, transformOrigin: "bottom right" }}>
-                    <HeartButton
-                      pieceId={art.id}
-                      isOwner={isOwner}
-                      initialHeartCount={art.heart_count ?? 0}
-                      isLoggedIn={isLoggedIn}
-                    />
-                  </div>
-                )}
               </div>
+
+              {isLoggedIn && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: `${xPct}%`,
+                    top: `${yPct}%`,
+                    zIndex: zIndex + 1,
+                    transform: `translate(${heartOffsetX}px, ${heartOffsetY}px)`,
+                    opacity: hoveredId === art.id ? 1 : 0,
+                    transition: "opacity 0.15s",
+                    pointerEvents: hoveredId === art.id ? "auto" : "none",
+                  }}
+                  onMouseEnter={() => setHoveredId(art.id)}
+                  onMouseLeave={handleMouseLeave}
+                >
+                  <HeartButton
+                    pieceId={art.id}
+                    isOwner={isOwner}
+                    initialHeartCount={art.heart_count ?? 0}
+                    isLoggedIn={isLoggedIn}
+                  />
+                </div>
+              )}
 
               {hoveredId === art.id && tooltipPos && (
                 <div
