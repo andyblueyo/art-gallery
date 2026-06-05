@@ -453,14 +453,12 @@ function CustomLayoutView({
                   {art.medium && <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{art.medium}</p>}
                 </div>
                 {isLoggedIn && (
-                  <div className="rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-2 py-2 shadow-lg">
                     <HeartButton
                       pieceId={art.id}
                       isOwner={isOwner}
                       initialHeartCount={art.heart_count ?? 0}
                       isLoggedIn={isLoggedIn}
                     />
-                  </div>
                 )}
               </div>
             </div>
