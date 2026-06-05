@@ -30,6 +30,7 @@ export function HeartButton({
         .from("hearts")
         .select("id")
         .eq("piece_id", pieceId)
+        .eq("user_id", user.id)
         .maybeSingle()
         .then(({ data }) => setHearted(!!data));
     });
