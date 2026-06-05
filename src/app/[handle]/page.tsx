@@ -93,7 +93,7 @@ export default async function PublicGalleryPage({ params }: PageProps) {
 
   return (
     <>
-      <ViewCounter artistId={gallery.profile.id} />
+      <ViewCounter galleryId={gallery.profile.id} isOwner={isOwner} />
       <GallerySalonWall
         artist={artist}
         artworks={wallArtworks}

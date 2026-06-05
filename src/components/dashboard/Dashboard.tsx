@@ -31,9 +31,9 @@ export function Dashboard({ userId, initialProfile }: DashboardProps) {
         .eq("artist_id", userId)
         .order("display_order", { ascending: true }),
       supabase
-        .from("page_views")
+        .from("gallery_views")
         .select("id", { count: "exact", head: true })
-        .eq("artist_id", userId),
+        .eq("gallery_id", userId),
     ]);
 
     const pieces = (artRes.data ?? []) as DashboardArtwork[];

@@ -14,6 +14,7 @@ import {
 } from "@/lib/gallery-wall-data";
 import { DEFAULT_FRAME_FILE } from "@/lib/frames";
 import { createClient } from "@/lib/supabase/client";
+import { HeartButton } from "@/components/ui/HeartButton";
 
 interface GallerySalonWallProps {
   artist: ArtistBubbleData;
@@ -108,6 +109,8 @@ export function GallerySalonWall({
       <GallerySeeAllGrid
         artworks={allArtworks}
         onClose={() => setShowAllGrid(false)}
+        isOwner={isOwner}
+        isLoggedIn={isLoggedIn}
       />
     );
   }
@@ -207,7 +210,12 @@ export function GallerySalonWall({
 
         {/* ── Custom layout ──────────────────────────────────── */}
         {isCustomLayout && allArtworks.length > 0 ? (
-          <CustomLayoutView artworks={allArtworks} artistName={artist.name} />
+          <CustomLayoutView
+            artworks={allArtworks}
+            artistName={artist.name}
+            isOwner={isOwner}
+            isLoggedIn={isLoggedIn}
+          />
         ) : layout.length === 0 ? (
           <main className="relative z-10 flex min-h-[100dvh] items-center justify-center px-6 pt-24">
             <p className="text-center font-serif text-lg text-[#f5e6c8]/80">
@@ -225,6 +233,7 @@ export function GallerySalonWall({
               return (
                 <div
                   key={`${frameFile}-${item.artIndex}-${index}`}
+                  className="relative"
                 >
                   <FramedArtwork
                     frame_file={frameFile}
@@ -236,6 +245,16 @@ export function GallerySalonWall({
                     fileType={art.fileType}
                     innerPadding={item.innerPadding}
                   />
+                  {isLoggedIn && (
+                    <div className="absolute bottom-1 right-1 z-10">
+                      <HeartButton
+                        pieceId={art.id}
+                        isOwner={isOwner}
+                        initialHeartCount={art.heartCount}
+                        isLoggedIn={isLoggedIn}
+                      />
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -251,7 +270,7 @@ export function GallerySalonWall({
                 return (
                   <div
                     key={`${frameFile}-${item.artIndex}-${index}`}
-                    className="flex items-center justify-center"
+                    className="relative flex items-center justify-center"
                   >
                     <FramedArtwork
                       frame_file={frameFile}
@@ -263,6 +282,16 @@ export function GallerySalonWall({
                       fileType={art.fileType}
                       innerPadding={item.innerPadding}
                     />
+                    {isLoggedIn && (
+                      <div className="absolute bottom-2 right-2 z-10">
+                        <HeartButton
+                          pieceId={art.id}
+                          isOwner={isOwner}
+                          initialHeartCount={art.heartCount}
+                          isLoggedIn={isLoggedIn}
+                        />
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -290,9 +319,13 @@ export function GallerySalonWall({
 function CustomLayoutView({
   artworks,
   artistName,
+  isOwner = false,
+  isLoggedIn = false,
 }: {
   artworks: Artwork[];
   artistName: string;
+  isOwner?: boolean;
+  isLoggedIn?: boolean;
 }) {
   const [hoveredId, setHoveredId] = React.useState<string | null>(null);
   const [tooltipPos, setTooltipPos] = React.useState<{ left: number; top: number } | null>(null);
@@ -399,6 +432,16 @@ function CustomLayoutView({
                   fileType={art.file_type}
                   showTooltip={false}
                 />
+                {isLoggedIn && (
+                  <div style={{ position: "absolute", bottom: 4, right: 4, zIndex: 10 }}>
+                    <HeartButton
+                      pieceId={art.id}
+                      isOwner={isOwner}
+                      initialHeartCount={art.heart_count ?? 0}
+                      isLoggedIn={isLoggedIn}
+                    />
+                  </div>
+                )}
               </div>
 
               {hoveredId === art.id && tooltipPos && (

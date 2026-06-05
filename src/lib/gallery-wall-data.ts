@@ -10,11 +10,13 @@ export interface WallArtist {
 }
 
 export interface WallArtwork {
+  id: string;
   title: string;
   medium: string;
   src: string;
   fileType?: "image" | "pdf";
   frame_file: string;
+  heartCount: number;
 }
 
 export interface GalleryLayoutItem {

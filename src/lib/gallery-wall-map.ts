@@ -26,10 +26,12 @@ export function profileToWallArtist(
 
 export function artworksToWallArtworks(artworks: Artwork[]): WallArtwork[] {
   return artworks.map((a) => ({
+    id: a.id,
     title: a.title,
     medium: a.medium,
     src: a.file_url,
     fileType: a.file_type,
     frame_file: a.frame_file || DEFAULT_FRAME_FILE,
+    heartCount: a.heart_count ?? 0,
   }));
 }

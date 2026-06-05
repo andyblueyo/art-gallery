@@ -79,5 +79,13 @@ export async function recordPageView(artistId: string): Promise<void> {
   if (!isSupabaseConfigured()) return;
 
   const supabase = await createClient();
-  await supabase.from("page_views").insert({ artist_id: artistId });
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  // don't record if not logged in or if owner is viewing own gallery
+  if (!user || user.id === artistId) return;
+
+  await supabase.from("gallery_views").insert({ 
+    gallery_id: artistId, 
+    viewer_id: user.id 
+  });
 }

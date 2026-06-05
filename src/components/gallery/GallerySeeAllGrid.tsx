@@ -2,13 +2,21 @@
 
 import Image from "next/image";
 import type { Artwork } from "@/lib/types";
+import { HeartButton } from "@/components/ui/HeartButton";
 
 interface GallerySeeAllGridProps {
   artworks: Artwork[];
   onClose: () => void;
+  isOwner?: boolean;
+  isLoggedIn?: boolean;
 }
 
-export function GallerySeeAllGrid({ artworks, onClose }: GallerySeeAllGridProps) {
+export function GallerySeeAllGrid({
+  artworks,
+  onClose,
+  isOwner = false,
+  isLoggedIn = false,
+}: GallerySeeAllGridProps) {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-[#f5f0e8]">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-[#d8ceb8] bg-[#f5f0e8]/95 px-5 py-4 backdrop-blur-sm">
@@ -51,6 +59,16 @@ export function GallerySeeAllGrid({ artworks, onClose }: GallerySeeAllGridProps)
                   unoptimized
                   sizes="300px"
                 />
+              )}
+              {isLoggedIn && (
+                <div className="absolute bottom-2 right-2 z-10">
+                  <HeartButton
+                    pieceId={art.id}
+                    isOwner={isOwner}
+                    initialHeartCount={art.heart_count ?? 0}
+                    isLoggedIn={isLoggedIn}
+                  />
+                </div>
               )}
             </div>
             <div className="p-3">
