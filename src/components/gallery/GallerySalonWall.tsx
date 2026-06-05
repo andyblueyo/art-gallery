@@ -407,62 +407,69 @@ function CustomLayoutView({
           const baseWidth = 220;
           const artRef = getOrCreateRef(art.id);
 
-          // Offset to place the heart button near the bottom-right corner of the
-          // rendered frame. baseWidth * scale gives the visual right edge;
-          // × 1.35 approximates the typical frame aspect for the bottom edge.
-          const heartOffsetX = Math.round(baseWidth * scale - 44);
-          const heartOffsetY = Math.round(baseWidth * scale * 1.35 - 44);
+          const heartOffsetX = Math.round(baseWidth * scale - 36);
+          const heartOffsetY = Math.round(baseWidth * scale - 36);
 
           return (
             <React.Fragment key={art.id}>
+              {/* Shared hover wrapper — single enter/leave handler covers both frame and heart */}
               <div
-                ref={artRef}
                 style={{
                   position: "absolute",
                   left: `${xPct}%`,
                   top: `${yPct}%`,
+                  width: `${Math.round(baseWidth * scale)}px`,
+                  height: `${Math.round(baseWidth * scale * 1.6)}px`,
                   zIndex,
-                  transform: `rotate(${rotation}deg) scale(${scale})`,
-                  transformOrigin: "top left",
                 }}
                 onMouseEnter={() => handleMouseEnter(art)}
                 onMouseLeave={handleMouseLeave}
               >
-                <FramedArtwork
-                  frame_file={art.frame_file || DEFAULT_FRAME_FILE}
-                  artSrc={art.file_url}
-                  width={baseWidth}
-                  title={art.title}
-                  medium={art.medium}
-                  artistName={artistName}
-                  fileType={art.file_type}
-                  showTooltip={false}
-                />
-              </div>
-
-              {isLoggedIn && (
+                {/* Frame — rotate+scale transform, ref for tooltip bounds */}
                 <div
+                  ref={artRef}
                   style={{
                     position: "absolute",
-                    left: `${xPct}%`,
-                    top: `${yPct}%`,
-                    zIndex: zIndex + 1,
-                    transform: `translate(${heartOffsetX}px, ${heartOffsetY}px)`,
-                    opacity: hoveredId === art.id ? 1 : 0,
-                    transition: "opacity 0.15s",
-                    pointerEvents: hoveredId === art.id ? "auto" : "none",
+                    left: 0,
+                    top: 0,
+                    transform: `rotate(${rotation}deg) scale(${scale})`,
+                    transformOrigin: "top left",
                   }}
-                  onMouseEnter={() => setHoveredId(art.id)}
-                  onMouseLeave={handleMouseLeave}
                 >
-                  <HeartButton
-                    pieceId={art.id}
-                    isOwner={isOwner}
-                    initialHeartCount={art.heart_count ?? 0}
-                    isLoggedIn={isLoggedIn}
+                  <FramedArtwork
+                    frame_file={art.frame_file || DEFAULT_FRAME_FILE}
+                    artSrc={art.file_url}
+                    width={baseWidth}
+                    title={art.title}
+                    medium={art.medium}
+                    artistName={artistName}
+                    fileType={art.file_type}
+                    showTooltip={false}
                   />
                 </div>
-              )}
+
+                {/* Heart button — translate offset, in sync with hoveredId */}
+                {isLoggedIn && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      top: 0,
+                      transform: `translate(${heartOffsetX}px, ${heartOffsetY}px)`,
+                      opacity: hoveredId === art.id ? 1 : 0,
+                      transition: "opacity 0.15s",
+                      pointerEvents: hoveredId === art.id ? "auto" : "none",
+                    }}
+                  >
+                    <HeartButton
+                      pieceId={art.id}
+                      isOwner={isOwner}
+                      initialHeartCount={art.heart_count ?? 0}
+                      isLoggedIn={isLoggedIn}
+                    />
+                  </div>
+                )}
+              </div>
 
               {hoveredId === art.id && tooltipPos && (
                 <div
