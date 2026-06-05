@@ -233,7 +233,7 @@ export function GallerySalonWall({
               return (
                 <div
                   key={`${frameFile}-${item.artIndex}-${index}`}
-                  className="relative"
+                  className="flex flex-col items-center group"
                 >
                   <FramedArtwork
                     frame_file={frameFile}
@@ -244,17 +244,24 @@ export function GallerySalonWall({
                     artistName={artist.name}
                     fileType={art.fileType}
                     innerPadding={item.innerPadding}
+                    showTooltip={false}
                   />
-                  {isLoggedIn && (
-                    <div className="absolute bottom-1 right-1 z-10">
-                      <HeartButton
-                        pieceId={art.id}
-                        isOwner={isOwner}
-                        initialHeartCount={art.heartCount}
-                        isLoggedIn={isLoggedIn}
-                      />
+                  <div className="mt-3 flex items-center gap-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200 [&_.opacity-0]:opacity-100">
+                    <div className="whitespace-nowrap rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-3 py-2 text-center shadow-lg">
+                      <p className="font-serif text-sm text-[#f5e6c8]">{art.title}</p>
+                      {art.medium && <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{art.medium}</p>}
                     </div>
-                  )}
+                    {isLoggedIn && (
+                      <div className="rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-2 py-2 shadow-lg">
+                        <HeartButton
+                          pieceId={art.id}
+                          isOwner={isOwner}
+                          initialHeartCount={art.heartCount}
+                          isLoggedIn={isLoggedIn}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -270,7 +277,7 @@ export function GallerySalonWall({
                 return (
                   <div
                     key={`${frameFile}-${item.artIndex}-${index}`}
-                    className="relative flex items-center justify-center"
+                    className="flex flex-col items-center group"
                   >
                     <FramedArtwork
                       frame_file={frameFile}
@@ -281,17 +288,24 @@ export function GallerySalonWall({
                       artistName={artist.name}
                       fileType={art.fileType}
                       innerPadding={item.innerPadding}
+                      showTooltip={false}
                     />
-                    {isLoggedIn && (
-                      <div className="absolute bottom-2 right-2 z-10">
-                        <HeartButton
-                          pieceId={art.id}
-                          isOwner={isOwner}
-                          initialHeartCount={art.heartCount}
-                          isLoggedIn={isLoggedIn}
-                        />
+                    <div className="mt-3 flex items-center gap-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200 [&_.opacity-0]:opacity-100">
+                      <div className="whitespace-nowrap rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-3 py-2 text-center shadow-lg">
+                        <p className="font-serif text-sm text-[#f5e6c8]">{art.title}</p>
+                        {art.medium && <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{art.medium}</p>}
                       </div>
-                    )}
+                      {isLoggedIn && (
+                        <div className="rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-2 py-2 shadow-lg">
+                          <HeartButton
+                            pieceId={art.id}
+                            isOwner={isOwner}
+                            initialHeartCount={art.heartCount}
+                            isLoggedIn={isLoggedIn}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -328,9 +342,6 @@ function CustomLayoutView({
   isLoggedIn?: boolean;
 }) {
   const [hoveredId, setHoveredId] = React.useState<string | null>(null);
-  const [tooltipPos, setTooltipPos] = React.useState<{ left: number; top: number } | null>(null);
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const itemRefsMap = React.useRef(new Map<string, React.RefObject<HTMLDivElement>>());
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
   const CANVAS_W = 1400;
@@ -338,30 +349,12 @@ function CustomLayoutView({
 
   const positioned = artworks.filter((a) => a.position_x != null);
 
-  const getOrCreateRef = (artId: string) => {
-    let ref = itemRefsMap.current.get(artId);
-    if (!ref) {
-      ref = React.createRef<HTMLDivElement>();
-      itemRefsMap.current.set(artId, ref);
-    }
-    return ref;
-  };
-
-  const handleMouseEnter = (art: Artwork) => {
-    setHoveredId(art.id);
-    const artRef = getOrCreateRef(art.id);
-    if (!artRef.current || !containerRef.current) return;
-    const artRect = artRef.current.getBoundingClientRect();
-    const containerRect = containerRef.current.getBoundingClientRect();
-    setTooltipPos({
-      left: artRect.left - containerRect.left + artRect.width / 2,
-      top: artRect.bottom - containerRect.top + 12,
-    });
+  const handleMouseEnter = (artId: string) => {
+    setHoveredId(artId);
   };
 
   const handleMouseLeave = () => {
     setHoveredId(null);
-    setTooltipPos(null);
   };
 
   if (positioned.length === 0) {
@@ -389,7 +382,6 @@ function CustomLayoutView({
     >
       {/* Fixed-size canvas */}
       <div
-        ref={containerRef}
         style={{
           position: "relative",
           width: `${CANVAS_W}px`,
@@ -405,62 +397,67 @@ function CustomLayoutView({
           const scale = art.scale ?? 1;
           const zIndex = art.z_index ?? i + 1;
           const baseWidth = 220;
-          const artRef = getOrCreateRef(art.id);
-
-          const heartOffsetX = Math.round(baseWidth * scale - 36);
-          const heartOffsetY = Math.round(baseWidth * scale - 36);
 
           return (
-            <React.Fragment key={art.id}>
-              {/* Shared hover wrapper — single enter/leave handler covers both frame and heart */}
+            <div
+              key={art.id}
+              style={{
+                position: "absolute",
+                left: `${xPct}%`,
+                top: `${yPct}%`,
+                width: `${Math.round(baseWidth * scale)}px`,
+                height: `${Math.round(baseWidth * scale * 1.7)}px`,
+                zIndex,
+              }}
+              onMouseEnter={() => handleMouseEnter(art.id)}
+              onMouseLeave={handleMouseLeave}
+            >
+              {/* Frame — rotate+scale transform */}
               <div
                 style={{
                   position: "absolute",
-                  left: `${xPct}%`,
-                  top: `${yPct}%`,
-                  width: `${Math.round(baseWidth * scale)}px`,
-                  height: `${Math.round(baseWidth * scale * 1.6)}px`,
-                  zIndex,
+                  left: 0,
+                  top: 0,
+                  transform: `rotate(${rotation}deg) scale(${scale})`,
+                  transformOrigin: "top left",
                 }}
-                onMouseEnter={() => handleMouseEnter(art)}
-                onMouseLeave={handleMouseLeave}
               >
-                {/* Frame — rotate+scale transform, ref for tooltip bounds */}
-                <div
-                  ref={artRef}
-                  style={{
-                    position: "absolute",
-                    left: 0,
-                    top: 0,
-                    transform: `rotate(${rotation}deg) scale(${scale})`,
-                    transformOrigin: "top left",
-                  }}
-                >
-                  <FramedArtwork
-                    frame_file={art.frame_file || DEFAULT_FRAME_FILE}
-                    artSrc={art.file_url}
-                    width={baseWidth}
-                    title={art.title}
-                    medium={art.medium}
-                    artistName={artistName}
-                    fileType={art.file_type}
-                    showTooltip={false}
-                  />
-                </div>
+                <FramedArtwork
+                  frame_file={art.frame_file || DEFAULT_FRAME_FILE}
+                  artSrc={art.file_url}
+                  width={baseWidth}
+                  title={art.title}
+                  medium={art.medium}
+                  artistName={artistName}
+                  fileType={art.file_type}
+                  showTooltip={false}
+                />
+              </div>
 
-                {/* Heart button — translate offset, in sync with hoveredId */}
+              {/* Title + heart row, shown below the frame on hover */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: `${Math.round(baseWidth * scale * 1.35) + 8}px`,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  zIndex: 20,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  opacity: hoveredId === art.id ? 1 : 0,
+                  transition: "opacity 0.15s",
+                  pointerEvents: hoveredId === art.id ? "auto" : "none",
+                  whiteSpace: "nowrap",
+                }}
+                className="[&_.opacity-0]:opacity-100"
+              >
+                <div className="rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-3 py-2 text-center shadow-lg">
+                  <p className="font-serif text-sm text-[#f5e6c8]">{art.title}</p>
+                  {art.medium && <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{art.medium}</p>}
+                </div>
                 {isLoggedIn && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: 0,
-                      top: 0,
-                      transform: `translate(${heartOffsetX}px, ${heartOffsetY}px)`,
-                      opacity: hoveredId === art.id ? 1 : 0,
-                      transition: "opacity 0.15s",
-                      pointerEvents: hoveredId === art.id ? "auto" : "none",
-                    }}
-                  >
+                  <div className="rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-2 py-2 shadow-lg">
                     <HeartButton
                       pieceId={art.id}
                       isOwner={isOwner}
@@ -470,23 +467,7 @@ function CustomLayoutView({
                   </div>
                 )}
               </div>
-
-              {hoveredId === art.id && tooltipPos && (
-                <div
-                  style={{
-                    position: "absolute",
-                    left: `${tooltipPos.left}px`,
-                    top: `${tooltipPos.top}px`,
-                    transform: "translateX(-50%)",
-                    zIndex: 9999,
-                  }}
-                  className="pointer-events-none whitespace-nowrap rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-3 py-2 text-center shadow-lg"
-                >
-                  <p className="font-serif text-sm text-[#f5e6c8]">{art.title}</p>
-                  <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{art.medium}</p>
-                </div>
-              )}
-            </React.Fragment>
+            </div>
           );
         })}
       </div>
