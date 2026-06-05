@@ -252,14 +252,12 @@ export function GallerySalonWall({
                       {art.medium && <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{art.medium}</p>}
                     </div>
                     {isLoggedIn && (
-                      <div className="rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-2 py-2 shadow-lg">
                         <HeartButton
                           pieceId={art.id}
                           isOwner={isOwner}
                           initialHeartCount={art.heartCount}
                           isLoggedIn={isLoggedIn}
                         />
-                      </div>
                     )}
                   </div>
                 </div>
@@ -296,14 +294,12 @@ export function GallerySalonWall({
                         {art.medium && <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{art.medium}</p>}
                       </div>
                       {isLoggedIn && (
-                        <div className="rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-2 py-2 shadow-lg">
                           <HeartButton
                             pieceId={art.id}
                             isOwner={isOwner}
                             initialHeartCount={art.heartCount}
                             isLoggedIn={isLoggedIn}
                           />
-                        </div>
                       )}
                     </div>
                   </div>
@@ -438,7 +434,7 @@ function CustomLayoutView({
               <div
                 style={{
                   position: "absolute",
-                  top: `${Math.round(baseWidth * scale * 1.35) + 8}px`,
+                  top: `${Math.round(baseWidth * scale * 1.0) + 8}px`,
                   left: "50%",
                   transform: "translateX(-50%)",
                   zIndex: 20,
