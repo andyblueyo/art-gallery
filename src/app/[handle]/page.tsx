@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getGalleryByHandle } from "@/lib/data";
+import { getGalleryByHandle, getPrimaryGalleryId, getGalleryPieces } from "@/lib/data";
+import type { GalleryPiece } from "@/lib/types";
 import { getGalleryUrl } from "@/lib/url";
 import { ViewCounter } from "@/components/gallery/ViewCounter";
 import { GallerySalonWall } from "@/components/gallery/GallerySalonWall";
@@ -56,6 +57,14 @@ export default async function PublicGalleryPage({ params }: PageProps) {
     artworkCount: gallery.artworks.length,
   });
 
+  let galleryPieces: GalleryPiece[] = [];
+  if (gallery.profile.layout_mode === "custom") {
+    const primaryGalleryId = await getPrimaryGalleryId(gallery.profile.id);
+    if (primaryGalleryId) {
+      galleryPieces = await getGalleryPieces(primaryGalleryId);
+    }
+  }
+
   let isOwner = false;
   let isLoggedIn = false;
   if (isSupabaseConfigured()) {
@@ -101,6 +110,7 @@ export default async function PublicGalleryPage({ params }: PageProps) {
         galleryUrl={galleryUrl}
         totalPieceCount={gallery.artworks.length}
         allArtworks={gallery.artworks}
+        galleryPieces={galleryPieces}
         isOwner={isOwner}
         isLoggedIn={isLoggedIn}
         profileId={gallery.profile.id}
