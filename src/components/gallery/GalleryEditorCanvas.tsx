@@ -155,27 +155,61 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved, on
     setSaveError(false);
     try {
       const supabase = createClient();
-      await Promise.all(
-        items.map(item =>
-          supabase
-            .from("artworks")
-            .update({
-              position_x: item.xPct,
-              position_y: item.yPct,
-              rotation: item.rotation,
-              scale: item.scale,
-              z_index: item.zIndex,
-            })
-            .eq("id", item.id)
-        )
+
+      // 1. Get the user's primary gallery
+      const { data: gallery, error: galleryError } = await supabase
+        .from("galleries")
+        .select("id")
+        .eq("user_id", profileId)
+        .eq("is_primary", true)
+        .single();
+
+      if (galleryError || !gallery) {
+        throw new Error("Could not find primary gallery");
+      }
+
+      // 2. For each item, find its inventory_item_id and upsert into gallery_pieces
+      const upserts = await Promise.all(
+        items.map(async (item) => {
+          const { data: inv } = await supabase
+            .from("inventory_items")
+            .select("id")
+            .eq("artwork_id", item.id)
+            .eq("owned_by", profileId)
+            .single();
+
+          if (!inv) return null;
+
+          return {
+            gallery_id: gallery.id,
+            inventory_item_id: inv.id,
+            position_x: item.xPct,
+            position_y: item.yPct,
+            rotation: item.rotation,
+            scale: item.scale,
+            z_index: item.zIndex,
+          };
+        })
       );
+
+      const validUpserts = upserts.filter((u): u is NonNullable<typeof u> => u !== null);
+
+      const { error: upsertError } = await supabase
+        .from("gallery_pieces")
+        .upsert(validUpserts, { onConflict: "inventory_item_id" });
+
+      if (upsertError) throw upsertError;
+
+      // 3. Mark layout as custom
       await supabase
         .from("profiles")
         .update({ layout_mode: "custom" })
         .eq("id", profileId);
+
       onSaved();
       router.refresh();
-    } catch {
+    } catch (err) {
+      console.error("[editor] save failed:", err);
       setSaveError(true);
     } finally {
       setIsSaving(false);
