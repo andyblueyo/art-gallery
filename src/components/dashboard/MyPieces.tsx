@@ -8,7 +8,6 @@ interface MyPiecesProps {
   loading: boolean;
   onUpdate: (artwork: DashboardArtwork) => void;
   onDelete: (id: string) => void;
-  onReorder: (id: string, direction: "up" | "down") => void;
 }
 
 export function MyPieces({
@@ -16,7 +15,6 @@ export function MyPieces({
   loading,
   onUpdate,
   onDelete,
-  onReorder,
 }: MyPiecesProps) {
   if (loading) {
     return (
@@ -49,7 +47,7 @@ export function MyPieces({
   }
 
   const sorted = [...artworks].sort(
-    (a, b) => a.display_order - b.display_order
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
 
   return (
@@ -64,7 +62,6 @@ export function MyPieces({
             isLast={index === sorted.length - 1}
             onUpdate={onUpdate}
             onDelete={onDelete}
-            onReorder={onReorder}
           />
         ))}
       </div>

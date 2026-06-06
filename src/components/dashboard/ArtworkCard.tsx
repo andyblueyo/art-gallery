@@ -11,16 +11,14 @@ interface ArtworkCardProps {
   isLast: boolean;
   onUpdate: (artwork: DashboardArtwork) => void;
   onDelete: (id: string) => void;
-  onReorder: (id: string, direction: "up" | "down") => void;
 }
 
 export function ArtworkCard({
   artwork,
-  isFirst,
-  isLast,
+  isFirst: _isFirst,
+  isLast: _isLast,
   onUpdate,
   onDelete,
-  onReorder,
 }: ArtworkCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -198,16 +196,6 @@ export function ArtworkCard({
             >
               edit title / medium
             </MenuItem>
-            {!isFirst && (
-              <MenuItem onClick={() => onReorder(artwork.id, "up")}>
-                move up
-              </MenuItem>
-            )}
-            {!isLast && (
-              <MenuItem onClick={() => onReorder(artwork.id, "down")}>
-                move down
-              </MenuItem>
-            )}
             <MenuItem
               onClick={() => {
                 setConfirmDelete(true);

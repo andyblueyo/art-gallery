@@ -79,20 +79,6 @@ export function GallerySalonWall({
   const handleReset = useCallback(async () => {
     try {
       const supabase = createClient();
-      await Promise.all(
-        allArtworks.map(art =>
-          supabase
-            .from("artworks")
-            .update({
-              position_x: null,
-              position_y: null,
-              rotation: null,
-              scale: null,
-              z_index: null,
-            })
-            .eq("id", art.id)
-        )
-      );
       await supabase
         .from("profiles")
         .update({ layout_mode: "auto" })
@@ -102,7 +88,7 @@ export function GallerySalonWall({
     } catch (error) {
       console.error("Failed to reset layout:", error);
     }
-  }, [allArtworks, profileId, router]);
+  }, [profileId, router]);
 
   if (showAllGrid && allArtworks.length > 0) {
     return (
@@ -345,7 +331,7 @@ function CustomLayoutView({
   const CANVAS_W = 1400;
   const CANVAS_H = 1200;
 
-  const positioned = artworks.filter((a) => a.position_x != null);
+  const positioned: Artwork[] = [];
 
   const handleMouseEnter = (artId: string) => {
     setHoveredId(artId);
@@ -394,11 +380,11 @@ function CustomLayoutView({
         }}
       >
         {positioned.map((art, i) => {
-          const xPct = art.position_x!;
-          const yPct = art.position_y!;
-          const rotation = art.rotation ?? 0;
-          const scale = art.scale ?? 1;
-          const zIndex = art.z_index ?? i + 1;
+          const xPct = 0;
+          const yPct = 0;
+          const rotation = 0;
+          const scale = 1;
+          const zIndex = i + 1;
           const baseWidth = 220;
 
           return (
@@ -529,7 +515,7 @@ function GalleryMinimap({
     };
   }, [scrollRef]);
 
-  const positioned = artworks.filter(a => a.position_x != null);
+  const positioned: Artwork[] = [];
 
   return (
     <div
@@ -565,8 +551,8 @@ function GalleryMinimap({
             key={art.id}
             style={{
               position: "absolute",
-              left: `${8 + art.position_x! * 0.84}%`,
-              top: `${8 + art.position_y! * 0.84}%`,
+              left: `8%`,
+              top: `8%`,
               width: 7,
               height: 7,
               borderRadius: "50%",

@@ -67,11 +67,11 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved, on
         src: art.file_url,
         fileType: art.file_type,
         frame_file: art.frame_file || DEFAULT_FRAME_FILE,
-        xPct: art.position_x ?? def.xPct,
-        yPct: art.position_y ?? def.yPct,
-        rotation: art.rotation ?? def.rot,
-        scale: art.scale ?? 1,
-        zIndex: art.z_index ?? (i + 1),
+        xPct: def.xPct,
+        yPct: def.yPct,
+        rotation: def.rot,
+        scale: 1,
+        zIndex: i + 1,
       };
     })
   );

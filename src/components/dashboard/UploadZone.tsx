@@ -35,7 +35,6 @@ type Step = "pick" | "frame" | "crop" | "meta";
 
 interface UploadZoneProps {
   artistId: string;
-  nextDisplayOrder: number;
   onUploaded: (artwork: DashboardArtwork, tempId: string) => void;
   onOptimisticAdd: (artwork: DashboardArtwork) => void;
   onOptimisticFail: (tempId: string) => void;
@@ -43,7 +42,6 @@ interface UploadZoneProps {
 
 export function UploadZone({
   artistId,
-  nextDisplayOrder,
   onUploaded,
   onOptimisticAdd,
   onOptimisticFail,
@@ -70,7 +68,7 @@ export function UploadZone({
   const [dragOver, setDragOver] = useState(false);
 
   const isPdf = file?.type === "application/pdf";
-  const isGalleryFull = nextDisplayOrder >= IMAGE_LIMIT;
+  const isGalleryFull = false;
 
   const resetAll = useCallback(() => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -207,7 +205,6 @@ export function UploadZone({
       file_url: localPreview || `/frames/${selectedFrame.file}`,
       file_type: fileType,
       frame_file: selectedFrame.file,
-      display_order: nextDisplayOrder,
       heart_count: 0,
       created_at: new Date().toISOString(),
       _uploading: true,
@@ -294,7 +291,6 @@ export function UploadZone({
         file_url: fileUrl,
         file_type: fileType,
         frame_file: selectedFrame.file,
-        display_order: nextDisplayOrder,
       };
       console.log("[upload] inserting artwork row:", row);
 
@@ -309,6 +305,17 @@ export function UploadZone({
         throw insertError;
       }
       console.log("[upload] insert ok:", data);
+
+      const { error: inventoryError } = await supabase
+        .from("inventory_items")
+        .insert({
+          owned_by: effectiveArtistId,
+          artwork_id: artworkId,
+          edition_number: 1,
+        });
+      if (inventoryError) {
+        console.error("[upload] inventory_items insert error:", inventoryError);
+      }
 
       onUploaded({ ...(data as DashboardArtwork), heart_count: 0 }, tempId);
       setSuccess(true);

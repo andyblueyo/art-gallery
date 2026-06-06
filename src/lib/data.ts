@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import type { Artwork, Profile } from "@/lib/types";
+import type { Artwork, GalleryPiece, Profile } from "@/lib/types";
 import { getDemoGallery } from "@/lib/demo-data";
 
 export async function getProfileByHandle(
@@ -43,7 +43,7 @@ export async function getArtworksByArtistId(
     .from("artworks")
     .select("*")
     .eq("artist_id", artistId)
-    .order("display_order", { ascending: true });
+    .order("created_at", { ascending: false });
 
   if (error) {
     console.error("[data] getArtworksByArtistId error:", error);
@@ -52,7 +52,7 @@ export async function getArtworksByArtistId(
     "[data] getArtworksByArtistId returned",
     data?.length ?? 0,
     "rows:",
-    data?.map((a) => ({ id: a.id, title: a.title, file_url: a.file_url, display_order: a.display_order }))
+    data?.map((a) => ({ id: a.id, title: a.title, file_url: a.file_url }))
   );
   if (error || !data) return [];
   return data as Artwork[];
@@ -84,8 +84,53 @@ export async function recordPageView(artistId: string): Promise<void> {
   // don't record if not logged in or if owner is viewing own gallery
   if (!user || user.id === artistId) return;
 
-  await supabase.from("gallery_views").insert({ 
-    gallery_id: artistId, 
-    viewer_id: user.id 
+  const { data: gallery } = await supabase
+    .from("galleries")
+    .select("id")
+    .eq("user_id", artistId)
+    .eq("is_primary", true)
+    .single();
+
+  if (!gallery) return;
+
+  await supabase.from("gallery_views").insert({
+    gallery_id: gallery.id,
+    viewer_id: user.id,
   });
+}
+
+export async function getPrimaryGalleryId(userId: string): Promise<string | null> {
+  if (!isSupabaseConfigured()) return null;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("galleries")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("is_primary", true)
+    .single();
+  return data?.id ?? null;
+}
+
+export async function getGalleryPieces(galleryId: string): Promise<GalleryPiece[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("gallery_pieces")
+    .select(`
+      id, gallery_id, inventory_item_id, position_x, position_y, rotation, scale, z_index,
+      inventory_item:inventory_items (
+        id, owned_by, artwork_id, edition_number,
+        artwork:artworks (
+          id, artist_id, title, medium, description,
+          file_url, file_type, frame_file, heart_count, created_at,
+          for_sale, price_coins, edition_total, editions_remaining
+        )
+      )
+    `)
+    .eq("gallery_id", galleryId);
+  if (error) {
+    console.error("[data] getGalleryPieces error:", error);
+    return [];
+  }
+  return (data ?? []) as unknown as GalleryPiece[];
 }

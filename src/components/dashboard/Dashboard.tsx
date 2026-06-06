@@ -29,7 +29,7 @@ export function Dashboard({ userId, initialProfile }: DashboardProps) {
         .from("artworks")
         .select("*")
         .eq("artist_id", userId)
-        .order("display_order", { ascending: true }),
+        .order("created_at", { ascending: false }),
       supabase
         .from("gallery_views")
         .select("id", { count: "exact", head: true })
@@ -49,11 +49,6 @@ export function Dashboard({ userId, initialProfile }: DashboardProps) {
     fetchData();
   }, [fetchData]);
 
-  const nextDisplayOrder = useMemo(() => {
-    if (artworks.length === 0) return 0;
-    return Math.max(...artworks.map((a) => a.display_order)) + 1;
-  }, [artworks]);
-
   const handleOptimisticAdd = useCallback((artwork: DashboardArtwork) => {
     setArtworks((prev) => [...prev, artwork]);
   }, []);
@@ -66,7 +61,7 @@ export function Dashboard({ userId, initialProfile }: DashboardProps) {
     (artwork: DashboardArtwork, tempId: string) => {
       setArtworks((prev) =>
         [...prev.filter((a) => a.id !== tempId), artwork].sort(
-          (x, y) => x.display_order - y.display_order
+          (x, y) => new Date(y.created_at).getTime() - new Date(x.created_at).getTime()
         )
       );
     },
@@ -83,43 +78,6 @@ export function Dashboard({ userId, initialProfile }: DashboardProps) {
     setArtworks((prev) => prev.filter((a) => a.id !== id));
   }, []);
 
-  const handleReorder = useCallback(
-    async (id: string, direction: "up" | "down") => {
-      const sorted = [...artworks].sort(
-        (a, b) => a.display_order - b.display_order
-      );
-      const index = sorted.findIndex((a) => a.id === id);
-      const swapIndex = direction === "up" ? index - 1 : index + 1;
-      if (swapIndex < 0 || swapIndex >= sorted.length) return;
-
-      const a = sorted[index];
-      const b = sorted[swapIndex];
-      const supabase = createClient();
-
-      await Promise.all([
-        supabase
-          .from("artworks")
-          .update({ display_order: b.display_order })
-          .eq("id", a.id),
-        supabase
-          .from("artworks")
-          .update({ display_order: a.display_order })
-          .eq("id", b.id),
-      ]);
-
-      setArtworks((prev) =>
-        prev.map((piece) => {
-          if (piece.id === a.id)
-            return { ...piece, display_order: b.display_order };
-          if (piece.id === b.id)
-            return { ...piece, display_order: a.display_order };
-          return piece;
-        })
-      );
-    },
-    [artworks]
-  );
-
   const realPieces = artworks.filter((a) => !a._uploading);
 
   return (
@@ -134,7 +92,6 @@ export function Dashboard({ userId, initialProfile }: DashboardProps) {
         />
         <UploadZone
           artistId={userId}
-          nextDisplayOrder={nextDisplayOrder}
           onOptimisticAdd={handleOptimisticAdd}
           onOptimisticFail={handleOptimisticFail}
           onUploaded={handleUploaded}
@@ -144,7 +101,6 @@ export function Dashboard({ userId, initialProfile }: DashboardProps) {
           loading={loading}
           onUpdate={handleUpdate}
           onDelete={handleDelete}
-          onReorder={handleReorder}
         />
       </div>
     </div>
