@@ -339,6 +339,8 @@ function CustomLayoutView({
 }) {
   const [hoveredId, setHoveredId] = React.useState<string | null>(null);
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  const frameRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
+  const [tooltipTops, setTooltipTops] = React.useState<Record<string, number>>({});
 
   const CANVAS_W = 1400;
   const CANVAS_H = 1200;
@@ -347,6 +349,11 @@ function CustomLayoutView({
 
   const handleMouseEnter = (artId: string) => {
     setHoveredId(artId);
+    const el = frameRefs.current[artId];
+    if (el) {
+      const artScale = parseFloat(el.getAttribute('data-scale') ?? '1');
+      setTooltipTops(prev => ({ ...prev, [artId]: el.offsetHeight * artScale + 8 }));
+    }
   };
 
   const handleMouseLeave = () => {
@@ -410,6 +417,8 @@ function CustomLayoutView({
             >
               {/* Frame — rotate+scale transform */}
               <div
+                ref={el => { frameRefs.current[art.id] = el; }}
+                data-scale={scale}
                 style={{
                   position: "absolute",
                   left: 0,
@@ -434,7 +443,7 @@ function CustomLayoutView({
               <div
                 style={{
                   position: "absolute",
-                  top: `${Math.round(baseWidth * scale * 1.0) + 8}px`,
+                  top: `${tooltipTops[art.id] ?? Math.round(baseWidth * scale) + 8}px`,
                   left: "50%",
                   transform: "translateX(-50%)",
                   zIndex: 20,
