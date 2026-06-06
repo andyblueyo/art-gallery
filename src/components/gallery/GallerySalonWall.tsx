@@ -410,7 +410,7 @@ function CustomLayoutView({
                 top: `${yPct}%`,
                 width: `${Math.round(baseWidth * scale)}px`,
                 height: `${Math.round(baseWidth * scale * 1.7)}px`,
-                zIndex,
+                zIndex: hoveredId === art.id ? 9999 : zIndex,
               }}
               onMouseEnter={() => handleMouseEnter(art.id)}
               onMouseLeave={handleMouseLeave}
