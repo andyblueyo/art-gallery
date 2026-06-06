@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import React from "react";
 import { useRouter } from "next/navigation";
 import type { Artwork } from "@/lib/types";
+import type { GalleryPiece } from "@/lib/types";
 import { FramedArtwork } from "./FramedArtwork";
 import { ArtistBubble, type ArtistBubbleData } from "./ArtistBubble";
 import { GallerySeeAllGrid } from "./GallerySeeAllGrid";
@@ -23,6 +24,7 @@ interface GallerySalonWallProps {
   galleryUrl: string;
   totalPieceCount: number;
   allArtworks?: Artwork[];
+  galleryPieces?: GalleryPiece[];
   isOwner?: boolean;
   isLoggedIn?: boolean;
   profileId?: string;
@@ -36,6 +38,7 @@ export function GallerySalonWall({
   galleryUrl,
   totalPieceCount,
   allArtworks = [],
+  galleryPieces,
   isOwner = false,
   isLoggedIn = false,
   profileId = "",
@@ -79,10 +82,25 @@ export function GallerySalonWall({
   const handleReset = useCallback(async () => {
     try {
       const supabase = createClient();
+      const { data: gallery } = await supabase
+        .from("galleries")
+        .select("id")
+        .eq("user_id", profileId)
+        .eq("is_primary", true)
+        .single();
+
+      if (gallery) {
+        await supabase
+          .from("gallery_pieces")
+          .delete()
+          .eq("gallery_id", gallery.id);
+      }
+
       await supabase
         .from("profiles")
         .update({ layout_mode: "auto" })
         .eq("id", profileId);
+
       setEditMode(false);
       router.refresh();
     } catch (error) {
@@ -195,9 +213,9 @@ export function GallerySalonWall({
         )}
 
         {/* ── Custom layout ──────────────────────────────────── */}
-        {isCustomLayout && allArtworks.length > 0 ? (
+        {isCustomLayout && galleryPieces && galleryPieces.length > 0 ? (
           <CustomLayoutView
-            artworks={allArtworks}
+            pieces={galleryPieces}
             artistName={artist.name}
             isOwner={isOwner}
             isLoggedIn={isLoggedIn}
@@ -313,12 +331,12 @@ export function GallerySalonWall({
 
 // ── Custom layout view (read-only) ──────────────────────────────
 function CustomLayoutView({
-  artworks,
+  pieces,
   artistName,
   isOwner = false,
   isLoggedIn = false,
 }: {
-  artworks: Artwork[];
+  pieces: GalleryPiece[];
   artistName: string;
   isOwner?: boolean;
   isLoggedIn?: boolean;
@@ -331,22 +349,21 @@ function CustomLayoutView({
   const CANVAS_W = 1400;
   const CANVAS_H = 1200;
 
-  const positioned: Artwork[] = [];
-
-  const handleMouseEnter = (artId: string) => {
-    setHoveredId(artId);
-    const el = frameRefs.current[artId];
+  const handleMouseEnter = (pieceId: string) => {
+    setHoveredId(pieceId);
+    const el = frameRefs.current[pieceId];
     if (el) {
-      const artScale = parseFloat(el.getAttribute('data-scale') ?? '1');
-      setTooltipTops(prev => ({ ...prev, [artId]: el.offsetHeight * artScale + 8 }));
+      const artScale = parseFloat(el.getAttribute("data-scale") ?? "1");
+      setTooltipTops((prev) => ({
+        ...prev,
+        [pieceId]: el.offsetHeight * artScale + 8,
+      }));
     }
   };
 
-  const handleMouseLeave = () => {
-    setHoveredId(null);
-  };
+  const handleMouseLeave = () => setHoveredId(null);
 
-  if (positioned.length === 0) {
+  if (pieces.length === 0) {
     return (
       <main className="relative z-10 flex min-h-[100dvh] items-center justify-center px-6 pt-24">
         <p className="text-center font-serif text-lg text-[#f5e6c8]/80">
@@ -358,122 +375,102 @@ function CustomLayoutView({
 
   return (
     <>
-    {/* Outer scroll container — full viewport, scrollable in both axes on mobile */}
-    <div
-      ref={scrollRef} 
-      className="relative z-10 w-full pt-14"
-      style={{
-        // On mobile: allow 2D panning. On desktop: normal doc scroll takes over.
-        overflowX: "auto",
-        overflowY: "auto",
-        WebkitOverflowScrolling: "touch",
-      }}
-    >
-      {/* Fixed-size canvas */}
       <div
-        style={{
-          position: "relative",
-          width: `${CANVAS_W}px`,
-          height: `${CANVAS_H}px`,
-          // On desktop (≥1400px) center the canvas; on smaller screens it scrolls
-          margin: "0 auto",
-        }}
+        ref={scrollRef}
+        className="relative z-10 w-full pt-14"
+        style={{ overflowX: "auto", overflowY: "auto", WebkitOverflowScrolling: "touch" }}
       >
-        {positioned.map((art, i) => {
-          const xPct = 0;
-          const yPct = 0;
-          const rotation = 0;
-          const scale = 1;
-          const zIndex = i + 1;
-          const baseWidth = 220;
+        <div style={{ position: "relative", width: `${CANVAS_W}px`, height: `${CANVAS_H}px`, margin: "0 auto" }}>
+          {pieces.map((piece, i) => {
+            const art = piece.inventory_item?.artwork;
+            if (!art) return null;
+            const rotation = piece.rotation ?? 0;
+            const scale = piece.scale ?? 1;
+            const zIndex = piece.z_index ?? i + 1;
+            const baseWidth = 220;
 
-          return (
-            <div
-              key={art.id}
-              style={{
-                position: "absolute",
-                left: `${xPct}%`,
-                top: `${yPct}%`,
-                width: `${Math.round(baseWidth * scale)}px`,
-                height: `${Math.round(baseWidth * scale * 1.7)}px`,
-                zIndex: hoveredId === art.id ? 9999 : zIndex,
-              }}
-              onMouseEnter={() => handleMouseEnter(art.id)}
-              onMouseLeave={handleMouseLeave}
-            >
-              {/* Frame — rotate+scale transform */}
+            return (
               <div
-                ref={el => { frameRefs.current[art.id] = el; }}
-                data-scale={scale}
+                key={piece.id}
                 style={{
                   position: "absolute",
-                  left: 0,
-                  top: 0,
-                  transform: `rotate(${rotation}deg) scale(${scale})`,
-                  transformOrigin: "top left",
+                  left: `${piece.position_x}%`,
+                  top: `${piece.position_y}%`,
+                  width: `${Math.round(baseWidth * scale)}px`,
+                  height: `${Math.round(baseWidth * scale * 1.7)}px`,
+                  zIndex: hoveredId === piece.id ? 9999 : zIndex,
                 }}
+                onMouseEnter={() => handleMouseEnter(piece.id)}
+                onMouseLeave={handleMouseLeave}
               >
-                <FramedArtwork
-                  frame_file={art.frame_file || DEFAULT_FRAME_FILE}
-                  artSrc={art.file_url}
-                  width={baseWidth}
-                  title={art.title}
-                  medium={art.medium}
-                  artistName={artistName}
-                  fileType={art.file_type}
-                  showTooltip={false}
-                />
-              </div>
-
-              {/* Title + heart row, shown below the frame on hover */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: `${tooltipTops[art.id] ?? Math.round(baseWidth * scale) + 8}px`,
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  zIndex: 20,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  opacity: hoveredId === art.id ? 1 : 0,
-                  transition: "opacity 0.15s",
-                  pointerEvents: hoveredId === art.id ? "auto" : "none",
-                  whiteSpace: "nowrap",
-                }}
-                className="[&_.opacity-0]:opacity-100"
-              >
-                <div className="rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-3 py-2 text-center shadow-lg">
-                  <p className="font-serif text-sm text-[#f5e6c8]">{art.title}</p>
-                  {art.medium && <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{art.medium}</p>}
+                <div
+                  ref={(el) => { frameRefs.current[piece.id] = el; }}
+                  data-scale={scale}
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: 0,
+                    transform: `rotate(${rotation}deg) scale(${scale})`,
+                    transformOrigin: "top left",
+                  }}
+                >
+                  <FramedArtwork
+                    frame_file={art.frame_file || DEFAULT_FRAME_FILE}
+                    artSrc={art.file_url}
+                    width={baseWidth}
+                    title={art.title}
+                    medium={art.medium}
+                    artistName={artistName}
+                    fileType={art.file_type}
+                    showTooltip={false}
+                  />
                 </div>
-                {isLoggedIn && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: `${tooltipTops[piece.id] ?? Math.round(baseWidth * scale) + 8}px`,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    zIndex: 20,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    opacity: hoveredId === piece.id ? 1 : 0,
+                    transition: "opacity 0.15s",
+                    pointerEvents: hoveredId === piece.id ? "auto" : "none",
+                    whiteSpace: "nowrap",
+                  }}
+                  className="[&_.opacity-0]:opacity-100"
+                >
+                  <div className="rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-3 py-2 text-center shadow-lg">
+                    <p className="font-serif text-sm text-[#f5e6c8]">{art.title}</p>
+                    {art.medium && <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{art.medium}</p>}
+                  </div>
+                  {isLoggedIn && (
                     <HeartButton
                       pieceId={art.id}
                       isOwner={isOwner}
                       initialHeartCount={art.heart_count ?? 0}
                       isLoggedIn={isLoggedIn}
                     />
-                )}
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
-    </div>
-         {/* ← this closes the scroll div */}
-
-      <GalleryMinimap artworks={artworks} scrollRef={scrollRef} />
+      <GalleryMinimap pieces={pieces} scrollRef={scrollRef} />
     </>
   );
 }
 
 // ── Minimap ──────────────────────────────────────────────────────
 function GalleryMinimap({
-  artworks,
+  pieces,
   scrollRef,
 }: {
-  artworks: Artwork[];
+  pieces: GalleryPiece[];
   scrollRef: React.RefObject<HTMLDivElement>;
 }) {
   const CANVAS_W = 1400;
@@ -505,17 +502,17 @@ function GalleryMinimap({
 
     update();
     el.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("scroll", update, { passive: true }); 
+    window.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
     return () => {
       el.removeEventListener("scroll", update);
-      window.removeEventListener("scroll", update);  
+      window.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
       clearTimeout(idleTimer.current);
     };
   }, [scrollRef]);
 
-  const positioned: Artwork[] = [];
+  const positioned = pieces;
 
   return (
     <div
@@ -524,7 +521,7 @@ function GalleryMinimap({
         bottom: 24,
         right: 24,
         zIndex: 50,
-        opacity: idle ? 1 : 1,
+        opacity: idle ? 0.4 : 1,
         transition: "opacity 0.4s ease",
         background: "rgba(18,12,6,0.75)",
         borderRadius: 8,
@@ -546,13 +543,13 @@ function GalleryMinimap({
           overflow: "hidden",
         }}
       >
-        {positioned.map(art => (
+        {positioned.map(piece => (
           <div
-            key={art.id}
+            key={piece.id}
             style={{
               position: "absolute",
-              left: `8%`,
-              top: `8%`,
+              left: `${piece.position_x}%`,
+              top: `${piece.position_y}%`,
               width: 7,
               height: 7,
               borderRadius: "50%",
