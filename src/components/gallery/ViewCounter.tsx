@@ -15,10 +15,10 @@ export function ViewCounter({ galleryId, isOwner }: ViewCounterProps) {
 
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return;
-      supabase
-        .from("gallery_views")
-        .insert({ gallery_id: galleryId, viewer_id: user.id });
+      const row = user
+        ? { gallery_id: galleryId, viewer_id: user.id }
+        : { gallery_id: galleryId };
+      supabase.from("gallery_views").insert(row as any);
     });
   }, [galleryId, isOwner]);
 
