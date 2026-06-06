@@ -21,6 +21,18 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen font-sans">
+      <div style={{
+  background: '#1a1a1a',
+  color: '#f5f0e8',
+  textAlign: 'center',
+  padding: '10px',
+  fontSize: '14px',
+  fontFamily: 'serif',
+  zIndex: 9999,
+  position: 'relative'
+}}>
+  🚧 gallery club is currently undergoing database migrations. all data is still stored, will be fully restored by 6/8. thank you for your support! new exciting feature soon to be released!! any questions, comments, email hello@galleryclub.online!
+</div>
         {children}
         <Analytics />
         <SpeedInsights />
