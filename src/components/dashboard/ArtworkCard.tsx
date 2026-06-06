@@ -132,13 +132,17 @@ export function ArtworkCard({
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              maxLength={50}
               className="w-full rounded border border-[#d8ceb8] px-2 py-1 text-sm"
             />
+            <p className="text-right text-xs text-brown-muted">{title.length}/50</p>
             <input
               value={medium}
               onChange={(e) => setMedium(e.target.value)}
+              maxLength={50}
               className="w-full rounded border border-[#d8ceb8] px-2 py-1 text-sm"
             />
+            <p className="text-right text-xs text-brown-muted">{medium.length}/50</p>
             <div className="flex gap-2">
               <button
                 type="button"

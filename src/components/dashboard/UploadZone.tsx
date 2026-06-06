@@ -531,9 +531,11 @@ export function UploadZone({
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                maxLength={50}
                 className="mt-1 w-full rounded-lg border border-[#d8ceb8] bg-white/60 px-3 py-2.5 text-brown focus:border-[#c8a040] focus:outline-none"
-                placeholder="Afternoon Light"
+                placeholder="my really cool art"
               />
+              <p className="text-right text-xs text-brown-muted">{title.length}/50</p>
             </label>
             <label className="block sm:col-span-2">
               <span className="text-xs font-medium uppercase tracking-wide text-brown-muted">
@@ -542,10 +544,12 @@ export function UploadZone({
               <input
                 value={medium}
                 onChange={(e) => setMedium(e.target.value)}
+                maxLength={50}
                 list="medium-suggestions"
                 className="mt-1 w-full rounded-lg border border-[#d8ceb8] bg-white/60 px-3 py-2.5 text-brown focus:border-[#c8a040] focus:outline-none"
-                placeholder="watercolor"
+                placeholder="pencils, markers"
               />
+              <p className="text-right text-xs text-brown-muted">{medium.length}/50</p>
               <datalist id="medium-suggestions">
                 {MEDIUM_SUGGESTIONS.map((m) => (
                   <option key={m} value={m} />
