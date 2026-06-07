@@ -589,14 +589,14 @@ export function UploadZone({
                   if (val === "") {
                     setEditionTotal(0);
                   } else {
-                    setEditionTotal(Math.max(1, parseInt(val) || 1));
+                    setEditionTotal(Math.min(10, Math.max(1, parseInt(val) || 1)));
                   }
                 }}
                 onBlur={() => {
                   if (editionTotal < 1) setEditionTotal(1);
                 }}
                 min={1}
-                max={100}
+                max={10}
                 className="mt-1 w-full rounded-lg border border-[#d8ceb8] bg-white/60 px-3 py-2.5 text-brown focus:border-[#c8a040] focus:outline-none"
               />
               <p className="mt-1 text-xs text-brown-muted">
