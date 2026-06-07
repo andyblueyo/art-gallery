@@ -583,8 +583,18 @@ export function UploadZone({
               </span>
               <input
                 type="number"
-                value={editionTotal}
-                onChange={(e) => setEditionTotal(Math.max(1, parseInt(e.target.value) || 1))}
+                value={editionTotal === 0 ? "" : editionTotal}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "") {
+                    setEditionTotal(0);
+                  } else {
+                    setEditionTotal(Math.max(1, parseInt(val) || 1));
+                  }
+                }}
+                onBlur={() => {
+                  if (editionTotal < 1) setEditionTotal(1);
+                }}
                 min={1}
                 max={100}
                 className="mt-1 w-full rounded-lg border border-[#d8ceb8] bg-white/60 px-3 py-2.5 text-brown focus:border-[#c8a040] focus:outline-none"
