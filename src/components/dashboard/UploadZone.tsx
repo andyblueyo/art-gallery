@@ -62,6 +62,7 @@ export function UploadZone({
   );
   const [title, setTitle] = useState("");
   const [medium, setMedium] = useState("");
+  const [editionTotal, setEditionTotal] = useState<number>(1);
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +84,7 @@ export function UploadZone({
     setCroppedPreviewUrl(null);
     setTitle("");
     setMedium("");
+    setEditionTotal(1);
     setSuccess(false);
     setError(null);
     if (inputRef.current) inputRef.current.value = "";
@@ -291,6 +293,8 @@ export function UploadZone({
         file_url: fileUrl,
         file_type: fileType,
         frame_file: selectedFrame.file,
+        edition_total: editionTotal,
+        editions_remaining: editionTotal,
       };
       console.log("[upload] inserting artwork row:", row);
 
@@ -306,15 +310,25 @@ export function UploadZone({
       }
       console.log("[upload] insert ok:", data);
 
-      const { error: inventoryError } = await supabase
-        .from("inventory_items")
-        .insert({
-          owned_by: effectiveArtistId,
-          artwork_id: artworkId,
-          edition_number: 1,
-        });
-      if (inventoryError) {
-        console.error("[upload] inventory_items insert error:", inventoryError);
+      const failedEditions: number[] = [];
+      for (let i = 1; i <= editionTotal; i++) {
+        const { error: inventoryError } = await supabase
+          .from("inventory_items")
+          .insert({
+            owned_by: effectiveArtistId,
+            artwork_id: artworkId,
+            edition_number: i,
+          });
+        if (inventoryError) {
+          console.error(`[upload] inventory_items insert error (edition ${i}):`, inventoryError);
+          failedEditions.push(i);
+        }
+      }
+      if (failedEditions.length > 0) {
+        setError(
+          "your artwork was uploaded, but something went wrong setting up its listing. " +
+          "the piece is in your gallery — please contact support if you want to list it for sale."
+        );
       }
 
       onUploaded({ ...(data as DashboardArtwork), heart_count: 0 }, tempId);
@@ -563,6 +577,24 @@ export function UploadZone({
                 ))}
               </datalist>
             </label>
+            <label className="block sm:col-span-2">
+              <span className="text-xs font-medium uppercase tracking-wide text-brown-muted">
+                editions
+              </span>
+              <input
+                type="number"
+                value={editionTotal}
+                onChange={(e) => setEditionTotal(Math.max(1, parseInt(e.target.value) || 1))}
+                min={1}
+                max={100}
+                className="mt-1 w-full rounded-lg border border-[#d8ceb8] bg-white/60 px-3 py-2.5 text-brown focus:border-[#c8a040] focus:outline-none"
+              />
+              <p className="mt-1 text-xs text-brown-muted">
+                {editionTotal === 1
+                  ? "1 of 1 — this piece is personal and won't be listed for sale"
+                  : `${editionTotal} editions — you'll be able to list this for sale from your dashboard`}
+              </p>
+          </label>
           </div>
 
           <div className="mt-4 flex items-center justify-between gap-2">
