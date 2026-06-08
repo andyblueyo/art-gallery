@@ -9,6 +9,8 @@ export interface Profile {
   view_count: number;
   created_at: string;
   layout_mode?: string | null;
+  coin_balance: number;       
+  tier?: string | null;   
 }
 
 export interface Artwork {

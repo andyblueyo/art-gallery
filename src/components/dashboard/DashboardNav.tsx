@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 
 interface DashboardNavProps {
   handle: string;
+  coinBalance: number;
 }
 
 function getGalleryUrlClient(handle: string): string {
@@ -22,7 +23,7 @@ function getGalleryUrlClient(handle: string): string {
   return `https://${handle}.${hostname}`;
 }
 
-export function DashboardNav({ handle }: DashboardNavProps) {
+export function DashboardNav({ handle, coinBalance }: DashboardNavProps) {
   const router = useRouter();
 
   async function signOut() {
@@ -40,6 +41,7 @@ export function DashboardNav({ handle }: DashboardNavProps) {
         gallery club
       </Link>
       <div className="flex items-center gap-4 sm:gap-6">
+      <span className="text-sm text-brown-muted">✦ {coinBalance} coins</span>
         <a
           href={galleryUrl}
           target="_blank"

@@ -83,7 +83,7 @@ export function Dashboard({ userId, initialProfile }: DashboardProps) {
   return (
     <div className="min-h-screen bg-[#f5f0e8] text-[#2a2018]">
       <div className="mx-auto max-w-[860px] px-5 py-8 sm:px-6 sm:py-10 space-y-10">
-        <DashboardNav handle={profile.handle} />
+        <DashboardNav handle={profile.handle} coinBalance={profile.coin_balance ?? 0}/>
         <ProfileCard profile={profile} onProfileUpdate={setProfile} />
         <StatsRow
           pieceCount={realPieces.length}
@@ -101,6 +101,7 @@ export function Dashboard({ userId, initialProfile }: DashboardProps) {
           loading={loading}
           onUpdate={handleUpdate}
           onDelete={handleDelete}
+          userId={userId}
         />
       </div>
     </div>

@@ -8,6 +8,7 @@ interface MyPiecesProps {
   loading: boolean;
   onUpdate: (artwork: DashboardArtwork) => void;
   onDelete: (id: string) => void;
+  userId: string
 }
 
 export function MyPieces({
@@ -15,6 +16,7 @@ export function MyPieces({
   loading,
   onUpdate,
   onDelete,
+  userId,
 }: MyPiecesProps) {
   if (loading) {
     return (
@@ -62,6 +64,7 @@ export function MyPieces({
             isLast={index === sorted.length - 1}
             onUpdate={onUpdate}
             onDelete={onDelete}
+            userId={userId}
           />
         ))}
       </div>

@@ -11,6 +11,7 @@ interface ArtworkCardProps {
   isLast: boolean;
   onUpdate: (artwork: DashboardArtwork) => void;
   onDelete: (id: string) => void;
+  userId: string;
 }
 
 export function ArtworkCard({
@@ -19,6 +20,7 @@ export function ArtworkCard({
   isLast: _isLast,
   onUpdate,
   onDelete,
+  userId,
 }: ArtworkCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -26,6 +28,9 @@ export function ArtworkCard({
   const [medium, setMedium] = useState(artwork.medium);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [forSale, setForSale] = useState(artwork.for_sale ?? false);
+  const [priceCoins, setPriceCoins] = useState<number | string>(artwork.price_coins ?? "");
+  const priceDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -82,6 +87,51 @@ export function ArtworkCard({
       setDeleting(false);
       setConfirmDelete(false);
     }
+  }
+
+  async function handleToggleForSale(newValue: boolean) {
+    setForSale(newValue);
+    if (!newValue) setPriceCoins("");
+    onUpdate({ ...artwork, for_sale: newValue, price_coins: newValue ? (typeof priceCoins === "number" ? priceCoins : null) : null });
+
+    const supabase = createClient();
+
+    const { error: artworkError } = await supabase
+      .from("artworks")
+      .update({ for_sale: newValue, price_coins: newValue ? (typeof priceCoins === "number" ? priceCoins : null) : null })
+      .eq("id", artwork.id);
+
+    if (artworkError) {
+      setForSale(!newValue);
+      if (!newValue) setPriceCoins(artwork.price_coins ?? "");
+      onUpdate({ ...artwork });
+      return;
+    }
+
+    await supabase
+      .from("inventory_items")
+      .update({ listed_for_sale: newValue })
+      .eq("artwork_id", artwork.id)
+      .eq("owned_by", userId);
+  }
+
+  function handlePriceChange(val: string) {
+    setPriceCoins(val);
+    if (priceDebounceRef.current) clearTimeout(priceDebounceRef.current);
+    const parsed = parseInt(val, 10);
+    if (!val || isNaN(parsed) || parsed < 1) return;
+    priceDebounceRef.current = setTimeout(async () => {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("artworks")
+        .update({ price_coins: parsed })
+        .eq("id", artwork.id)
+        .select()
+        .single();
+      if (!error && data) {
+        onUpdate({ ...artwork, ...(data as DashboardArtwork), for_sale: forSale });
+      }
+    }, 800);
   }
 
   const isPdf = artwork.file_type === "pdf";
@@ -173,6 +223,37 @@ export function ArtworkCard({
             <p className="mt-1 text-xs text-brown-muted">
               {hearts} {hearts === 1 ? "heart" : "hearts"}
             </p>
+            {(artwork.edition_total ?? 1) === 1 ? (
+              <p className="mt-1 text-xs text-brown-muted">1 of 1</p>
+            ) : (
+              <div className="mt-2 space-y-2">
+                <p className="text-xs text-brown-muted">
+                  {artwork.editions_remaining} of {artwork.edition_total} remaining
+                </p>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={forSale}
+                    onChange={(e) => handleToggleForSale(e.target.checked)}
+                    className="rounded"
+                  />
+                  <span className="text-xs text-brown">for sale</span>
+                </label>
+                {forSale && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-brown-muted">✦</span>
+                    <input
+                      type="number"
+                      min={1}
+                      value={priceCoins}
+                      onChange={(e) => handlePriceChange(e.target.value)}
+                      placeholder="price in coins"
+                      className="w-full rounded border border-[#d8ceb8] px-2 py-1 text-xs"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>
