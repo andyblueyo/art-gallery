@@ -2,14 +2,15 @@ import type { Artwork, Profile } from "@/lib/types";
 
 const DEMO_PROFILE: Profile = {
   id: "00000000-0000-0000-0000-000000000001",
-  handle: "maya-lin",
-  display_name: "maya lin",
+  handle: "test-art",
+  display_name: "art test",
   bio: "Watercolor and ink artist based in Portland. I paint the quiet moments — morning light through windows, cups of tea, hands holding books.",
   location: "portland, or",
-  instagram_url: "https://instagram.com/mayalin.art",
+  instagram_url: "https://instagram.com/test",
   avatar_url: "",
   view_count: 247,
   created_at: "2025-01-15T00:00:00Z",
+  coin_balance: 0
 };
 
 const DEMO_ARTWORKS: Artwork[] = [
@@ -92,6 +93,7 @@ const MIKA_PROFILE: Profile = {
   avatar_url: "",
   view_count: 412,
   created_at: "2025-01-20T00:00:00Z",
+  coin_balance: 0
 };
 
 const MIKA_ARTWORKS: Artwork[] = [
