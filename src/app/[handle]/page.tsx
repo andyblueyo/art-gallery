@@ -67,6 +67,9 @@ export default async function PublicGalleryPage({ params }: PageProps) {
 
   let isOwner = false;
   let isLoggedIn = false;
+  let collectorCoinBalance: number | null = null;
+  let collectableItems: Record<string, string> = {};
+
   if (isSupabaseConfigured()) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -80,6 +83,29 @@ export default async function PublicGalleryPage({ params }: PageProps) {
         .single();
 
       isOwner = userProfile?.handle === gallery.profile.handle;
+
+      if (!isOwner) {
+        const [{ data: viewerProfile }, { data: items }] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("coin_balance")
+            .eq("id", user.id)
+            .single(),
+          supabase
+            .from("inventory_items")
+            .select("id, artwork_id")
+            .eq("owned_by", gallery.profile.id)
+            .eq("listed_for_sale", true),
+        ]);
+
+        collectorCoinBalance = viewerProfile?.coin_balance ?? 0;
+
+        for (const item of items ?? []) {
+          if (!collectableItems[item.artwork_id]) {
+            collectableItems[item.artwork_id] = item.id;
+          }
+        }
+      }
     }
   }
 
@@ -115,6 +141,8 @@ export default async function PublicGalleryPage({ params }: PageProps) {
         isLoggedIn={isLoggedIn}
         profileId={gallery.profile.id}
         layoutMode={gallery.profile.layout_mode ?? "auto"}
+        collectorCoinBalance={collectorCoinBalance}
+        collectableItems={collectableItems}
       />
     </>
   );

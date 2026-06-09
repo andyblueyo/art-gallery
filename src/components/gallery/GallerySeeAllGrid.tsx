@@ -3,12 +3,15 @@
 import Image from "next/image";
 import type { Artwork } from "@/lib/types";
 import { HeartButton } from "@/components/ui/HeartButton";
+import { CollectButton } from "@/components/gallery/CollectButton";
 
 interface GallerySeeAllGridProps {
   artworks: Artwork[];
   onClose: () => void;
   isOwner?: boolean;
   isLoggedIn?: boolean;
+  collectableItems?: Record<string, string>;
+  collectorCoinBalance?: number;
 }
 
 export function GallerySeeAllGrid({
@@ -16,6 +19,8 @@ export function GallerySeeAllGrid({
   onClose,
   isOwner = false,
   isLoggedIn = false,
+  collectableItems = {},
+  collectorCoinBalance = 0,
 }: GallerySeeAllGridProps) {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-[#f5f0e8]">
@@ -75,6 +80,17 @@ export function GallerySeeAllGrid({
               <p className="font-medium text-sm text-brown">{art.title}</p>
               {art.medium && (
                 <p className="text-xs text-brown-muted capitalize">{art.medium}</p>
+              )}
+              {!isOwner && collectableItems[art.id] && art.for_sale && art.price_coins != null && (
+                <div className="mt-2">
+                  <CollectButton
+                    inventoryItemId={collectableItems[art.id]}
+                    artworkId={art.id}
+                    priceCoins={art.price_coins}
+                    editionsRemaining={art.editions_remaining ?? 0}
+                    collectorCoinBalance={collectorCoinBalance}
+                  />
+                </div>
               )}
             </div>
           </article>

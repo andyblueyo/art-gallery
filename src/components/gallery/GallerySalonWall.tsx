@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import React from "react";
 import { useRouter } from "next/navigation";
 import type { Artwork } from "@/lib/types";
@@ -16,6 +16,7 @@ import {
 import { DEFAULT_FRAME_FILE } from "@/lib/frames";
 import { createClient } from "@/lib/supabase/client";
 import { HeartButton } from "@/components/ui/HeartButton";
+import { CollectButton } from "@/components/gallery/CollectButton";
 
 interface GallerySalonWallProps {
   artist: ArtistBubbleData;
@@ -29,6 +30,8 @@ interface GallerySalonWallProps {
   isLoggedIn?: boolean;
   profileId?: string;
   layoutMode?: string;
+  collectorCoinBalance?: number | null;
+  collectableItems?: Record<string, string>;
 }
 
 export function GallerySalonWall({
@@ -43,6 +46,8 @@ export function GallerySalonWall({
   isLoggedIn = false,
   profileId = "",
   layoutMode = "auto",
+  collectorCoinBalance = null,
+  collectableItems = {},
 }: GallerySalonWallProps) {
   console.log("GallerySalonWall props:", { isOwner, isLoggedIn });
   const router = useRouter();
@@ -53,6 +58,11 @@ export function GallerySalonWall({
 
   const hasMoreOnGrid = totalPieceCount > layout.length;
   const isCustomLayout = layoutMode === "custom";
+
+  const artworkMap = useMemo(
+    () => new Map(allArtworks.map((a) => [a.id, a])),
+    [allArtworks]
+  );
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -115,6 +125,8 @@ export function GallerySalonWall({
         onClose={() => setShowAllGrid(false)}
         isOwner={isOwner}
         isLoggedIn={isLoggedIn}
+        collectableItems={collectableItems}
+        collectorCoinBalance={collectorCoinBalance ?? undefined}
       />
     );
   }
@@ -126,6 +138,7 @@ export function GallerySalonWall({
         <GalleryEditorCanvas
           artworks={allArtworks}
           profileId={profileId}
+          galleryPieces={galleryPieces}
           onCancel={() => setEditMode(false)}
           onSaved={() => setEditMode(false)}
           onReset={handleReset}
@@ -219,6 +232,8 @@ export function GallerySalonWall({
             artistName={artist.name}
             isOwner={isOwner}
             isLoggedIn={isLoggedIn}
+            collectableItems={collectableItems}
+            collectorCoinBalance={collectorCoinBalance}
           />
         ) : layout.length === 0 ? (
           <main className="relative z-10 flex min-h-[100dvh] items-center justify-center px-6 pt-24">
@@ -263,6 +278,19 @@ export function GallerySalonWall({
                           isLoggedIn={isLoggedIn}
                         />
                     )}
+                    {!isOwner && collectableItems[art.id] && (() => {
+                      const full = artworkMap.get(art.id);
+                      if (!full?.for_sale || !full.price_coins) return null;
+                      return (
+                        <CollectButton
+                          inventoryItemId={collectableItems[art.id]}
+                          artworkId={art.id}
+                          priceCoins={full.price_coins}
+                          editionsRemaining={full.editions_remaining ?? 0}
+                          collectorCoinBalance={collectorCoinBalance ?? 0}
+                        />
+                      );
+                    })()}
                   </div>
                 </div>
               );
@@ -305,6 +333,19 @@ export function GallerySalonWall({
                             isLoggedIn={isLoggedIn}
                           />
                       )}
+                      {!isOwner && collectableItems[art.id] && (() => {
+                        const full = artworkMap.get(art.id);
+                        if (!full?.for_sale || !full.price_coins) return null;
+                        return (
+                          <CollectButton
+                            inventoryItemId={collectableItems[art.id]}
+                            artworkId={art.id}
+                            priceCoins={full.price_coins}
+                            editionsRemaining={full.editions_remaining ?? 0}
+                            collectorCoinBalance={collectorCoinBalance ?? 0}
+                          />
+                        );
+                      })()}
                     </div>
                   </div>
                 );
@@ -335,11 +376,15 @@ function CustomLayoutView({
   artistName,
   isOwner = false,
   isLoggedIn = false,
+  collectableItems = {},
+  collectorCoinBalance = null,
 }: {
   pieces: GalleryPiece[];
   artistName: string;
   isOwner?: boolean;
   isLoggedIn?: boolean;
+  collectableItems?: Record<string, string>;
+  collectorCoinBalance?: number | null;
 }) {
   const [hoveredId, setHoveredId] = React.useState<string | null>(null);
   const scrollRef = React.useRef<HTMLDivElement>(null);
@@ -452,6 +497,15 @@ function CustomLayoutView({
                       isOwner={isOwner}
                       initialHeartCount={art.heart_count ?? 0}
                       isLoggedIn={isLoggedIn}
+                    />
+                  )}
+                  {!isOwner && piece.inventory_item?.artwork_id && collectableItems[piece.inventory_item.artwork_id] && art.for_sale && art.price_coins != null && (
+                    <CollectButton
+                      inventoryItemId={collectableItems[piece.inventory_item.artwork_id]}
+                      artworkId={art.id}
+                      priceCoins={art.price_coins}
+                      editionsRemaining={art.editions_remaining ?? 0}
+                      collectorCoinBalance={collectorCoinBalance ?? 0}
                     />
                   )}
                 </div>

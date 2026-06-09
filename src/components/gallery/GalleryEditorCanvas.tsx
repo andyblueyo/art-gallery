@@ -5,7 +5,7 @@ import Draggable from "react-draggable";
 import type { DraggableData, DraggableEvent } from "react-draggable";
 import { FramedArtwork } from "./FramedArtwork";
 import { createClient } from "@/lib/supabase/client";
-import type { Artwork } from "@/lib/types";
+import type { Artwork, GalleryPiece } from "@/lib/types";
 import { DEFAULT_FRAME_FILE, getFrameConfig } from "@/lib/frames";
 import { useRouter } from "next/navigation";
 
@@ -42,23 +42,23 @@ interface CanvasItem {
 interface Props {
   artworks: Artwork[];
   profileId: string;
+  galleryPieces?: GalleryPiece[]; 
   onCancel: () => void;
   onSaved: () => void;
   onReset?: () => void;
 }
 
-export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved, onReset }: Props) {
+export function GalleryEditorCanvas({ artworks, profileId, galleryPieces, onCancel, onSaved, onReset }: Props) {
   const router = useRouter();
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  // const [canvasDims, setCanvasDims] = useState(() => ({
-  //   width: typeof window !== "undefined" ? window.innerWidth : 1200,
-  //   height: typeof window !== "undefined" ? Math.max(window.innerHeight - 56, 400) : 744,
-  // }));
   const [canvasDims] = useState({ width: 1400, height: 1200 });
 
   const [items, setItems] = useState<CanvasItem[]>(() =>
     artworks.map((art, i) => {
+      const saved = galleryPieces?.find(
+        p => p.inventory_item?.artwork_id === art.id  // or p.inventory_item?.artwork.id
+      );
       const def = DEFAULT_POSITIONS[i % DEFAULT_POSITIONS.length];
       return {
         id: art.id,
@@ -67,11 +67,11 @@ export function GalleryEditorCanvas({ artworks, profileId, onCancel, onSaved, on
         src: art.file_url,
         fileType: art.file_type,
         frame_file: art.frame_file || DEFAULT_FRAME_FILE,
-        xPct: def.xPct,
-        yPct: def.yPct,
-        rotation: def.rot,
-        scale: 1,
-        zIndex: i + 1,
+        xPct: saved?.position_x ?? def.xPct,
+        yPct: saved?.position_y ?? def.yPct,
+        rotation: saved?.rotation ?? def.rot,
+        scale: saved?.scale ?? 1,
+        zIndex: saved?.z_index ?? i + 1,
       };
     })
   );
