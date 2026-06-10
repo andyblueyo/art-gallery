@@ -547,10 +547,14 @@ function CustomLayoutView({
                   height: `${Math.round(220 * 1.7)}px`,
                   zIndex: hoveredId === art.id ? 9999 : pieces.length + i + 1,
                 }}
-                onMouseEnter={() => setHoveredId(art.id)}
+                onMouseEnter={() => handleMouseEnter(art.id)}
                 onMouseLeave={() => setHoveredId(null)}
               >
-                <div style={{ transform: `rotate(${def.rot}deg)`, transformOrigin: "top left" }}>
+                <div
+                  ref={(el) => { frameRefs.current[art.id] = el; }}
+                  data-scale="1"
+                  style={{ transform: `rotate(${def.rot}deg)`, transformOrigin: "top left" }}
+                >
                   <FramedArtwork
                     frame_file={art.frame_file || DEFAULT_FRAME_FILE}
                     artSrc={art.file_url}
@@ -565,7 +569,7 @@ function CustomLayoutView({
                 <div
                   style={{
                     position: "absolute",
-                    top: `${220 + 8}px`,
+                    top: `${tooltipTops[art.id] ?? 220 + 8}px`,
                     left: "50%",
                     transform: "translateX(-50%)",
                     zIndex: 20,
