@@ -132,5 +132,6 @@ export async function getGalleryPieces(galleryId: string): Promise<GalleryPiece[
     console.error("[data] getGalleryPieces error:", error);
     return [];
   }
+  console.log("[getGalleryPieces] first piece raw:", JSON.stringify(data?.[0], null, 2));
   return (data ?? []) as unknown as GalleryPiece[];
 }
