@@ -544,8 +544,10 @@ function CustomLayoutView({
                   left: `${def.xPct}%`,
                   top: `${def.yPct}%`,
                   width: `${Math.round(220)}px`,
-                  zIndex: pieces.length + i + 1,
+                  zIndex: hoveredId === art.id ? 9999 : pieces.length + i + 1,
                 }}
+                onMouseEnter={() => setHoveredId(art.id)}
+                onMouseLeave={() => setHoveredId(null)}
               >
                 <div style={{ transform: `rotate(${def.rot}deg)`, transformOrigin: "top left" }}>
                   <FramedArtwork
@@ -558,6 +560,28 @@ function CustomLayoutView({
                     fileType={art.file_type}
                     showTooltip={false}
                   />
+                </div>
+                <div
+                  style={{
+                    position: "absolute",
+                    top: `${220 + 8}px`,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    zIndex: 20,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    opacity: hoveredId === art.id ? 1 : 0,
+                    transition: "opacity 0.15s",
+                    pointerEvents: hoveredId === art.id ? "auto" : "none",
+                    whiteSpace: "nowrap",
+                  }}
+                  className="[&_.opacity-0]:opacity-100"
+                >
+                  <div className="rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-3 py-2 text-center shadow-lg">
+                    <p className="font-serif text-sm text-[#f5e6c8]">{art.title}</p>
+                    {art.medium && <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{art.medium}</p>}
+                  </div>
                 </div>
               </div>
             );
