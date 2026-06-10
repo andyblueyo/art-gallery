@@ -176,7 +176,8 @@ export function GalleryEditorCanvas({ artworks, profileId, galleryPieces, onCanc
             .select("id")
             .eq("artwork_id", item.id)
             .eq("owned_by", profileId)
-            .single();
+            .limit(1)
+            .maybeSingle();
 
           if (!inv) return null;
 
