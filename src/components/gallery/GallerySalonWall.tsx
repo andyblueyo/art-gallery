@@ -594,7 +594,16 @@ function CustomLayoutView({
                       initialHeartCount={art.heart_count ?? 0}
                       isLoggedIn={isLoggedIn}
                     />
-                  )}  
+                  )} 
+                  {!isOwner && collectableItems[art.id] && art.for_sale && art.price_coins != null && (
+                    <CollectButton
+                      inventoryItemId={collectableItems[art.id]}
+                      artworkId={art.id}
+                      priceCoins={art.price_coins}
+                      editionsRemaining={art.editions_remaining ?? 0}
+                      collectorCoinBalance={collectorCoinBalance ?? 0}
+                    />
+                  )} 
                 </div>
               </div>
             );
