@@ -544,6 +544,7 @@ function CustomLayoutView({
                   left: `${def.xPct}%`,
                   top: `${def.yPct}%`,
                   width: `${Math.round(220)}px`,
+                  height: `${Math.round(220 * 1.7)}px`,
                   zIndex: hoveredId === art.id ? 9999 : pieces.length + i + 1,
                 }}
                 onMouseEnter={() => setHoveredId(art.id)}
@@ -582,6 +583,14 @@ function CustomLayoutView({
                     <p className="font-serif text-sm text-[#f5e6c8]">{art.title}</p>
                     {art.medium && <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{art.medium}</p>}
                   </div>
+                  {isLoggedIn && (     
+                    <HeartButton
+                      pieceId={art.id}
+                      isOwner={isOwner}
+                      initialHeartCount={art.heart_count ?? 0}
+                      isLoggedIn={isLoggedIn}
+                    />
+                  )}  
                 </div>
               </div>
             );
