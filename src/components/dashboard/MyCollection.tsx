@@ -15,7 +15,7 @@ export function MyCollection({ userId }: MyCollectionProps) {
       const supabase = createClient();
       const { data } = await supabase
         .from("inventory_items")
-        .select("id, edition_number, acquired_at, artworks(id, title, file_url, edition_total, profiles(handle, display_name))")
+        .select("id, edition_number, acquired_at, artworks(id, title, file_url, edition_total, artist_id, profiles(handle, display_name))")
         .eq("owned_by", userId)
         .order("acquired_at", { ascending: false });
         setPieces((data ?? []).filter((p: any) => p.artworks?.artist_id !== userId));
