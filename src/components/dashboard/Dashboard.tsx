@@ -8,6 +8,7 @@ import { ProfileCard } from "./ProfileCard";
 import { StatsRow } from "./StatsRow";
 import { UploadZone } from "./UploadZone";
 import { MyPieces } from "./MyPieces";
+import { MyCollection } from "./MyCollection";
 
 interface DashboardProps {
   userId: string;
@@ -20,6 +21,7 @@ export function Dashboard({ userId, initialProfile }: DashboardProps) {
   const [loading, setLoading] = useState(true);
   const [viewCount, setViewCount] = useState(0);
   const [heartTotal, setHeartTotal] = useState(0);
+  const [activeTab, setActiveTab] = useState<"pieces" | "collection">("pieces");
 
   const fetchData = useCallback(async () => {
     const supabase = createClient();
@@ -96,13 +98,42 @@ export function Dashboard({ userId, initialProfile }: DashboardProps) {
           onOptimisticFail={handleOptimisticFail}
           onUploaded={handleUploaded}
         />
-        <MyPieces
-          artworks={artworks}
-          loading={loading}
-          onUpdate={handleUpdate}
-          onDelete={handleDelete}
-          userId={userId}
-        />
+{/* Tab bar */}
+<div className="flex gap-8 border-b border-[#d8ceb8]">
+  <button
+    onClick={() => setActiveTab("pieces")}
+    className={`pb-2 text-sm font-serif text-xl transition-colors ${
+      activeTab === "pieces"
+        ? "text-brown border-b-2 border-[#2a2018] -mb-px"
+        : "text-brown-muted"
+    }`}
+  >
+    my pieces
+  </button>
+  <button
+    onClick={() => setActiveTab("collection")}
+    className={`pb-2 text-sm font-serif text-xl transition-colors ${
+      activeTab === "collection"
+        ? "text-brown border-b-2 border-[#2a2018] -mb-px"
+        : "text-brown-muted"
+    }`}
+  >
+    my collection
+  </button>
+</div>
+
+{activeTab === "pieces" && (
+  <MyPieces
+    artworks={artworks}
+    loading={loading}
+    onUpdate={handleUpdate}
+    onDelete={handleDelete}
+    userId={userId}
+  />
+)}
+{activeTab === "collection" && (
+  <MyCollection userId={userId} />
+)}
       </div>
     </div>
   );
