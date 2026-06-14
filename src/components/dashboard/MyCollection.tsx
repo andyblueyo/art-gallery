@@ -18,7 +18,7 @@ export function MyCollection({ userId }: MyCollectionProps) {
         .select("id, edition_number, acquired_at, artworks(id, title, file_url, edition_total, profiles(handle, display_name))")
         .eq("owned_by", userId)
         .order("acquired_at", { ascending: false });
-      setPieces(data ?? []);
+        setPieces((data ?? []).filter((p: any) => p.artworks?.artist_id !== userId));
       setLoading(false);
     }
     fetchCollection();
