@@ -58,11 +58,9 @@ export default async function PublicGalleryPage({ params }: PageProps) {
   });
 
   let galleryPieces: GalleryPiece[] = [];
-  if (gallery.profile.layout_mode === "custom") {
-    const primaryGalleryId = await getPrimaryGalleryId(gallery.profile.id);
-    if (primaryGalleryId) {
-      galleryPieces = await getGalleryPieces(primaryGalleryId);
-    }
+  const primaryGalleryId = await getPrimaryGalleryId(gallery.profile.id);
+  if (primaryGalleryId) {
+    galleryPieces = await getGalleryPieces(primaryGalleryId);
   }
 
   let isOwner = false;
