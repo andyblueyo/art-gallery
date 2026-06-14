@@ -57,7 +57,7 @@ export interface GalleryPiece {
   rotation: number;
   scale: number;
   z_index: number;
-  inventory_item?: InventoryItem & { artwork: Artwork };
+  inventory_item: InventoryItem & { artwork: Artwork };
 }
 
 export type FrameShape = "portrait" | "landscape" | "square";

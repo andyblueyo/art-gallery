@@ -136,9 +136,9 @@ export function GallerySalonWall({
       {/* ── Editor overlay ───────────────────────────────────── */}
       {editMode && (
         <GalleryEditorCanvas
-          artworks={allArtworks}
+          placedPieces={galleryPieces ?? []}
+          unplacedInventory={[]}
           profileId={profileId}
-          galleryPieces={galleryPieces}
           onCancel={() => setEditMode(false)}
           onSaved={() => setEditMode(false)}
           onReset={handleReset}

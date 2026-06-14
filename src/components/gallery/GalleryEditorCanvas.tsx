@@ -39,41 +39,47 @@ interface CanvasItem {
   zIndex: number;
 }
 
+interface InventoryTrayItem {
+  inventoryItemId: string;
+  artworkId: string;
+  title: string;
+  medium: string;
+  fileUrl: string;
+  fileType: "image" | "pdf";
+  frameFile: string;
+  editionNumber: number;
+}
+
 interface Props {
-  artworks: Artwork[];
+  placedPieces: GalleryPiece[];
+  unplacedInventory: InventoryTrayItem[];  
   profileId: string;
-  galleryPieces?: GalleryPiece[]; 
   onCancel: () => void;
   onSaved: () => void;
   onReset?: () => void;
 }
 
-export function GalleryEditorCanvas({ artworks, profileId, galleryPieces, onCancel, onSaved, onReset }: Props) {
+export function GalleryEditorCanvas({ placedPieces, unplacedInventory, profileId, onCancel, onSaved, onReset }: Props) {
   const router = useRouter();
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const [canvasDims] = useState({ width: 1400, height: 1200 });
 
   const [items, setItems] = useState<CanvasItem[]>(() =>
-    artworks.map((art, i) => {
-      const saved = galleryPieces?.find(
-        p => p.inventory_item?.artwork_id === art.id  // or p.inventory_item?.artwork.id
-      );
-      const def = DEFAULT_POSITIONS[i % DEFAULT_POSITIONS.length];
-      return {
-        id: art.id,
-        title: art.title,
-        medium: art.medium,
-        src: art.file_url,
-        fileType: art.file_type,
-        frame_file: art.frame_file || DEFAULT_FRAME_FILE,
-        xPct: saved?.position_x ?? def.xPct,
-        yPct: saved?.position_y ?? def.yPct,
-        rotation: saved?.rotation ?? def.rot,
-        scale: saved?.scale ?? 1,
-        zIndex: saved?.z_index ?? i + 1,
-      };
-    })
+    placedPieces.map((piece, i) => ({
+      id: piece.inventory_item.artwork_id,
+      inventoryItemId: piece.inventory_item_id,
+      title: piece.inventory_item.artwork.title,
+      medium: piece.inventory_item.artwork.medium,
+      src: piece.inventory_item.artwork.file_url,
+      fileType: piece.inventory_item.artwork.file_type,
+      frame_file: piece.inventory_item.artwork.frame_file || DEFAULT_FRAME_FILE,
+      xPct: piece.position_x,      // always real — no fallback needed
+      yPct: piece.position_y,
+      rotation: piece.rotation,
+      scale: piece.scale,
+      zIndex: piece.z_index ?? i + 1,
+    }))
   );
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
