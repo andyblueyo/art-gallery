@@ -112,7 +112,8 @@ export function ArtworkCard({
       .from("inventory_items")
       .update({ listed_for_sale: newValue })
       .eq("artwork_id", artwork.id)
-      .eq("owned_by", userId);
+      .eq("owned_by", userId)
+      .gt("edition_number", 0);  // never list ed. 0
   }
 
   function handlePriceChange(val: string) {
