@@ -60,6 +60,17 @@ export interface GalleryPiece {
   inventory_item: InventoryItem & { artwork: Artwork };
 }
 
+export interface InventoryTrayItem {
+  inventoryItemId: string;
+  artworkId: string;
+  editionNumber: number;
+  title: string;
+  medium: string;
+  fileUrl: string;
+  fileType: "image" | "pdf";
+  frameFile: string | null;
+}
+
 export type FrameShape = "portrait" | "landscape" | "square";
 
 export type GalleryView = "wall" | "grid" | "about";

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getGalleryByHandle, getPrimaryGalleryId, getGalleryPieces } from "@/lib/data";
-import type { GalleryPiece } from "@/lib/types";
+import type { GalleryPiece, InventoryTrayItem } from "@/lib/types";
 import { getGalleryUrl } from "@/lib/url";
 import { ViewCounter } from "@/components/gallery/ViewCounter";
 import { GallerySalonWall } from "@/components/gallery/GallerySalonWall";
@@ -106,6 +106,46 @@ export default async function PublicGalleryPage({ params }: PageProps) {
     }
   }
 
+  let unplacedInventory: InventoryTrayItem[] = [];
+  if (isOwner && primaryGalleryId) {
+    const supabase = await createClient();
+    const placedInventoryItemIds = galleryPieces.map(p => p.inventory_item_id);
+    
+    const { data: unplaced } = placedInventoryItemIds.length > 0
+      ? await supabase
+          .from("inventory_items")
+          .select(`
+            id, artwork_id, edition_number,
+            artwork:artworks (
+              id, title, medium, file_url, file_type, frame_file
+            )
+          `)
+          .eq("owned_by", gallery.profile.id)
+          .not("id", "in", `(${placedInventoryItemIds.join(",")})`)
+      : await supabase
+          .from("inventory_items")
+          .select(`
+            id, artwork_id, edition_number,
+            artwork:artworks (
+              id, title, medium, file_url, file_type, frame_file
+            )
+          `)
+          .eq("owned_by", gallery.profile.id);
+  
+    unplacedInventory = (unplaced ?? [])
+      .filter(item => item.artwork !== null)
+      .map(item => ({
+        inventoryItemId: item.id,
+        artworkId: item.artwork_id,
+        editionNumber: item.edition_number,
+        title: (item.artwork as any).title,
+        medium: (item.artwork as any).medium,
+        fileUrl: (item.artwork as any).file_url,
+        fileType: (item.artwork as any).file_type as "image" | "pdf",
+        frameFile: (item.artwork as any).frame_file,
+      }));
+  }
+
   const galleryUrl = await getGalleryUrl(gallery.profile.handle);
   const wallPieces = gallery.artworks.slice(0, GALLERY_WALL_MAX);
   const layout = buildGalleryLayout(wallPieces.length);
@@ -134,6 +174,7 @@ export default async function PublicGalleryPage({ params }: PageProps) {
         totalPieceCount={gallery.artworks.length}
         allArtworks={gallery.artworks}
         galleryPieces={galleryPieces}
+        unplacedInventory={unplacedInventory}  
         isOwner={isOwner}
         isLoggedIn={isLoggedIn}
         profileId={gallery.profile.id}

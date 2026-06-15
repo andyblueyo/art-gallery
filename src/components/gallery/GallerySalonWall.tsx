@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import React from "react";
 import { useRouter } from "next/navigation";
-import type { Artwork } from "@/lib/types";
-import type { GalleryPiece } from "@/lib/types";
+import type { Artwork, GalleryPiece, InventoryTrayItem } from "@/lib/types";
 import { FramedArtwork } from "./FramedArtwork";
 import { ArtistBubble, type ArtistBubbleData } from "./ArtistBubble";
 import { GallerySeeAllGrid } from "./GallerySeeAllGrid";
@@ -26,6 +25,7 @@ interface GallerySalonWallProps {
   totalPieceCount: number;
   allArtworks?: Artwork[];
   galleryPieces?: GalleryPiece[];
+  unplacedInventory?: InventoryTrayItem[]; 
   isOwner?: boolean;
   isLoggedIn?: boolean;
   profileId?: string;
