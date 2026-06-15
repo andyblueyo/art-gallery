@@ -583,7 +583,8 @@ export function UploadZone({
               </span>
               <input
                 type="number"
-                value={editionTotal}
+                value={editionTotal === 0 ? "" : editionTotal}
+                placeholder="0"
                 onChange={(e) => {
                   const val = e.target.value;
                   if (val === "") {
