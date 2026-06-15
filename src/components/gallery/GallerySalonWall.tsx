@@ -42,6 +42,7 @@ export function GallerySalonWall({
   totalPieceCount,
   allArtworks = [],
   galleryPieces,
+  unplacedInventory = [],
   isOwner = false,
   isLoggedIn = false,
   profileId = "",
@@ -137,7 +138,7 @@ export function GallerySalonWall({
       {editMode && (
         <GalleryEditorCanvas
           placedPieces={galleryPieces ?? []}
-          unplacedInventory={[]}
+          unplacedInventory={unplacedInventory}
           profileId={profileId}
           onCancel={() => setEditMode(false)}
           onSaved={() => setEditMode(false)}
