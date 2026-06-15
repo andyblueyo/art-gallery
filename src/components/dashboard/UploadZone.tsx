@@ -67,6 +67,7 @@ export function UploadZone({
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [editionTouched, setEditionTouched] = useState(false);
 
   const isPdf = file?.type === "application/pdf";
   const isGalleryFull = false;
@@ -87,6 +88,7 @@ export function UploadZone({
     setEditionTotal(0);
     setSuccess(false);
     setError(null);
+    setEditionTouched(false);
     if (inputRef.current) inputRef.current.value = "";
   }, [previewUrl, croppedPreviewUrl]);
 
@@ -583,9 +585,9 @@ export function UploadZone({
               </span>
               <input
                 type="number"
-                value={editionTotal === 0 ? "" : editionTotal}
-                placeholder="0"
+                value={editionTouched ? editionTotal : ""}
                 onChange={(e) => {
+                  setEditionTouched(true);
                   const val = e.target.value;
                   if (val === "") {
                     setEditionTotal(0);
@@ -593,17 +595,16 @@ export function UploadZone({
                     setEditionTotal(Math.min(10, Math.max(0, parseInt(val) || 0)));
                   }
                 }}
-                onBlur={() => {
-                  if (editionTotal < 0) setEditionTotal(0);
-                }}
                 min={0}
                 max={10}
                 className="mt-1 w-full rounded-lg border border-[#d8ceb8] bg-white/60 px-3 py-2.5 text-brown focus:border-[#c8a040] focus:outline-none"
               />
               <p className="mt-1 text-xs text-brown-muted">
-              {editionTotal === 0
-                ? "personal piece — won't be listed for sale"
-                : `${editionTotal} edition${editionTotal === 1 ? "" : "s"} available for sale — you'll keep a personal copy`}
+                {!editionTouched
+                  ? "enter 0 for a personal piece, or 1–10 to list editions for sale"
+                  : editionTotal === 0
+                  ? "personal piece — won't be listed for sale"
+                  : `${editionTotal} edition${editionTotal === 1 ? "" : "s"} available for sale — you'll keep a personal copy`}
               </p>
           </label>
           </div>
@@ -624,7 +625,7 @@ export function UploadZone({
                 if (isUploadingRef.current) return;
                 handleUpload();
               }}
-              disabled={!title.trim() || uploading}
+              disabled={!title.trim() || !editionTouched || uploading}
               className="flex items-center justify-center gap-2 rounded-lg bg-[#c8a040] px-6 py-2.5 text-sm font-medium text-[#1a1208] hover:bg-[#e0c060] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {uploading && <Spinner />}
