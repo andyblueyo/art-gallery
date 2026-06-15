@@ -134,6 +134,7 @@ export default async function PublicGalleryPage({ params }: PageProps) {
   
     unplacedInventory = (unplaced ?? [])
       .filter(item => item.artwork !== null)
+      .sort((a, b) => a.edition_number - b.edition_number) 
       .map(item => ({
         inventoryItemId: item.id,
         artworkId: item.artwork_id,
@@ -144,7 +145,10 @@ export default async function PublicGalleryPage({ params }: PageProps) {
         fileUrl: (item.artwork as any).file_url,
         fileType: (item.artwork as any).file_type as "image" | "pdf",
         frameFile: (item.artwork as any).frame_file,
-      }));
+      }))
+      .filter((item, index, arr) =>   // deduplicate by artworkId, keeping ed. 1
+      arr.findIndex(t => t.artworkId === item.artworkId) === index
+      );
   }
 
   const galleryUrl = await getGalleryUrl(gallery.profile.handle);
