@@ -32,6 +32,7 @@ interface CanvasItem {
   medium: string;
   src: string;
   fileType: "image" | "pdf";
+  ownedBy: string,
   frame_file: string;
   xPct: number;
   yPct: number;
@@ -64,6 +65,7 @@ export function GalleryEditorCanvas({ placedPieces, unplacedInventory, profileId
       src: piece.inventory_item.artwork.file_url,
       fileType: piece.inventory_item.artwork.file_type,
       frame_file: piece.inventory_item.artwork.frame_file || DEFAULT_FRAME_FILE,
+      ownedBy: piece.inventory_item.owned_by,
       xPct: piece.position_x,      // always real — no fallback needed
       yPct: piece.position_y,
       rotation: piece.rotation,
@@ -169,7 +171,9 @@ export function GalleryEditorCanvas({ placedPieces, unplacedInventory, profileId
       }
 
       // 2. Upsert canvas items into gallery_pieces
-      const validUpserts = items.map((item) => ({
+      const validUpserts = items
+      .filter(item => item.ownedBy === profileId)
+      .map((item) => ({
         gallery_id: gallery.id,
         inventory_item_id: item.inventoryItemId,
         position_x: item.xPct,
@@ -317,6 +321,7 @@ export function GalleryEditorCanvas({ placedPieces, unplacedInventory, profileId
                   fileUrl: item.src,
                   fileType: item.fileType,
                   frameFile: item.frame_file,
+                  ownedBy: item.ownedBy
                 }]);
                 setSelectedId(null);
               }}
@@ -529,6 +534,7 @@ export function GalleryEditorCanvas({ placedPieces, unplacedInventory, profileId
                       src: item.fileUrl,
                       fileType: item.fileType,
                       frame_file: item.frameFile ?? DEFAULT_FRAME_FILE,
+                      ownedBy: item.ownedBy, 
                       xPct: 40,
                       yPct: 35,
                       rotation: 0,

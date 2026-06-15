@@ -115,7 +115,7 @@ export default async function PublicGalleryPage({ params }: PageProps) {
       ? await supabase
           .from("inventory_items")
           .select(`
-            id, artwork_id, edition_number,
+            id, artwork_id, edition_number, owned_by,
             artwork:artworks (
               id, artist_id, title, medium, file_url, file_type, frame_file
             )
@@ -125,7 +125,7 @@ export default async function PublicGalleryPage({ params }: PageProps) {
       : await supabase
           .from("inventory_items")
           .select(`
-            id, artwork_id, edition_number,
+            id, artwork_id, edition_number, owned_by,
             artwork:artworks (
               id, artist_id, title, medium, file_url, file_type, frame_file
             )
@@ -139,6 +139,7 @@ export default async function PublicGalleryPage({ params }: PageProps) {
         inventoryItemId: item.id,
         artworkId: item.artwork_id,
         artistId: (item.artwork as any).artist_id,
+        ownedBy: item.owned_by,
         editionNumber: item.edition_number,
         title: (item.artwork as any).title,
         medium: (item.artwork as any).medium,

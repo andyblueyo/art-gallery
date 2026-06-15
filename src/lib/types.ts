@@ -64,6 +64,7 @@ export interface InventoryTrayItem {
   inventoryItemId: string;
   artworkId: string;
   artistId: string; 
+  ownedBy: string;
   editionNumber: number;
   title: string;
   medium: string;
