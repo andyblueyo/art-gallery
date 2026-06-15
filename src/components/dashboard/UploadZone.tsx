@@ -62,7 +62,7 @@ export function UploadZone({
   );
   const [title, setTitle] = useState("");
   const [medium, setMedium] = useState("");
-  const [editionTotal, setEditionTotal] = useState<number>(1);
+  const [editionTotal, setEditionTotal] = useState<number>(0);
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,7 +84,7 @@ export function UploadZone({
     setCroppedPreviewUrl(null);
     setTitle("");
     setMedium("");
-    setEditionTotal(1);
+    setEditionTotal(0);
     setSuccess(false);
     setError(null);
     if (inputRef.current) inputRef.current.value = "";
@@ -311,7 +311,7 @@ export function UploadZone({
       console.log("[upload] insert ok:", data);
 
       const failedEditions: number[] = [];
-      for (let i = 1; i <= editionTotal; i++) {
+      for (let i = 0; i <= editionTotal; i++) {
         const { error: inventoryError } = await supabase
           .from("inventory_items")
           .insert({
@@ -583,26 +583,26 @@ export function UploadZone({
               </span>
               <input
                 type="number"
-                value={editionTotal === 0 ? "" : editionTotal}
+                value={editionTotal}
                 onChange={(e) => {
                   const val = e.target.value;
                   if (val === "") {
                     setEditionTotal(0);
                   } else {
-                    setEditionTotal(Math.min(10, Math.max(1, parseInt(val) || 1)));
+                    setEditionTotal(Math.min(10, Math.max(0, parseInt(val) || 0)));
                   }
                 }}
                 onBlur={() => {
-                  if (editionTotal < 1) setEditionTotal(1);
+                  if (editionTotal < 0) setEditionTotal(0);
                 }}
-                min={1}
+                min={0}
                 max={10}
                 className="mt-1 w-full rounded-lg border border-[#d8ceb8] bg-white/60 px-3 py-2.5 text-brown focus:border-[#c8a040] focus:outline-none"
               />
               <p className="mt-1 text-xs text-brown-muted">
-                {editionTotal === 1
-                  ? "1 of 1 — this piece is personal and won't be listed for sale"
-                  : `${editionTotal} editions — you'll be able to list this for sale from your dashboard`}
+              {editionTotal === 0
+                ? "personal piece — won't be listed for sale"
+                : `${editionTotal} edition${editionTotal === 1 ? "" : "s"} available for sale — you'll keep a personal copy`}
               </p>
           </label>
           </div>

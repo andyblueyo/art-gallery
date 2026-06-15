@@ -223,7 +223,7 @@ export function ArtworkCard({
             <p className="mt-1 text-xs text-brown-muted">
               {hearts} {hearts === 1 ? "heart" : "hearts"}
             </p>
-            {(artwork.edition_total ?? 1) === 1 ? (
+            {(artwork.edition_total ?? 0) === 0 ? (
               <p className="mt-1 text-xs text-brown-muted">1 of 1</p>
             ) : (
               <div className="mt-2 space-y-2">
