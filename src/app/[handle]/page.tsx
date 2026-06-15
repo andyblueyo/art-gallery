@@ -117,7 +117,7 @@ export default async function PublicGalleryPage({ params }: PageProps) {
           .select(`
             id, artwork_id, edition_number,
             artwork:artworks (
-              id, title, medium, file_url, file_type, frame_file
+              id, artist_id, title, medium, file_url, file_type, frame_file
             )
           `)
           .eq("owned_by", gallery.profile.id)
@@ -127,7 +127,7 @@ export default async function PublicGalleryPage({ params }: PageProps) {
           .select(`
             id, artwork_id, edition_number,
             artwork:artworks (
-              id, title, medium, file_url, file_type, frame_file
+              id, artist_id, title, medium, file_url, file_type, frame_file
             )
           `)
           .eq("owned_by", gallery.profile.id);
@@ -137,6 +137,7 @@ export default async function PublicGalleryPage({ params }: PageProps) {
       .map(item => ({
         inventoryItemId: item.id,
         artworkId: item.artwork_id,
+        artistId: (item.artwork as any).artist_id,
         editionNumber: item.edition_number,
         title: (item.artwork as any).title,
         medium: (item.artwork as any).medium,

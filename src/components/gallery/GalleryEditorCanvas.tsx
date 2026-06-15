@@ -5,7 +5,7 @@ import Draggable from "react-draggable";
 import type { DraggableData, DraggableEvent } from "react-draggable";
 import { FramedArtwork } from "./FramedArtwork";
 import { createClient } from "@/lib/supabase/client";
-import type { Artwork, GalleryPiece } from "@/lib/types";
+import type { Artwork, GalleryPiece, InventoryTrayItem } from "@/lib/types";
 import { DEFAULT_FRAME_FILE, getFrameConfig } from "@/lib/frames";
 import { useRouter } from "next/navigation";
 
@@ -27,6 +27,7 @@ const DEFAULT_POSITIONS: { xPct: number; yPct: number; rot: number }[] = [
 
 interface CanvasItem {
   id: string;
+  inventoryItemId: string;
   title: string;
   medium: string;
   src: string;
@@ -37,17 +38,6 @@ interface CanvasItem {
   rotation: number;
   scale: number;
   zIndex: number;
-}
-
-interface InventoryTrayItem {
-  inventoryItemId: string;
-  artworkId: string;
-  title: string;
-  medium: string;
-  fileUrl: string;
-  fileType: "image" | "pdf";
-  frameFile: string;
-  editionNumber: number;
 }
 
 interface Props {
@@ -86,6 +76,10 @@ export function GalleryEditorCanvas({ placedPieces, unplacedInventory, profileId
   const [isSaving, setIsSaving] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [saveError, setSaveError] = useState(false);
+  const [trayItems, setTrayItems] = useState<InventoryTrayItem[]>(() =>
+    unplacedInventory.map(item => ({ ...item }))
+  );
+  const [trayOpen, setTrayOpen] = useState(true);
 
   const nodeRefsMap = useRef(new Map<string, React.RefObject<HTMLDivElement>>());
 
@@ -174,40 +168,41 @@ export function GalleryEditorCanvas({ placedPieces, unplacedInventory, profileId
         throw new Error("Could not find primary gallery");
       }
 
-      // 2. For each item, find its inventory_item_id and upsert into gallery_pieces
-      const upserts = await Promise.all(
-        items.map(async (item) => {
-          const { data: inv } = await supabase
-            .from("inventory_items")
-            .select("id")
-            .eq("artwork_id", item.id)
-            .eq("owned_by", profileId)
-            .limit(1)
-            .maybeSingle();
+      // 2. Upsert canvas items into gallery_pieces
+      const validUpserts = items.map((item) => ({
+        gallery_id: gallery.id,
+        inventory_item_id: item.inventoryItemId,
+        position_x: item.xPct,
+        position_y: item.yPct,
+        rotation: item.rotation,
+        scale: item.scale,
+        z_index: item.zIndex,
+      }));
 
-          if (!inv) return null;
+      if (validUpserts.length > 0) {
+        const { error: upsertError } = await supabase
+          .from("gallery_pieces")
+          .upsert(validUpserts, { onConflict: "inventory_item_id" });
 
-          return {
-            gallery_id: gallery.id,
-            inventory_item_id: inv.id,
-            position_x: item.xPct,
-            position_y: item.yPct,
-            rotation: item.rotation,
-            scale: item.scale,
-            z_index: item.zIndex,
-          };
-        })
-      );
+        if (upsertError) throw upsertError;
+      }
 
-      const validUpserts = upserts.filter((u): u is NonNullable<typeof u> => u !== null);
+      // 3. Delete orphaned gallery_pieces rows
+      if (items.length === 0) {
+        await supabase
+          .from("gallery_pieces")
+          .delete()
+          .eq("gallery_id", gallery.id);
+      } else {
+        const currentInventoryItemIds = validUpserts.map(u => u.inventory_item_id);
+        await supabase
+          .from("gallery_pieces")
+          .delete()
+          .eq("gallery_id", gallery.id)
+          .not("inventory_item_id", "in", `(${currentInventoryItemIds.join(",")})`);
+      }
 
-      const { error: upsertError } = await supabase
-        .from("gallery_pieces")
-        .upsert(validUpserts, { onConflict: "inventory_item_id" });
-
-      if (upsertError) throw upsertError;
-
-      // 3. Mark layout as custom
+      // 4. Mark layout as custom
       await supabase
         .from("profiles")
         .update({ layout_mode: "custom" })
@@ -302,6 +297,32 @@ export function GalleryEditorCanvas({ placedPieces, unplacedInventory, profileId
                 ↓
               </button>
             </div>
+
+            {/* Store in inventory */}
+            <button
+              className={`${btnBase} text-[#f5e6c8]/50`}
+              title="Store in inventory"
+              onClick={() => {
+                if (!selectedId) return;
+                const item = items.find(i => i.id === selectedId);
+                if (!item) return;
+                setItems(prev => prev.filter(i => i.id !== selectedId));
+                setTrayItems(prev => [...prev, {
+                  inventoryItemId: item.inventoryItemId,
+                  artworkId: item.id,
+                  artistId: "",
+                  editionNumber: 0,
+                  title: item.title,
+                  medium: item.medium,
+                  fileUrl: item.src,
+                  fileType: item.fileType,
+                  frameFile: item.frame_file,
+                }]);
+                setSelectedId(null);
+              }}
+            >
+              → store in inventory
+            </button>
           </div>
         ) : (
           <span className="hidden flex-1 text-center text-xs text-[#f5e6c8]/40 sm:block">
@@ -444,11 +465,124 @@ export function GalleryEditorCanvas({ placedPieces, unplacedInventory, profileId
         {items.length === 0 && (
           <div className="flex h-full items-center justify-center">
             <p className="font-serif text-lg text-[#f5e6c8]/50">
-              No artworks to arrange yet.
+              Open the tray below to add pieces to your wall.
             </p>
           </div>
         )}
       </div>
+      </div>
+
+      {/* ── Inventory Tray ──────────────────────────────────────── */}
+      <div
+        className="relative z-10 shrink-0"
+        style={{ background: "rgba(18,12,6,0.92)", borderTop: "0.5px solid rgba(200,160,64,0.2)" }}
+      >
+        {/* Header */}
+        <div className="flex items-center gap-2 px-4" style={{ height: 36 }}>
+          <span className="text-xs text-[#f5e6c8]/50">unplaced</span>
+          <span className="rounded-full px-1.5 py-0.5 text-[10px] bg-[#c8a040]/20 text-[#c8a040]/90">
+            {trayItems.length}
+          </span>
+          <button
+            className="ml-auto text-[#f5e6c8]/50 hover:text-[#f5e6c8]/80 transition-colors"
+            onClick={() => setTrayOpen(o => !o)}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 14 14"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              style={{ transform: trayOpen ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.2s" }}
+            >
+              <polyline points="3,5 7,9 11,5" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Items row */}
+        {trayOpen && (
+          <div className="flex gap-2 overflow-x-auto px-4 pb-3">
+            {trayItems.map(item => (
+              <div
+                key={item.inventoryItemId}
+                style={{
+                  width: 84,
+                  flexShrink: 0,
+                  background: "rgba(245,230,200,0.06)",
+                  border: "0.5px solid rgba(200,160,64,0.2)",
+                  borderRadius: 6,
+                  overflow: "hidden",
+                }}
+              >
+                {/* Thumbnail */}
+                <div
+                  className="relative cursor-pointer"
+                  style={{ height: 64, overflow: "hidden" }}
+                  onClick={() => {
+                    setItems(prev => [...prev, {
+                      id: item.artworkId,
+                      inventoryItemId: item.inventoryItemId,
+                      title: item.title,
+                      medium: item.medium,
+                      src: item.fileUrl,
+                      fileType: item.fileType,
+                      frame_file: item.frameFile ?? DEFAULT_FRAME_FILE,
+                      xPct: 40,
+                      yPct: 35,
+                      rotation: 0,
+                      scale: 1,
+                      zIndex: items.length + 1,
+                    }]);
+                    setTrayItems(prev => prev.filter(t => t.inventoryItemId !== item.inventoryItemId));
+                  }}
+                >
+                  {item.fileType === "pdf" ? (
+                    <div className="flex h-full items-center justify-center bg-[rgba(245,230,200,0.04)]">
+                      <span className="text-[#f5e6c8]/30 text-lg">▦</span>
+                    </div>
+                  ) : (
+                    <img
+                      src={item.fileUrl}
+                      alt={item.title}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  )}
+                  {/* + badge */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 6,
+                      right: 6,
+                      width: 22,
+                      height: 22,
+                      borderRadius: "50%",
+                      background: "#c8a040",
+                      color: "#120c06",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 14,
+                      fontWeight: "bold",
+                      lineHeight: 1,
+                      pointerEvents: "none",
+                    }}
+                  >
+                    +
+                  </div>
+                </div>
+                {/* Text */}
+                <div style={{ padding: "4px 6px" }}>
+                  <p className="text-[9px] font-serif text-[#f5e6c8]/70 truncate">{item.title}</p>
+                  <p className="text-[8px] text-[#f5e6c8]/30">
+                    ed. {item.editionNumber} · {item.artistId === profileId ? "yours" : "collected"}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Mobile: scale slider when selected */}

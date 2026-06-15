@@ -63,6 +63,7 @@ export interface GalleryPiece {
 export interface InventoryTrayItem {
   inventoryItemId: string;
   artworkId: string;
+  artistId: string; 
   editionNumber: number;
   title: string;
   medium: string;
