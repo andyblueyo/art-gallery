@@ -227,7 +227,7 @@ export function GallerySalonWall({
         )}
 
         {/* ── Custom layout ──────────────────────────────────── */}
-        {isCustomLayout && galleryPieces && galleryPieces.length > 0 ? (
+        {(isCustomLayout || (galleryPieces && galleryPieces.length > 0)) && galleryPieces && galleryPieces.length > 0 ? (
           <CustomLayoutView
             pieces={galleryPieces}
             artistName={artist.name}
@@ -235,7 +235,6 @@ export function GallerySalonWall({
             isLoggedIn={isLoggedIn}
             collectableItems={collectableItems}
             collectorCoinBalance={collectorCoinBalance}
-            allArtworks={allArtworks}
           />
         ) : layout.length === 0 ? (
           <main className="relative z-10 flex min-h-[100dvh] items-center justify-center px-6 pt-24">
@@ -380,7 +379,6 @@ function CustomLayoutView({
   isLoggedIn = false,
   collectableItems = {},
   collectorCoinBalance = null,
-  allArtworks = []
 }: {
   pieces: GalleryPiece[];
   artistName: string;
@@ -388,7 +386,6 @@ function CustomLayoutView({
   isLoggedIn?: boolean;
   collectableItems?: Record<string, string>;
   collectorCoinBalance?: number | null;
-  allArtworks?: Artwork[];
 }) {
   const [hoveredId, setHoveredId] = React.useState<string | null>(null);
   const scrollRef = React.useRef<HTMLDivElement>(null);
@@ -397,25 +394,6 @@ function CustomLayoutView({
 
   const CANVAS_W = 1400;
   const CANVAS_H = 1200;
-
-  const DEFAULT_POSITIONS = [
-    { xPct: 4, yPct: 8, rot: -2 },
-    { xPct: 22, yPct: 5, rot: 1 },
-    { xPct: 43, yPct: 6, rot: 0 },
-    { xPct: 62, yPct: 4, rot: -1 },
-    { xPct: 80, yPct: 7, rot: 2 },
-    { xPct: 5, yPct: 50, rot: 1 },
-    { xPct: 25, yPct: 47, rot: 0 },
-    { xPct: 50, yPct: 49, rot: -1 },
-    { xPct: 68, yPct: 46, rot: 1 },
-    { xPct: 84, yPct: 50, rot: -2 },
-  ];
-  
-  const placedArtworkIds = new Set(
-    pieces.map(p => p.inventory_item?.artwork_id).filter(Boolean)
-  );
-  
-  const unplacedArtworks = allArtworks.filter(a => !placedArtworkIds.has(a.id));
 
   const handleMouseEnter = (pieceId: string) => {
     setHoveredId(pieceId);
@@ -531,80 +509,6 @@ function CustomLayoutView({
                       collectorCoinBalance={collectorCoinBalance ?? 0}
                     />
                   )}
-                </div>
-              </div>
-            );
-          })}
-          {unplacedArtworks.map((art, i) => {
-            const def = DEFAULT_POSITIONS[i % DEFAULT_POSITIONS.length];
-            return (
-              <div
-                key={art.id}
-                style={{
-                  position: "absolute",
-                  left: `${def.xPct}%`,
-                  top: `${def.yPct}%`,
-                  width: `${Math.round(220)}px`,
-                  height: `${Math.round(220 * 1.7)}px`,
-                  zIndex: hoveredId === art.id ? 9999 : pieces.length + i + 1,
-                }}
-                onMouseEnter={() => handleMouseEnter(art.id)}
-                onMouseLeave={() => setHoveredId(null)}
-              >
-                <div
-                  ref={(el) => { frameRefs.current[art.id] = el; }}
-                  data-scale="1"
-                  style={{ transform: `rotate(${def.rot}deg)`, transformOrigin: "top left" }}
-                >
-                  <FramedArtwork
-                    frame_file={art.frame_file || DEFAULT_FRAME_FILE}
-                    artSrc={art.file_url}
-                    width={220}
-                    title={art.title}
-                    medium={art.medium}
-                    artistName={artistName}
-                    fileType={art.file_type}
-                    showTooltip={false}
-                  />
-                </div>
-                <div
-                  style={{
-                    position: "absolute",
-                    top: `${tooltipTops[art.id] ?? 220 + 8}px`,
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    zIndex: 20,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    opacity: hoveredId === art.id ? 1 : 0,
-                    transition: "opacity 0.15s",
-                    pointerEvents: hoveredId === art.id ? "auto" : "none",
-                    whiteSpace: "nowrap",
-                  }}
-                  className="[&_.opacity-0]:opacity-100"
-                >
-                  <div className="rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-3 py-2 text-center shadow-lg">
-                    <p className="font-serif text-sm text-[#f5e6c8]">{art.title}</p>
-                    {art.medium && <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{art.medium}</p>}
-                  </div>
-                  {isLoggedIn && (     
-                    <HeartButton
-                      pieceId={art.id}
-                      isOwner={isOwner}
-                      initialHeartCount={art.heart_count ?? 0}
-                      isLoggedIn={isLoggedIn}
-                    />
-                  )} 
-                  {!isOwner && collectableItems[art.id] && art.for_sale && art.price_coins != null && (
-                    <CollectButton
-                      inventoryItemId={collectableItems[art.id]}
-                      artworkId={art.id}
-                      priceCoins={art.price_coins}
-                      editionsRemaining={art.editions_remaining ?? 0}
-                      collectorCoinBalance={collectorCoinBalance ?? 0}
-                    />
-                  )} 
                 </div>
               </div>
             );

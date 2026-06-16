@@ -138,7 +138,11 @@ console.log("[unplaced] galleryPieces count:", galleryPieces.length);
   
     unplacedInventory = (unplaced ?? [])
       .filter(item => item.artwork !== null)
-      .sort((a, b) => a.edition_number - b.edition_number) 
+      .filter(item => {
+        const isOwnArtwork = (item.artwork as any).artist_id === gallery.profile.id;
+        return isOwnArtwork ? item.edition_number === 0 : true;
+      })
+      .sort((a, b) => a.edition_number - b.edition_number)
       .map(item => ({
         inventoryItemId: item.id,
         artworkId: item.artwork_id,
