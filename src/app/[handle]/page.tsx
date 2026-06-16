@@ -93,6 +93,7 @@ export default async function PublicGalleryPage({ params }: PageProps) {
             .from("inventory_items")
             .select("id, artwork_id")
             .eq("owned_by", gallery.profile.id)
+            .gt("edition_number", 0)
         ]);
 
         collectorCoinBalance = viewerProfile?.coin_balance ?? 0;
