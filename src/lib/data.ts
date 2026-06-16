@@ -115,23 +115,10 @@ export async function getGalleryPieces(galleryId: string): Promise<GalleryPiece[
   if (!isSupabaseConfigured()) return [];
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from("gallery_pieces")
-    .select(`
-      id, gallery_id, inventory_item_id, position_x, position_y, rotation, scale, z_index,
-      inventory_item:inventory_items (
-        id, owned_by, artwork_id, edition_number,
-        artwork:artworks (
-          id, artist_id, title, medium, description,
-          file_url, file_type, frame_file, heart_count, created_at,
-          for_sale, price_coins, edition_total, editions_remaining
-        )
-      )
-    `)
-    .eq("gallery_id", galleryId);
+    .rpc("get_gallery_pieces", { p_gallery_id: galleryId });
   if (error) {
     console.error("[data] getGalleryPieces error:", error);
     return [];
   }
-  console.log("[getGalleryPieces] first piece raw:", JSON.stringify(data?.[0], null, 2));
   return (data ?? []) as unknown as GalleryPiece[];
 }
