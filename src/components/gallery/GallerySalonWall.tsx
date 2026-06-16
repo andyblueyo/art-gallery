@@ -268,8 +268,8 @@ export function GallerySalonWall({
                   />
                   <div className="mt-3 flex items-center gap-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200 [&_.opacity-0]:opacity-100">
                     <div className="whitespace-nowrap rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-3 py-2 text-center shadow-lg">
-                      <p className="font-serif text-sm text-[#f5e6c8]">{art.title}</p>
-                      {art.medium && <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{art.medium}</p>}
+                    <p className="font-serif text-sm text-[#f5e6c8]">{art.title}</p>
+                    {art.medium && <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{art.medium}</p>}
                     </div>
                     {isLoggedIn && (
                         <HeartButton
@@ -460,16 +460,22 @@ function CustomLayoutView({
                     transformOrigin: "top left",
                   }}
                 >
+                <a 
+                  href={`https://${(art as any).artist_handle}.galleryclub.online`}
+                  style={{ display: "block" }}
+                  onClick={e => e.stopPropagation()}
+                >
                   <FramedArtwork
                     frame_file={art.frame_file || DEFAULT_FRAME_FILE}
                     artSrc={art.file_url}
                     width={baseWidth}
                     title={art.title}
                     medium={art.medium}
-                    artistName={artistName}
+                    artistName={(art as any).artist_display_name || artistName}
                     fileType={art.file_type}
                     showTooltip={false}
                   />
+                </a>
                 </div>
                 <div
                   style={{
@@ -489,8 +495,11 @@ function CustomLayoutView({
                   className="[&_.opacity-0]:opacity-100"
                 >
                   <div className="rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-3 py-2 text-center shadow-lg">
-                    <p className="font-serif text-sm text-[#f5e6c8]">{art.title}</p>
-                    {art.medium && <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{art.medium}</p>}
+                  <p className="font-serif text-sm text-[#f5e6c8]">{art.title}</p>
+                  {art.medium && <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{art.medium}</p>}
+                  <p className="mt-0.5 text-xs text-[#c8a040]/60">
+                    by {(art as any).artist_display_name || artistName}
+                  </p>
                   </div>
                   {isLoggedIn && (
                     <HeartButton
