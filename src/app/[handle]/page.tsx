@@ -110,6 +110,10 @@ export default async function PublicGalleryPage({ params }: PageProps) {
   if (isOwner && primaryGalleryId) {
     const supabase = await createClient();
     const placedInventoryItemIds = galleryPieces.map(p => p.inventory_item_id);
+
+    //delete after testing
+    console.log("[unplaced] placedInventoryItemIds:", placedInventoryItemIds);
+console.log("[unplaced] galleryPieces count:", galleryPieces.length);
     
     const { data: unplaced } = placedInventoryItemIds.length > 0
       ? await supabase
