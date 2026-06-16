@@ -202,7 +202,7 @@ console.log("[save] valid upserts after filter:", validUpserts.length);
           .delete()
           .eq("gallery_id", gallery.id);
       } else {
-        const currentInventoryItemIds = validUpserts.map(u => u.inventory_item_id);
+        const currentInventoryItemIds = items.map(i => i.inventoryItemId);
         await supabase
           .from("gallery_pieces")
           .delete()
