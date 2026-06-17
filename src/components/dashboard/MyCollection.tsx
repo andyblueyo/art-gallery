@@ -122,7 +122,7 @@ export function MyCollection({ userId }: MyCollectionProps) {
               <span className="font-medium text-brown">
                 {confirmingPiece.artworks.title}
               </span>{" "}
-              this will be removed from your collection and returned to the artist&apos;s gallery. no coins will be refunded. this cannot be undone.
+               will be removed from your collection and returned to the artist&apos;s gallery. no coins will be refunded. this cannot be undone.
             </p>
             {returnError && (
               <p className="text-red-500 text-xs">{returnError}</p>

@@ -62,24 +62,11 @@ export function ArtworkCard({
   async function handleDelete() {
     setDeleting(true);
     const supabase = createClient();
-
     try {
-      const path = extractStoragePath(artwork.file_url);
-      if (path) {
-        const { error: storageError } = await supabase.storage
-          .from("artworks")
-          .remove([path]);
-        if (storageError) {
-          console.error("[delete] storage removal failed:", storageError);
-        }
-      }
-
-      const { error: dbError } = await supabase
-        .from("artworks")
-        .delete()
-        .eq("id", artwork.id);
-      if (dbError) throw dbError;
-
+      const { error } = await supabase.rpc('remove_artwork', {
+        p_artwork_id: artwork.id
+      });
+      if (error) throw error;
       onDelete(artwork.id);
     } catch (err) {
       console.error("[delete] failed:", err);
