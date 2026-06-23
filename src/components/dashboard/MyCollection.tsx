@@ -21,6 +21,7 @@ export function MyCollection({ userId }: MyCollectionProps) {
         .from("inventory_items")
         .select("id, edition_number, acquired_at, artworks(id, title, file_url, edition_total, artist_id, profiles(handle, display_name))")
         .eq("owned_by", userId)
+        .is("deleted_at", null)
         .order("acquired_at", { ascending: false });
       setPieces((data ?? []).filter((p: any) => p.artworks?.artist_id !== userId));
       setLoading(false);
