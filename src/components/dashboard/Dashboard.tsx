@@ -31,6 +31,7 @@ export function Dashboard({ userId, initialProfile }: DashboardProps) {
         .from("artworks")
         .select("*")
         .eq("artist_id", userId)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false }),
       supabase
         .from("gallery_views")
