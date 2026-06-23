@@ -43,6 +43,7 @@ export async function getArtworksByArtistId(
     .from("artworks")
     .select("*")
     .eq("artist_id", artistId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   if (error) {

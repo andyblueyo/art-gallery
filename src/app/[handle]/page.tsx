@@ -122,20 +122,22 @@ console.log("[unplaced] galleryPieces count:", galleryPieces.length);
           .select(`
             id, artwork_id, edition_number, owned_by,
             artwork:artworks (
-              id, artist_id, title, medium, file_url, file_type, frame_file
+              id, artist_id, title, medium, file_url, file_type, frame_file, deleted_at
             )
           `)
           .eq("owned_by", gallery.profile.id)
+          .is("deleted_at", null)
           .not("id", "in", `(${placedInventoryItemIds.join(",")})`)
       : await supabase
           .from("inventory_items")
           .select(`
             id, artwork_id, edition_number, owned_by,
             artwork:artworks (
-              id, artist_id, title, medium, file_url, file_type, frame_file
+              id, artist_id, title, medium, file_url, file_type, frame_file, deleted_at
             )
           `)
-          .eq("owned_by", gallery.profile.id);
+          .eq("owned_by", gallery.profile.id)
+          .is("deleted_at", null);
   
     unplacedInventory = (unplaced ?? [])
       .filter(item => item.artwork !== null)
