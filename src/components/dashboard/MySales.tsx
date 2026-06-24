@@ -16,6 +16,7 @@ interface Transaction {
   created_at: string;
   to_user: string;
   from_user: string;
+  buyer: { handle: string } | null;
 }
 
 function TypeBadge({ type }: { type: string }) {
@@ -37,7 +38,7 @@ export function MySales({ userId }: MySalesProps) {
       const supabase = createClient();
       const { data } = await supabase
         .from("transactions")
-        .select("*")
+        .select("*, buyer:profiles!transactions_from_user_fkey(handle)")
         .or(
           `and(to_user.eq.${userId},type.eq.purchase),and(from_user.eq.${userId},type.eq.removal),and(to_user.eq.${userId},type.eq.return)`
         )
@@ -49,7 +50,6 @@ export function MySales({ userId }: MySalesProps) {
   }, [userId]);
 
   const purchaseRows = transactions.filter((t) => t.type === "purchase");
-  const returnRows = transactions.filter((t) => t.type === "return");
 
   const totalEarned = purchaseRows.reduce((sum, t) => sum + (t.amount ?? 0), 0);
   const editionsSold = purchaseRows.length;
@@ -57,8 +57,8 @@ export function MySales({ userId }: MySalesProps) {
   if (loading) {
     return (
       <section className="space-y-4">
-        <div className="grid grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
+        <div className="grid grid-cols-2 gap-4">
+          {[1, 2].map((i) => (
             <div key={i} className="h-20 rounded-xl bg-[#ede7da] animate-pulse" />
           ))}
         </div>
@@ -95,6 +95,7 @@ export function MySales({ userId }: MySalesProps) {
               <tr className="border-b border-[#d8ceb8] bg-[#ede7da]/50">
                 <th className="text-left px-4 py-3 text-xs text-brown-muted font-normal">artwork</th>
                 <th className="text-left px-4 py-3 text-xs text-brown-muted font-normal">edition</th>
+                <th className="text-left px-4 py-3 text-xs text-brown-muted font-normal">collector</th>
                 <th className="text-left px-4 py-3 text-xs text-brown-muted font-normal">date</th>
                 <th className="text-right px-4 py-3 text-xs text-brown-muted font-normal">amount</th>
                 <th className="text-right px-4 py-3 text-xs text-brown-muted font-normal">type</th>
@@ -126,6 +127,9 @@ export function MySales({ userId }: MySalesProps) {
                   </td>
                   <td className="px-4 py-3 text-brown-muted">
                     {t.edition_number != null ? `#${t.edition_number}` : "—"}
+                  </td>
+                  <td className="px-4 py-3 text-brown-muted">
+                    {t.buyer?.handle ? `@${t.buyer.handle}` : "—"}
                   </td>
                   <td className="px-4 py-3 text-brown-muted whitespace-nowrap">
                     {new Date(t.created_at).toLocaleDateString("en-US", {
