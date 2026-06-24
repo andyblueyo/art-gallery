@@ -43,14 +43,17 @@ export function MyPurchases({ userId }: MyPurchasesProps) {
       const { data: txData } = await supabase
         .from("transactions")
         .select("*")
-        .eq("from_user", userId)
-        .in("type", ["purchase", "removal"])
+        .or(
+          `and(from_user.eq.${userId},type.eq.purchase),and(to_user.eq.${userId},type.eq.removal)`
+        )
         .order("created_at", { ascending: false });
 
       const rows = (txData ?? []) as Transaction[];
       setTransactions(rows);
 
-      const artistIds = Array.from(new Set(rows.map((t) => t.to_user).filter(Boolean)));
+      const artistIds = Array.from(new Set(
+        rows.map((t) => t.type === "removal" ? t.from_user : t.to_user).filter(Boolean)
+      ));
       if (artistIds.length > 0) {
         const { data: profiles } = await supabase
           .from("profiles")
@@ -69,16 +72,17 @@ export function MyPurchases({ userId }: MyPurchasesProps) {
   }, [userId]);
 
   const purchaseRows = transactions.filter((t) => t.type === "purchase");
+  const removalRows = transactions.filter((t) => t.type === "removal");
 
-
-  const totalSpent = purchaseRows.reduce((sum, t) => sum + (t.amount ?? 0), 0);
-  const artworksCollected = purchaseRows.length;
+  const totalSpent = purchaseRows.reduce((sum, t) => sum + (t.amount ?? 0), 0)
+                   - removalRows.reduce((sum, t) => sum + (t.amount ?? 0), 0);
+  const artworksCollected = purchaseRows.length - removalRows.length;
 
   if (loading) {
     return (
       <section className="space-y-4">
-        <div className="grid grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
+        <div className="grid grid-cols-2 gap-4">
+          {[1, 2].map((i) => (
             <div key={i} className="h-20 rounded-xl bg-[#ede7da] animate-pulse" />
           ))}
         </div>
@@ -123,8 +127,9 @@ export function MyPurchases({ userId }: MyPurchasesProps) {
             </thead>
             <tbody>
               {transactions.map((t) => {
-                const artist = profileMap[t.to_user];
                 const isRemoval = t.type === "removal";
+                const artistId = isRemoval ? t.from_user : t.to_user;
+                const artist = profileMap[artistId];
                 return (
                   <tr
                     key={t.id}
@@ -132,27 +137,29 @@ export function MyPurchases({ userId }: MyPurchasesProps) {
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        {isRemoval && !t.artwork_image_url ? (
-                          <div className="w-10 h-10 rounded bg-[#ede7da] flex-shrink-0 flex items-center justify-center">
-                            <span className="text-[10px] text-brown-muted leading-tight text-center">unavail&shy;able</span>
-                          </div>
-                        ) : t.artwork_image_url ? (
+                        {isRemoval ? (
                           <img
-                            src={t.artwork_image_url}
+                            src="/art/no-file.png"
+                            alt=""
+                            className="w-10 h-10 rounded object-cover bg-[#ede7da] flex-shrink-0 opacity-40"
+                          />
+                        ) : (
+                          <img
+                            src={t.artwork_image_url ?? ""}
                             alt={t.artwork_title ?? ""}
                             className="w-10 h-10 rounded object-cover bg-[#ede7da] flex-shrink-0"
                           />
-                        ) : (
-                          <div className="w-10 h-10 rounded bg-[#ede7da] flex-shrink-0" />
                         )}
-                        <span className="text-[#2a2018]">{t.artwork_title ?? "—"}</span>
+                        <span className={isRemoval ? "text-brown-muted italic" : "text-[#2a2018]"}>
+                          {isRemoval ? "a piece was removed" : (t.artwork_title ?? "—")}
+                        </span>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-brown-muted">
-                      {t.edition_number != null ? `#${t.edition_number}` : "—"}
+                      {isRemoval ? "—" : (t.edition_number != null ? `#${t.edition_number}` : "—")}
                     </td>
                     <td className="px-4 py-3 text-brown-muted">
-                      {artist ? `@${artist.handle}` : "—"}
+                      {isRemoval ? "—" : (artist ? `@${artist.handle}` : "—")}
                     </td>
                     <td className="px-4 py-3 text-brown-muted whitespace-nowrap">
                       {new Date(t.created_at).toLocaleDateString("en-US", {
@@ -163,7 +170,7 @@ export function MyPurchases({ userId }: MyPurchasesProps) {
                     </td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
                       {isRemoval ? (
-                        <span className="text-green-700">{t.amount}</span>
+                        <span className="text-green-700">+{t.amount}</span>
                       ) : (
                         <span className="text-[#2a2018]">{t.amount}</span>
                       )}
