@@ -9,6 +9,8 @@ import { StatsRow } from "./StatsRow";
 import { UploadZone } from "./UploadZone";
 import { MyPieces } from "./MyPieces";
 import { MyCollection } from "./MyCollection";
+import { MySales } from "./MySales";
+import { MyPurchases } from "./MyPurchases";
 
 interface DashboardProps {
   userId: string;
@@ -21,7 +23,7 @@ export function Dashboard({ userId, initialProfile }: DashboardProps) {
   const [loading, setLoading] = useState(true);
   const [viewCount, setViewCount] = useState(0);
   const [heartTotal, setHeartTotal] = useState(0);
-  const [activeTab, setActiveTab] = useState<"pieces" | "collection">("pieces");
+  const [activeTab, setActiveTab] = useState<"pieces" | "collection" | "sales" | "purchases">("pieces");
 
   const fetchData = useCallback(async () => {
     const supabase = createClient();
@@ -121,6 +123,26 @@ export function Dashboard({ userId, initialProfile }: DashboardProps) {
   >
     my collection
   </button>
+  <button
+    onClick={() => setActiveTab("sales")}
+    className={`pb-2 text-sm font-serif text-xl transition-colors ${
+      activeTab === "sales"
+        ? "text-brown border-b-2 border-[#2a2018] -mb-px"
+        : "text-brown-muted"
+    }`}
+  >
+    sales
+  </button>
+  <button
+    onClick={() => setActiveTab("purchases")}
+    className={`pb-2 text-sm font-serif text-xl transition-colors ${
+      activeTab === "purchases"
+        ? "text-brown border-b-2 border-[#2a2018] -mb-px"
+        : "text-brown-muted"
+    }`}
+  >
+    purchases
+  </button>
 </div>
 
 {activeTab === "pieces" && (
@@ -134,6 +156,12 @@ export function Dashboard({ userId, initialProfile }: DashboardProps) {
 )}
 {activeTab === "collection" && (
   <MyCollection userId={userId} />
+)}
+{activeTab === "sales" && (
+  <MySales userId={userId} />
+)}
+{activeTab === "purchases" && (
+  <MyPurchases userId={userId} />
 )}
       </div>
     </div>
