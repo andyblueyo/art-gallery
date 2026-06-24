@@ -19,11 +19,6 @@ export default async function HomePage() {
   : null;
   return (
     <div style={{ backgroundColor: "#F2EDE3" }} className="min-h-screen flex flex-col">
-        {/* Maintenance Banner */}
-  <div className="w-full text-center py-2.5 px-6 text-[13px]"
-       style={{ backgroundColor: "#1a1a18", backgroundImage: 'repeating-linear-gradient(135deg, transparent, transparent 18px, rgba(255,255,255,0.025) 18px, rgba(255,255,255,0.025) 20px)', color: "#e8e2d9", letterSpacing: "0.02em" }}>
-    gallery club is undergoing renovations and will be at full service on June 20. thank you for your support!
-  </div>
       {/* Nav */}
       <nav className="border-b" style={{ borderColor: "#D3CEBF", color: "#2C2A22" }}>
         <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
