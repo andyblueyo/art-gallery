@@ -26,6 +26,7 @@ export function ArtworkCard({
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(artwork.title);
   const [medium, setMedium] = useState(artwork.medium);
+  const [editingPrice, setEditingPrice] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [forSale, setForSale] = useState(artwork.for_sale ?? false);
@@ -228,16 +229,37 @@ export function ArtworkCard({
                   <span className="text-xs text-brown">for sale</span>
                 </label>
                 {forSale && (
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs text-brown-muted">✦</span>
-                    <input
-                      type="number"
-                      min={1}
-                      value={priceCoins}
-                      onChange={(e) => handlePriceChange(e.target.value)}
-                      placeholder="price in coins"
-                      className="w-full rounded border border-[#d8ceb8] px-2 py-1 text-xs"
-                    />
+                  <div className="mt-1">
+                    {editingPrice ? (
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-brown-muted">✦</span>
+                        <input
+                          type="number"
+                          min={1}
+                          value={priceCoins}
+                          onChange={(e) => handlePriceChange(e.target.value)}
+                          placeholder="price in coins"
+                          autoFocus
+                          onBlur={() => setEditingPrice(false)}
+                          onKeyDown={(e) => { if (e.key === "Enter") setEditingPrice(false); }}
+                          className="w-full rounded border border-[#d8ceb8] px-2 py-1 text-xs"
+                        />
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setEditingPrice(true)}
+                        className="flex items-center gap-1 group"
+                      >
+                        <span className="text-xs text-brown-muted">✦</span>
+                        <span className="text-xs text-brown">
+                          {priceCoins !== "" ? `${priceCoins} coins` : "set price"}
+                        </span>
+                        <span className="text-xs text-brown-muted opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                          ✎
+                        </span>
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
