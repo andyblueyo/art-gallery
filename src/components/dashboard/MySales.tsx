@@ -53,7 +53,6 @@ export function MySales({ userId }: MySalesProps) {
 
   const totalEarned = purchaseRows.reduce((sum, t) => sum + (t.amount ?? 0), 0);
   const editionsSold = purchaseRows.length;
-  const totalReturned = returnRows.length;
 
   if (loading) {
     return (
@@ -74,18 +73,14 @@ export function MySales({ userId }: MySalesProps) {
 
   return (
     <section className="space-y-6">
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <div className="rounded-xl border border-[#d8ceb8] bg-white/30 p-4 text-center">
           <p className="font-serif text-2xl text-[#2a2018]">{totalEarned}</p>
           <p className="text-xs text-brown-muted mt-1">coins earned</p>
         </div>
         <div className="rounded-xl border border-[#d8ceb8] bg-white/30 p-4 text-center">
           <p className="font-serif text-2xl text-[#2a2018]">{editionsSold}</p>
-          <p className="text-xs text-brown-muted mt-1">editions sold</p>
-        </div>
-        <div className="rounded-xl border border-[#d8ceb8] bg-white/30 p-4 text-center">
-          <p className="font-serif text-2xl text-[#2a2018]">{totalReturned}</p>
-          <p className="text-xs text-brown-muted mt-1">total returned</p>
+          <p className="text-xs text-brown-muted mt-1">pieces sold</p>
         </div>
       </div>
 
@@ -141,9 +136,9 @@ export function MySales({ userId }: MySalesProps) {
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
                     {t.type === "removal" ? (
-                      <span className="text-red-500">−{t.amount}</span>
+                      <span className="text-red-500">{t.amount}</span>
                     ) : t.type === "purchase" ? (
-                      <span className="text-[#2a2018]">+{t.amount}</span>
+                      <span className="text-[#2a2018]">{t.amount}</span>
                     ) : (
                       <span className="text-brown-muted">—</span>
                     )}

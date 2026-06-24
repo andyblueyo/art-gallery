@@ -69,12 +69,10 @@ export function MyPurchases({ userId }: MyPurchasesProps) {
   }, [userId]);
 
   const purchaseRows = transactions.filter((t) => t.type === "purchase");
-  const removalRows = transactions.filter((t) => t.type === "removal");
+
 
   const totalSpent = purchaseRows.reduce((sum, t) => sum + (t.amount ?? 0), 0);
   const artworksCollected = purchaseRows.length;
-  const refundCount = removalRows.length;
-  const refundTotal = removalRows.reduce((sum, t) => sum + (t.amount ?? 0), 0);
 
   if (loading) {
     return (
@@ -95,7 +93,7 @@ export function MyPurchases({ userId }: MyPurchasesProps) {
 
   return (
     <section className="space-y-6">
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <div className="rounded-xl border border-[#d8ceb8] bg-white/30 p-4 text-center">
           <p className="font-serif text-2xl text-[#2a2018]">{totalSpent}</p>
           <p className="text-xs text-brown-muted mt-1">coins spent</p>
@@ -103,12 +101,6 @@ export function MyPurchases({ userId }: MyPurchasesProps) {
         <div className="rounded-xl border border-[#d8ceb8] bg-white/30 p-4 text-center">
           <p className="font-serif text-2xl text-[#2a2018]">{artworksCollected}</p>
           <p className="text-xs text-brown-muted mt-1">artworks collected</p>
-        </div>
-        <div className="rounded-xl border border-[#d8ceb8] bg-white/30 p-4 text-center">
-          <p className="font-serif text-2xl text-[#2a2018]">{refundCount}</p>
-          <p className="text-xs text-brown-muted mt-1">
-            {refundCount === 1 ? "refund" : "refunds"}{refundTotal > 0 ? ` · +${refundTotal}` : ""}
-          </p>
         </div>
       </div>
 
@@ -171,9 +163,9 @@ export function MyPurchases({ userId }: MyPurchasesProps) {
                     </td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
                       {isRemoval ? (
-                        <span className="text-green-700">+{t.amount}</span>
+                        <span className="text-green-700">{t.amount}</span>
                       ) : (
-                        <span className="text-[#2a2018]">−{t.amount}</span>
+                        <span className="text-[#2a2018]">{t.amount}</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
