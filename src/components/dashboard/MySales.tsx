@@ -126,7 +126,7 @@ export function MySales({ userId }: MySalesProps) {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-brown-muted">
-                    {t.edition_number != null ? `#${t.edition_number}` : "—"}
+                  {t.type === "return" || t.edition_number == null ? "—" : `#${t.edition_number}`}
                   </td>
                   <td className="px-4 py-3 text-brown-muted">
                   {t.type === "return" ? "—" : t.buyer?.handle ? `@${t.buyer.handle}` : "—"}
