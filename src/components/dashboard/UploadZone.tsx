@@ -457,8 +457,7 @@ export function UploadZone({
           <p className="mb-3 text-sm text-brown">
             crop your art to fit the{" "}
             <span className="font-medium">{selectedFrame.label}</span> frame.
-            drag the corners; the frame is shown semi-transparent so you can
-            see the result.
+            drag the corners to adjust.
           </p>
           <div className="flex justify-center">
             <div
@@ -485,26 +484,6 @@ export function UploadZone({
                   style={{ maxHeight: 480, display: "block" }}
                 />
               </ReactCrop>
-              {pixelCrop && pixelCrop.width > 0 && (() => {
-  const p = selectedFrame.cropPadding;
-  return (
-    <img
-      src={`/frames/${selectedFrame.file}`}
-      alt=""
-      aria-hidden
-      style={{
-        position: "absolute",
-        top:  pixelCrop.y - pixelCrop.height * selectedFrame.cropPadding.top,
-        left: pixelCrop.x - pixelCrop.width  * selectedFrame.cropPadding.left,
-        width:  pixelCrop.width  * (1 + selectedFrame.cropPadding.left + selectedFrame.cropPadding.right),
-        height: "auto",
-        pointerEvents: "none",
-        opacity: 0.6,
-        zIndex: 5,
-      }}
-    />
-  );
-})()}
             </div>
           </div>
 
