@@ -129,7 +129,7 @@ export function MySales({ userId }: MySalesProps) {
                     {t.edition_number != null ? `#${t.edition_number}` : "—"}
                   </td>
                   <td className="px-4 py-3 text-brown-muted">
-                    {t.buyer?.handle ? `@${t.buyer.handle}` : "—"}
+                  {t.type === "return" ? "—" : t.buyer?.handle ? `@${t.buyer.handle}` : "—"}
                   </td>
                   <td className="px-4 py-3 text-brown-muted whitespace-nowrap">
                     {new Date(t.created_at).toLocaleDateString("en-US", {
