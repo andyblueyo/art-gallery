@@ -120,7 +120,7 @@ export function MySales({ userId }: MySalesProps) {
                       )}
                       <span className="text-[#2a2018]">
                         {t.type === "return"
-                          ? `a piece was returned · ${t.artwork_title ?? ""}`
+                          ? `${t.artwork_title ?? ""}`
                           : (t.artwork_title ?? "—")}
                       </span>
                     </div>
