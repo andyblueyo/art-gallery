@@ -144,7 +144,7 @@ export default async function HomePage() {
             hang work you love in your own gallery. curate art from other artists, build a collection, and show off the pieces that you love.
           </p>
           <p style={{ color: "#888780" }} className="text-sm mt-8 italic">
-            coming soon
+            now live testing in beta
           </p>
         </div>
       </section>
