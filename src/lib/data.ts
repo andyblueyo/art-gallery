@@ -112,6 +112,27 @@ export async function getPrimaryGalleryId(userId: string): Promise<string | null
   return data?.id ?? null;
 }
 
+export async function getPrimaryGallery(userId: string): Promise<{
+  id: string;
+  name: string | null;
+  slug: string | null;
+  is_primary: boolean;
+  background_type: string | null;
+  background_color: string | null;
+  background_image_url: string | null;
+  background_image_mode: string | null;
+} | null> {
+  if (!isSupabaseConfigured()) return null;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("galleries")
+    .select("id, name, slug, is_primary, background_type, background_color, background_image_url, background_image_mode")
+    .eq("user_id", userId)
+    .eq("is_primary", true)
+    .single();
+  return data ?? null;
+}
+
 export async function getGalleryPieces(galleryId: string): Promise<GalleryPiece[]> {
   if (!isSupabaseConfigured()) return [];
   const supabase = await createClient();

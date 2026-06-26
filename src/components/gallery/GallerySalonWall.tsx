@@ -25,13 +25,27 @@ interface GallerySalonWallProps {
   totalPieceCount: number;
   allArtworks?: Artwork[];
   galleryPieces?: GalleryPiece[];
-  unplacedInventory?: InventoryTrayItem[]; 
+  unplacedInventory?: InventoryTrayItem[];
   isOwner?: boolean;
   isLoggedIn?: boolean;
   profileId?: string;
   layoutMode?: string;
   collectorCoinBalance?: number | null;
   collectableItems?: Record<string, string>;
+  backgroundType?: 'color' | 'image';
+  backgroundColor?: string;
+  backgroundImageUrl?: string | null;
+  backgroundImageMode?: 'cover' | 'tile' | null;
+  gallery?: {
+    id: string;
+    name: string | null;
+    slug: string | null;
+    isPrimary: boolean;
+    backgroundType: 'color' | 'image';
+    backgroundColor: string;
+    backgroundImageUrl: string | null;
+    backgroundImageMode: 'cover' | 'tile' | null;
+  } | null;
 }
 
 export function GallerySalonWall({
@@ -49,6 +63,11 @@ export function GallerySalonWall({
   layoutMode = "auto",
   collectorCoinBalance = null,
   collectableItems = {},
+  backgroundType,
+  backgroundColor,
+  backgroundImageUrl,
+  backgroundImageMode,
+  gallery = null,
 }: GallerySalonWallProps) {
   console.log("GallerySalonWall props:", { isOwner, isLoggedIn });
   const router = useRouter();
@@ -59,6 +78,15 @@ export function GallerySalonWall({
 
   const hasMoreOnGrid = totalPieceCount > layout.length;
   const isCustomLayout = layoutMode === "custom";
+
+  const wallBgStyle: React.CSSProperties = backgroundType === 'image' && backgroundImageUrl
+    ? {
+        backgroundImage: `url(${backgroundImageUrl})`,
+        backgroundSize: backgroundImageMode === 'tile' ? 'auto' : 'cover',
+        backgroundRepeat: backgroundImageMode === 'tile' ? 'repeat' : 'no-repeat',
+        backgroundPosition: 'center',
+      }
+    : { backgroundColor: backgroundColor ?? '#e8ddd0' };
 
   const artworkMap = useMemo(
     () => new Map(allArtworks.map((a) => [a.id, a])),
@@ -143,11 +171,21 @@ export function GallerySalonWall({
           onCancel={() => setEditMode(false)}
           onSaved={() => setEditMode(false)}
           onReset={handleReset}
+          gallery={gallery ?? {
+            id: '',
+            name: '',
+            slug: '',
+            isPrimary: false,
+            backgroundType: (backgroundType ?? 'color') as 'color' | 'image',
+            backgroundColor: backgroundColor ?? '#e8ddd0',
+            backgroundImageUrl: backgroundImageUrl ?? null,
+            backgroundImageMode: (backgroundImageMode ?? null) as 'cover' | 'tile' | null,
+          }}
         />
       )}
 
       {/* ── Gallery view ─────────────────────────────────────── */}
-      <div className="gallery-salon-wall relative min-h-[100dvh] w-full overflow-x-hidden bg-[#ddd4b4]">
+      <div className="gallery-salon-wall relative min-h-[100dvh] w-full overflow-x-hidden" style={wallBgStyle}>
         <div className="gallery-salon-wall__texture pointer-events-none absolute inset-0" />
         <div className="gallery-salon-wall__vignette pointer-events-none absolute inset-0" />
 

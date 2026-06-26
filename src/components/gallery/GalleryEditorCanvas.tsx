@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import Draggable from "react-draggable";
 import type { DraggableData, DraggableEvent } from "react-draggable";
 import { FramedArtwork } from "./FramedArtwork";
+import { GallerySettingsPanel, type GallerySettings } from "./GallerySettingsPanel";
 import { createClient } from "@/lib/supabase/client";
 import type { Artwork, GalleryPiece, InventoryTrayItem } from "@/lib/types";
 import { DEFAULT_FRAME_FILE, getFrameConfig } from "@/lib/frames";
@@ -43,14 +44,24 @@ interface CanvasItem {
 
 interface Props {
   placedPieces: GalleryPiece[];
-  unplacedInventory: InventoryTrayItem[];  
+  unplacedInventory: InventoryTrayItem[];
   profileId: string;
   onCancel: () => void;
   onSaved: () => void;
   onReset?: () => void;
+  gallery: {
+    id: string;
+    name: string | null;
+    slug: string | null;
+    isPrimary: boolean;
+    backgroundType: 'color' | 'image';
+    backgroundColor: string;
+    backgroundImageUrl: string | null;
+    backgroundImageMode: 'cover' | 'tile' | null;
+  };
 }
 
-export function GalleryEditorCanvas({ placedPieces, unplacedInventory, profileId, onCancel, onSaved, onReset }: Props) {
+export function GalleryEditorCanvas({ placedPieces, unplacedInventory, profileId, onCancel, onSaved, onReset, gallery }: Props) {
   const router = useRouter();
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -73,6 +84,17 @@ export function GalleryEditorCanvas({ placedPieces, unplacedInventory, profileId
       zIndex: piece.z_index ?? i + 1,
     }))
   );
+
+  const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
+  const [liveBackground, setLiveBackground] = useState<GallerySettings>({
+    name: gallery.name ?? '',
+    slug: gallery.slug ?? '',
+    isPrimary: gallery.isPrimary,
+    backgroundType: gallery.backgroundType,
+    backgroundColor: gallery.backgroundColor,
+    backgroundImageUrl: gallery.backgroundImageUrl,
+    backgroundImageMode: gallery.backgroundImageMode,
+  });
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -231,6 +253,15 @@ console.log("[save] valid upserts after filter:", validUpserts.length);
   const btnBase =
     "rounded border border-[#c8a040]/30 px-2 py-1 text-xs text-[#f5e6c8]/80 hover:bg-[#c8a040]/20 transition-colors";
 
+  const canvasBgStyle: React.CSSProperties = liveBackground.backgroundType === 'image' && liveBackground.backgroundImageUrl
+    ? {
+        backgroundImage: `url(${liveBackground.backgroundImageUrl})`,
+        backgroundSize: liveBackground.backgroundImageMode === 'tile' ? 'auto' : 'cover',
+        backgroundRepeat: liveBackground.backgroundImageMode === 'tile' ? 'repeat' : 'no-repeat',
+        backgroundPosition: 'center',
+      }
+    : { background: liveBackground.backgroundColor };
+
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-[#ddd4b4] select-none">
       {/* ── Toolbar ─────────────────────────────────────────────── */}
@@ -339,6 +370,28 @@ console.log("[save] valid upserts after filter:", validUpserts.length);
           </span>
         )}
 
+        {/* Settings trigger */}
+        <button
+          onClick={() => setSettingsPanelOpen(o => !o)}
+          className={`${btnBase} flex shrink-0 items-center gap-1.5`}
+        >
+          <span
+            style={{
+              display: 'inline-block',
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
+              background: liveBackground.backgroundColor,
+              border: '1px solid rgba(255,255,255,0.3)',
+              flexShrink: 0,
+            }}
+          />
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="currentColor" style={{ opacity: 0.8 }}>
+            <path d="M10.12 1.88a1.5 1.5 0 0 0-2.12 0L1.5 8.38 1 11l2.62-.5 6.5-6.5a1.5 1.5 0 0 0 0-2.12z"/>
+          </svg>
+          <span className="hidden sm:inline">edit</span>
+        </button>
+
         {/* Cancel / Reset / Save */}
         <div className="flex shrink-0 items-center gap-2">
           {saveError && (
@@ -369,6 +422,23 @@ console.log("[save] valid upserts after filter:", validUpserts.length);
         </div>
       </header>
 
+      {/* Settings Panel */}
+      {settingsPanelOpen && (
+        <GallerySettingsPanel
+          galleryId={gallery.id}
+          profileId={profileId}   
+          initialName={gallery.name ?? ''}
+          initialSlug={gallery.slug ?? ''}
+          initialIsPrimary={gallery.isPrimary}
+          initialBackgroundType={gallery.backgroundType}
+          initialBackgroundColor={gallery.backgroundColor}
+          initialBackgroundImageUrl={gallery.backgroundImageUrl}
+          initialBackgroundImageMode={gallery.backgroundImageMode}
+          onSettingsChange={setLiveBackground}
+          onClose={() => setSettingsPanelOpen(false)}
+        />
+      )}
+
       {/* Texture */}
       <div className="gallery-salon-wall__texture pointer-events-none absolute inset-0" />
       
@@ -378,7 +448,7 @@ console.log("[save] valid upserts after filter:", validUpserts.length);
         <div
           ref={canvasRef}
           className="relative"
-          style={{ width: 1400, height: 1200 }}
+          style={{ width: 1400, height: 1200, ...canvasBgStyle }}
           onClick={() => setSelectedId(null)}
         >
         {items.map(item => {

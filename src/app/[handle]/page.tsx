@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getGalleryByHandle, getPrimaryGalleryId, getGalleryPieces } from "@/lib/data";
+import { getGalleryByHandle, getPrimaryGallery, getGalleryPieces } from "@/lib/data";
 import type { GalleryPiece, InventoryTrayItem } from "@/lib/types";
 import { getGalleryUrl } from "@/lib/url";
 import { ViewCounter } from "@/components/gallery/ViewCounter";
@@ -58,7 +58,8 @@ export default async function PublicGalleryPage({ params }: PageProps) {
   });
 
   let galleryPieces: GalleryPiece[] = [];
-  const primaryGalleryId = await getPrimaryGalleryId(gallery.profile.id);
+  const primaryGallery = await getPrimaryGallery(gallery.profile.id);
+  const primaryGalleryId = primaryGallery?.id ?? null;
   if (primaryGalleryId) {
     galleryPieces = await getGalleryPieces(primaryGalleryId);
   }
@@ -193,13 +194,27 @@ console.log("[unplaced] galleryPieces count:", galleryPieces.length);
         totalPieceCount={gallery.artworks.length}
         allArtworks={gallery.artworks}
         galleryPieces={galleryPieces}
-        unplacedInventory={unplacedInventory}  
+        unplacedInventory={unplacedInventory}
         isOwner={isOwner}
         isLoggedIn={isLoggedIn}
         profileId={gallery.profile.id}
         layoutMode={gallery.profile.layout_mode ?? "auto"}
         collectorCoinBalance={collectorCoinBalance}
         collectableItems={collectableItems}
+        backgroundType={(primaryGallery?.background_type as 'color' | 'image') ?? 'color'}
+        backgroundColor={primaryGallery?.background_color ?? '#e8ddd0'}
+        backgroundImageUrl={primaryGallery?.background_image_url ?? null}
+        backgroundImageMode={(primaryGallery?.background_image_mode as 'cover' | 'tile') ?? null}
+        gallery={primaryGallery ? {
+          id: primaryGallery.id,
+          name: primaryGallery.name,
+          slug: primaryGallery.slug,
+          isPrimary: primaryGallery.is_primary,
+          backgroundType: (primaryGallery.background_type as 'color' | 'image') ?? 'color',
+          backgroundColor: primaryGallery.background_color ?? '#e8ddd0',
+          backgroundImageUrl: primaryGallery.background_image_url ?? null,
+          backgroundImageMode: (primaryGallery.background_image_mode as 'cover' | 'tile') ?? null,
+        } : null}
       />
     </>
   );
