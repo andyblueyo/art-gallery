@@ -15,6 +15,7 @@ export interface GallerySettings {
 
 interface GallerySettingsPanelProps {
   galleryId: string;
+  handle: string;
   profileId: string; 
   initialName: string;
   initialSlug: string;
@@ -42,6 +43,7 @@ function deriveSlug(name: string): string {
 
 export function GallerySettingsPanel({
   galleryId,
+  handle,
   profileId,
   initialName,
   initialSlug,
@@ -243,7 +245,7 @@ export function GallerySettingsPanel({
           {nameLen}/25
         </span>
         <span style={{ fontSize: 10 }}>
-          <span style={{ color: 'rgba(245,230,200,0.35)' }}>galleryclub.online/</span>
+          <span style={{ color: 'rgba(245,230,200,0.35)' }}>{handle}.galleryclub.online/</span>
           <span style={{ color: '#c8a040' }}>{slug || '…'}</span>
         </span>
       </div>
