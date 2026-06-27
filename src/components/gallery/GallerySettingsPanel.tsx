@@ -158,7 +158,7 @@ export function GallerySettingsPanel({
         .update({
           name,
           slug,
-          is_primary: isPrimary,
+          //is_primary: isPrimary,
           background_type: bgTab,
           background_color: bgColor,
           background_image_url: finalImageUrl,
