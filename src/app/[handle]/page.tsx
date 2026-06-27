@@ -187,6 +187,7 @@ console.log("[unplaced] galleryPieces count:", galleryPieces.length);
     <>
       <ViewCounter galleryId={gallery.profile.id} isOwner={isOwner} />
       <GallerySalonWall
+        handle={gallery.profile.handle} 
         artist={artist}
         artworks={wallArtworks}
         layout={layout}
