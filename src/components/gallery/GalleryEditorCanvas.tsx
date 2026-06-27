@@ -43,6 +43,7 @@ interface CanvasItem {
 }
 
 interface Props {
+  handle: string;
   placedPieces: GalleryPiece[];
   unplacedInventory: InventoryTrayItem[];
   profileId: string;
@@ -61,7 +62,7 @@ interface Props {
   };
 }
 
-export function GalleryEditorCanvas({ placedPieces, unplacedInventory, profileId, onCancel, onSaved, onReset, gallery }: Props) {
+export function GalleryEditorCanvas({ handle, placedPieces, unplacedInventory, profileId, onCancel, onSaved, onReset, gallery }: Props) {
   const router = useRouter();
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -426,6 +427,7 @@ console.log("[save] valid upserts after filter:", validUpserts.length);
       {settingsPanelOpen && (
         <GallerySettingsPanel
           galleryId={gallery.id}
+          handle={handle}
           profileId={profileId}   
           initialName={gallery.name ?? ''}
           initialSlug={gallery.slug ?? ''}

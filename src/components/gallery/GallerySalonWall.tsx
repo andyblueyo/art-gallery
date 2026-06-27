@@ -19,6 +19,7 @@ import { CollectButton } from "@/components/gallery/CollectButton";
 
 interface GallerySalonWallProps {
   artist: ArtistBubbleData;
+  handle?: string;
   artworks: WallArtwork[];
   layout: GalleryLayoutItem[];
   galleryUrl: string;
@@ -50,6 +51,7 @@ interface GallerySalonWallProps {
 
 export function GallerySalonWall({
   artist,
+  handle = "",
   artworks,
   layout,
   galleryUrl,
@@ -165,6 +167,7 @@ export function GallerySalonWall({
       {/* ── Editor overlay ───────────────────────────────────── */}
       {editMode && (
         <GalleryEditorCanvas
+          handle={handle}
           placedPieces={galleryPieces ?? []}
           unplacedInventory={unplacedInventory}
           profileId={profileId}
