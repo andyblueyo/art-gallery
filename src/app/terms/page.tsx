@@ -66,7 +66,7 @@ export default function TermsPage() {
                 email communications
               </h2>
               <p>
-              by creating a gallery club account, you agree to receive emails from us about your account, new features, and occasional announcements from the gallery club community. you can opt out of non-essential emails anytime using the unsubscribe link. we don't sell or share your email with third parties for their marketing.
+              by creating a gallery club account, you agree to receive emails from us about your account, new features, and occasional announcements from the gallery club community. you can opt out of non-essential emails anytime using the unsubscribe link. we don&apos;t sell or share your email with third parties for their marketing.
               </p>
             </section>
 
