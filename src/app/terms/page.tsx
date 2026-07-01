@@ -19,7 +19,7 @@ export default function TermsPage() {
             gallery club
           </h1>
           <p style={{ color: "#888780" }} className="text-sm mb-12">
-            terms of service • last updated: June 2026
+            terms of service • last updated: July 2026
           </p>
 
           <div style={{ color: "#2C2A22" }} className="space-y-8 leading-relaxed">
@@ -58,6 +58,15 @@ export default function TermsPage() {
               </h2>
               <p>
                 you are responsible for the content you upload and the activity on your account.
+              </p>
+            </section>
+
+            <section>
+              <h2 style={{ fontFamily: "'Crooked', serif", fontSize: "28px", color: "#2C2A22" }} className="mb-4">
+                email communications
+              </h2>
+              <p>
+              by creating a gallery club account, you agree to receive emails from us about your account, new features, and occasional announcements from the gallery club community. you can opt out of non-essential emails anytime using the unsubscribe link. we don't sell or share your email with third parties for their marketing.
               </p>
             </section>
 
