@@ -184,7 +184,7 @@ console.log("[unplaced] galleryPieces count:", galleryPieces.length);
       gallery.artworks.length,
       0
     ),
-    supportLinks: buildSupportLinks(gallery.profile),
+    supportLinks: buildSupportLinks(gallery.profile as unknown as Record<string, string | null | undefined>),
   };
 
   return (
