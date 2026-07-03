@@ -35,6 +35,12 @@ export function ProfileEditor({
   const [bio, setBio] = useState(profile.bio);
   const [location, setLocation] = useState(profile.location);
   const [instagramUrl, setInstagramUrl] = useState(profile.instagram_url);
+  const [venmoHandle, setVenmoHandle] = useState(profile.venmo_handle ?? '');
+  const [cashappHandle, setCashappHandle] = useState(profile.cashapp_handle ?? '');
+  const [kofiHandle, setKofiHandle] = useState(profile.kofi_handle ?? '');
+  const [patreonHandle, setPatreonHandle] = useState(profile.patreon_handle ?? '');
+  const [paypalHandle, setPaypalHandle] = useState(profile.paypal_handle ?? '');
+  const [buymeacoffeeHandle, setBuymeacoffeeHandle] = useState(profile.buymeacoffee_handle ?? '');
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -118,6 +124,12 @@ export function ProfileEditor({
         location: location.trim(),
         instagram_url: normalizeInstagram(instagramUrl),
         avatar_url: nextAvatarUrl,
+        venmo_handle: venmoHandle ? venmoHandle.trim().replace(/^@/, '').toLowerCase() : null,
+        cashapp_handle: cashappHandle ? cashappHandle.trim().replace(/^\$/, '').toLowerCase() : null,
+        kofi_handle: kofiHandle ? kofiHandle.trim().toLowerCase() : null,
+        patreon_handle: patreonHandle ? patreonHandle.trim().toLowerCase() : null,
+        paypal_handle: paypalHandle ? paypalHandle.trim().toLowerCase() : null,
+        buymeacoffee_handle: buymeacoffeeHandle ? buymeacoffeeHandle.trim().toLowerCase() : null,
       };
 
       const { data, error: updateError } = await supabase
@@ -207,6 +219,58 @@ export function ProfileEditor({
         hint={instagramUrl ? `instagram.com/${normalizeInstagram(instagramUrl)}` : undefined}
         placeholder="https://instagram.com/badartrat"
       />
+
+      <div className="space-y-3">
+        <span className="text-xs font-medium uppercase tracking-wide text-brown-muted">support links</span>
+        <FormField
+          label="venmo"
+          value={venmoHandle}
+          onChange={setVenmoHandle}
+          maxLength={50}
+          placeholder="@yourhandle"
+          hint={venmoHandle ? `venmo.com/${venmoHandle.replace(/^@/, '')}` : undefined}
+        />
+        <FormField
+          label="cash app"
+          value={cashappHandle}
+          onChange={setCashappHandle}
+          maxLength={50}
+          placeholder="$yourcashtag"
+          hint={cashappHandle ? `cash.app/$${cashappHandle.replace(/^\$/, '')}` : undefined}
+        />
+        <FormField
+          label="ko-fi"
+          value={kofiHandle}
+          onChange={setKofiHandle}
+          maxLength={50}
+          placeholder="yourhandle"
+          hint={kofiHandle ? `ko-fi.com/${kofiHandle}` : undefined}
+        />
+        <FormField
+          label="patreon"
+          value={patreonHandle}
+          onChange={setPatreonHandle}
+          maxLength={50}
+          placeholder="yourhandle"
+          hint={patreonHandle ? `patreon.com/${patreonHandle}` : undefined}
+        />
+        <FormField
+          label="paypal"
+          value={paypalHandle}
+          onChange={setPaypalHandle}
+          maxLength={50}
+          placeholder="yourhandle"
+          hint={paypalHandle ? `paypal.me/${paypalHandle}` : undefined}
+        />
+        <FormField
+          label="buy me a coffee"
+          value={buymeacoffeeHandle}
+          onChange={setBuymeacoffeeHandle}
+          maxLength={50}
+          placeholder="yourhandle"
+          hint={buymeacoffeeHandle ? `buymeacoffee.com/${buymeacoffeeHandle}` : undefined}
+        />
+      </div>
 
       {error && (
         <p className="text-sm text-red-700 bg-red-50 rounded-lg px-3 py-2">{error}</p>

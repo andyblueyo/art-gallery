@@ -10,6 +10,7 @@ import {
   profileToWallArtist,
 } from "@/lib/gallery-wall-map";
 import { buildGalleryLayout, GALLERY_WALL_MAX } from "@/lib/gallery-layout";
+import { buildSupportLinks } from "@/lib/support-platforms";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
@@ -177,11 +178,14 @@ console.log("[unplaced] galleryPieces count:", galleryPieces.length);
     firstWallArt: wallArtworks[0],
   });
 
-  const artist = profileToWallArtist(
-    gallery.profile,
-    gallery.artworks.length,
-    0
-  );
+  const artist = {
+    ...profileToWallArtist(
+      gallery.profile,
+      gallery.artworks.length,
+      0
+    ),
+    supportLinks: buildSupportLinks(gallery.profile),
+  };
 
   return (
     <>

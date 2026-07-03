@@ -6,6 +6,12 @@ export interface Profile {
   location: string;
   instagram_url: string;
   avatar_url: string;
+  venmo_handle?: string | null;
+  cashapp_handle?: string | null;
+  kofi_handle?: string | null;
+  patreon_handle?: string | null;
+  paypal_handle?: string | null;
+  buymeacoffee_handle?: string | null;
   view_count: number;
   created_at: string;
   layout_mode?: string | null;

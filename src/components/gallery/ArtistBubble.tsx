@@ -12,6 +12,7 @@ export interface ArtistBubbleData {
   avatarUrl?: string;
   pieceCount: number;
   followers: number;
+  supportLinks?: { label: string; url: string }[];
 }
 
 interface ArtistBubbleProps {
@@ -35,6 +36,7 @@ function formatInstagramUrl(instagram: string): string {
 
 export function ArtistBubble({ artist, siteOrigin = "galleryclub.online" }: ArtistBubbleProps) {
   const [open, setOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const initials = getInitials(artist.name);
   const instagramHref = formatInstagramUrl(artist.instagram);
   const galleryUrl = `${artist.handle}.${siteOrigin}`;
@@ -96,6 +98,45 @@ export function ArtistBubble({ artist, siteOrigin = "galleryclub.online" }: Arti
           >
             Instagram
           </a>
+
+          {artist.supportLinks && artist.supportLinks.length === 1 && (
+            <a
+              href={artist.supportLinks[0].url}
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              className="rounded-lg border border-[#c8a040]/50 px-4 py-2 text-sm text-[#f5e6c8] transition-colors hover:border-[#c8a040] hover:bg-[#c8a040]/10"
+            >
+              support ♥
+            </a>
+          )}
+
+          {artist.supportLinks && artist.supportLinks.length > 1 && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setSupportOpen(v => !v)}
+                className="rounded-lg border border-[#c8a040]/50 px-4 py-2 text-sm text-[#f5e6c8] transition-colors hover:border-[#c8a040] hover:bg-[#c8a040]/10"
+              >
+                support ♥ ▾
+              </button>
+              {supportOpen && (
+                <div className="absolute bottom-full left-0 mb-2 min-w-[160px] rounded-lg border border-[#c8a040]/30 bg-[rgba(18,12,6,0.98)] py-1 shadow-xl">
+                  {artist.supportLinks.map(link => (
+                    <a
+                      key={link.label}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer nofollow"
+                      className="flex items-center justify-between px-4 py-2 text-sm text-[#f5e6c8] hover:bg-[#c8a040]/10"
+                    >
+                      {link.label}
+                      <span className="ml-3 text-[#c8a040]/50 text-xs">↗</span>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
