@@ -226,7 +226,7 @@ export function ProfileEditor({
           label="venmo"
           value={venmoHandle}
           onChange={setVenmoHandle}
-          maxLength={50}
+          maxLength={30}
           placeholder="@yourhandle"
           hint={venmoHandle ? `venmo.com/${venmoHandle.replace(/^@/, '')}` : undefined}
         />
@@ -234,7 +234,7 @@ export function ProfileEditor({
           label="cash app"
           value={cashappHandle}
           onChange={setCashappHandle}
-          maxLength={50}
+          maxLength={30}
           placeholder="$yourcashtag"
           hint={cashappHandle ? `cash.app/$${cashappHandle.replace(/^\$/, '')}` : undefined}
         />
@@ -242,7 +242,7 @@ export function ProfileEditor({
           label="ko-fi"
           value={kofiHandle}
           onChange={setKofiHandle}
-          maxLength={50}
+          maxLength={30}
           placeholder="yourhandle"
           hint={kofiHandle ? `ko-fi.com/${kofiHandle}` : undefined}
         />
@@ -250,7 +250,7 @@ export function ProfileEditor({
           label="patreon"
           value={patreonHandle}
           onChange={setPatreonHandle}
-          maxLength={50}
+          maxLength={30}
           placeholder="yourhandle"
           hint={patreonHandle ? `patreon.com/${patreonHandle}` : undefined}
         />
@@ -258,7 +258,7 @@ export function ProfileEditor({
           label="paypal"
           value={paypalHandle}
           onChange={setPaypalHandle}
-          maxLength={50}
+          maxLength={30}
           placeholder="yourhandle"
           hint={paypalHandle ? `paypal.me/${paypalHandle}` : undefined}
         />
@@ -266,7 +266,7 @@ export function ProfileEditor({
           label="buy me a coffee"
           value={buymeacoffeeHandle}
           onChange={setBuymeacoffeeHandle}
-          maxLength={50}
+          maxLength={30}
           placeholder="yourhandle"
           hint={buymeacoffeeHandle ? `buymeacoffee.com/${buymeacoffeeHandle}` : undefined}
         />
