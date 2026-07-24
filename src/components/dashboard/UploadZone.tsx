@@ -14,7 +14,7 @@ import type { DashboardArtwork } from "@/lib/types";
 
 const IMAGE_LIMIT = 25;
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
-const MAX_RAW_UPLOAD_BYTES = 10 * 1024 * 1024;
+const MAX_RAW_UPLOAD_BYTES = 5 * 1024 * 1024;
 
 const MEDIUM_SUGGESTIONS = [
   "watercolor",
