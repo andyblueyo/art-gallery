@@ -173,7 +173,7 @@ export function UploadZone({
     try {
       const blob = await getCroppedBlob(cropImgRef.current, pixelCrop);
       if (blob.size > MAX_UPLOAD_BYTES) {
-        setError("this image is too large to upload — try a smaller file, lower resolution, or compress it at squoosh.app");
+        setError("this image is too large to upload. try a smaller file, lower resolution, or compress it at squoosh.app");
         return;
       }
       if (croppedPreviewUrl) URL.revokeObjectURL(croppedPreviewUrl);
