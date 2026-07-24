@@ -112,7 +112,7 @@ export function UploadZone({
       }
             if (picked.size > MAX_RAW_UPLOAD_BYTES) {
                 setError(
-                  "this file is too large to upload — try compressing it at squoosh.app first, or use a smaller file"
+                  "this file is too large to upload. try compressing it at squoosh.app first, or use a smaller file"
                 );
                 return;
               }
