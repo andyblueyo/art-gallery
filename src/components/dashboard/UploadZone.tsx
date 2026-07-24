@@ -14,6 +14,7 @@ import type { DashboardArtwork } from "@/lib/types";
 
 const IMAGE_LIMIT = 25;
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
+const MAX_RAW_UPLOAD_BYTES = 10 * 1024 * 1024;
 
 const MEDIUM_SUGGESTIONS = [
   "watercolor",
@@ -109,6 +110,12 @@ export function UploadZone({
         setError("Please upload an image in an acceptable format like JPG or PNG");
         return;
       }
+            if (picked.size > MAX_RAW_UPLOAD_BYTES) {
+                setError(
+                  "this file is too large to upload — try compressing it at squoosh.app first, or use a smaller file"
+                );
+                return;
+              }
       if (previewUrl) URL.revokeObjectURL(previewUrl);
       setFile(picked);
       setError(null);
@@ -166,7 +173,7 @@ export function UploadZone({
     try {
       const blob = await getCroppedBlob(cropImgRef.current, pixelCrop);
       if (blob.size > MAX_UPLOAD_BYTES) {
-        setError("this image is too large to upload — try a smaller file or lower resolution");
+        setError("this image is too large to upload — try a smaller file, lower resolution, or compress it at squoosh.app");
         return;
       }
       if (croppedPreviewUrl) URL.revokeObjectURL(croppedPreviewUrl);
@@ -622,8 +629,26 @@ export function UploadZone({
       )}
       {error && (
         <pre className="whitespace-pre-wrap break-words text-xs text-red-700 bg-red-50 rounded-lg px-3 py-2 font-mono">
-          {error}
-        </pre>
+          {error.includes("squoosh.app") ? (
+            error.split(/(squoosh\.app)/).map((part, i) =>
+              part === "squoosh.app" ? (
+                <a
+                  key={i}
+                  href="https://squoosh.app/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline font-medium"
+                >
+                  {part}
+                </a>
+              ) : (
+                part
+              )
+            )
+          ) : (
+           error
+          )}
+       </pre>
       )}
     </section>
   );
