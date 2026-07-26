@@ -9,7 +9,7 @@ import ReactCrop, {
 } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { createClient } from "@/lib/supabase/client";
-import { FRAMES, DEFAULT_FRAME_FILE, type FrameConfig } from "@/lib/frames";
+import { FRAMES, FRAME_CATEGORIES, DEFAULT_FRAME_FILE, type FrameConfig, type FrameCategory } from "@/lib/frames";
 import type { DashboardArtwork } from "@/lib/types";
 
 const IMAGE_LIMIT = 25;
@@ -69,6 +69,7 @@ export function UploadZone({
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [editionTouched, setEditionTouched] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<FrameCategory>("classic");
 
   const isPdf = file?.type === "application/pdf";
   const isGalleryFull = false;
@@ -409,8 +410,27 @@ export function UploadZone({
             choose a frame for{" "}
             <span className="font-medium">{file.name}</span>
           </p>
+
+          {/* category tabs */}
+          <div className="mb-3 flex gap-2">
+            {FRAME_CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setActiveCategory(cat.id)}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  activeCategory === cat.id
+                    ? "bg-[#3b2a1a] text-[#faf7f0]"
+                    : "border border-[#d8ceb8] text-brown hover:border-[#c8a040]/60"
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-            {FRAMES.map((f) => {
+            {FRAMES.filter((f) => f.category === activeCategory).map((f) => {
               const isSelected = selectedFrame?.file === f.file;
               return (
                 <button
