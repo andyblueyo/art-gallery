@@ -36,8 +36,30 @@ export function FramedArtwork({
 }: FramedArtworkProps) {
   const frameConfig = getFrameConfig(frame_file);
   const frameSrc = `/frames/${frameConfig.file}`;
-  const padding = innerPadding ?? frameConfig.innerPadding;
   const shape = frameConfig.shape;
+
+  // cropPadding is the per-frame art window, measured from each PNG's alpha
+  // channel (see scripts/frame-window-inscribe.py) and stored as 0..1
+  // fractions. For polaroid/digis it's the tuned source of truth, where
+  // innerPadding is just a flat 10% placeholder.
+  //
+  // Classic frames stay on innerPadding: their cropPadding was never tuned
+  // and measures far worse (frame2 70%, frame5 69% of the box outside the
+  // real window). The circle/oval/heart ones also need a non-rectangular
+  // fit, which a 4-sided padding can't express.
+  //
+  // An explicit innerPadding prop still wins, and stays in percent units.
+  const cp = frameConfig.cropPadding;
+  const padding =
+    innerPadding ??
+    (frameConfig.category === "classic"
+      ? frameConfig.innerPadding
+      : {
+          top: cp.top * 100,
+          right: cp.right * 100,
+          bottom: cp.bottom * 100,
+          left: cp.left * 100,
+        });
 
   console.log("FramedArtwork rendering:", { artSrc, frameSrc, width });
 
