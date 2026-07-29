@@ -35,6 +35,9 @@ export function FramedArtwork({
   showTooltip = true,  
 }: FramedArtworkProps) {
   const frameConfig = getFrameConfig(frame_file);
+  // The unframed option: no frame PNG exists, so there is nothing to overlay
+  // and the box is sized from the artwork itself rather than from a frame.
+  const isUnframed = frameConfig.file === "none";
   const frameSrc = `/frames/${frameConfig.file}`;
   const shape = frameConfig.shape;
 
@@ -50,8 +53,9 @@ export function FramedArtwork({
   //
   // An explicit innerPadding prop still wins, and stays in percent units.
   const cp = frameConfig.cropPadding;
-  const padding =
-    innerPadding ??
+  const padding = isUnframed
+    ? { top: 0, right: 0, bottom: 0, left: 0 }
+    : innerPadding ??
     (frameConfig.category === "classic"
       ? frameConfig.innerPadding
       : {
@@ -66,6 +70,10 @@ export function FramedArtwork({
   const [frameAspect, setFrameAspect] = useState<number | null>(null);
   const [hovered, setHovered] = useState(false);
 
+  // Unframed pieces are never cropped to a frame's aspect, so their box height
+  // has to come from the uploaded image's own proportions.
+  const aspectSrc = isUnframed ? artSrc : frameSrc;
+
   useEffect(() => {
     const img = new window.Image();
     img.onload = () => {
@@ -73,8 +81,8 @@ export function FramedArtwork({
         setFrameAspect(img.naturalHeight / img.naturalWidth);
       }
     };
-    img.src = frameSrc;
-  }, [frameSrc]);
+    img.src = aspectSrc;
+  }, [aspectSrc]);
 
   const height = frameAspect ? width * frameAspect : undefined;
 
@@ -113,6 +121,8 @@ export function FramedArtwork({
             zIndex: 1,
             backgroundColor: "transparent",
             borderRadius: shape === "rect" ? 0 : "50%",
+            // stands in for the frame's own depth on unframed pieces
+            boxShadow: isUnframed ? "0 6px 14px rgba(0,0,0,0.35)" : undefined,
           }}
         >
           {fileType === "pdf" ? (
@@ -143,20 +153,22 @@ export function FramedArtwork({
           )}
         </div>
 
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={frameSrc}
-          alt=""
-          aria-hidden
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            zIndex: 2,
-            pointerEvents: "none",
-          }}
-        />
+        {!isUnframed && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={frameSrc}
+            alt=""
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              zIndex: 2,
+              pointerEvents: "none",
+            }}
+          />
+        )}
       </div>
       {showTooltip && (
   <div

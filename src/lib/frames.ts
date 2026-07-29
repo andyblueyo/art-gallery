@@ -1,5 +1,7 @@
 export type FrameShape = "rect" | "circle" | "oval";
-export type FrameCategory = "classic" | "polaroid" | "digis";
+// "none" is a pseudo-category for the unframed option — deliberately absent
+// from FRAME_CATEGORIES so it never renders as a tab or a frame tile.
+export type FrameCategory = "classic" | "polaroid" | "digis" | "none";
 
 export interface FrameInnerPadding {
   top: number;
@@ -63,10 +65,21 @@ export const FRAMES: FrameConfig[] = [
   { file: "digis/pink2-tama.png",    label: "Pink 2 Tama",   category: "digis", aspect: 461/513, shape: "rect", innerPadding: { top: 10, right: 10, bottom: 10, left: 10 }, cropPadding: { top: 0.355, right: 0.359, bottom: 0.242, left: 0.197 } }, // inscribed rect (rounded corners)
   { file: "digis/plaid-tama.png",    label: "Plaid Tama",    category: "digis", aspect: 397/524, shape: "rect", innerPadding: { top: 10, right: 10, bottom: 10, left: 10 }, cropPadding: { top: 0.304, right: 0.242, bottom: 0.279, left: 0.230 } }, // manual override
   { file: "digis/retro-tv.png",      label: "Retro TV",      category: "digis", aspect: 485/320, shape: "rect", innerPadding: { top: 10, right: 10, bottom: 10, left: 10 }, cropPadding: { top: 0.242, right: 0.269, bottom: 0.291, left: 0.085 } },
+
+  // ── none ──────────────────────────────────────────────────────────────────
+  // The unframed option. There is no /frames/none.png — FramedArtwork skips the
+  // frame overlay for this entry and sizes the box from the artwork itself, so
+  // `aspect` here is an unused placeholder. The sentinel is the string "none"
+  // rather than "" because falsy frame_file values are treated as "use the
+  // default frame" by getFrameConfig and by the `|| DEFAULT_FRAME_FILE`
+  // fallbacks on the walls, which would silently re-frame unframed pieces.
+  { file: "none", label: "No Frame", category: "none", aspect: 1, selectionScale: 1.0, shape: "rect", innerPadding: { top: 0, right: 0, bottom: 0, left: 0 }, cropPadding: { top: 0, right: 0, bottom: 0, left: 0 } },
 ];
 
 
 export const DEFAULT_FRAME_FILE = "frame1.png";
+
+export const NO_FRAME = FRAMES.find((f) => f.file === "none")!;
 
 export function getFrameConfig(frameFile: string | null | undefined): FrameConfig {
   if (!frameFile) return FRAMES[0];

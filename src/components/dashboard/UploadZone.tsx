@@ -9,7 +9,7 @@ import ReactCrop, {
 } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { createClient } from "@/lib/supabase/client";
-import { FRAMES, FRAME_CATEGORIES, DEFAULT_FRAME_FILE, type FrameConfig, type FrameCategory } from "@/lib/frames";
+import { FRAMES, FRAME_CATEGORIES, DEFAULT_FRAME_FILE, NO_FRAME, type FrameConfig, type FrameCategory } from "@/lib/frames";
 import type { DashboardArtwork } from "@/lib/types";
 
 const IMAGE_LIMIT = 25;
@@ -31,6 +31,14 @@ const MEDIUM_SUGGESTIONS = [
 ];
 
 const ACCEPT = "image/jpeg,image/png,image/webp,application/pdf";
+
+// only needed for unframed uploads, where the original file is stored as-is
+// instead of being re-encoded to JPEG by the crop canvas
+const EXT_BY_MIME: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
 
 type Step = "pick" | "frame" | "crop" | "meta";
 
@@ -70,8 +78,12 @@ export function UploadZone({
   const [dragOver, setDragOver] = useState(false);
   const [editionTouched, setEditionTouched] = useState(false);
   const [activeCategory, setActiveCategory] = useState<FrameCategory>("classic");
+  // Unframed pieces are uploaded as-is, so they skip the crop step entirely —
+  // same routing as the existing PDF path.
+  const [skipFraming, setSkipFraming] = useState(false);
 
   const isPdf = file?.type === "application/pdf";
+  const skipCrop = isPdf || skipFraming;
   const isGalleryFull = false;
 
   const resetAll = useCallback(() => {
@@ -81,6 +93,7 @@ export function UploadZone({
     setFile(null);
     setPreviewUrl(null);
     setSelectedFrame(null);
+    setSkipFraming(false);
     setCrop(undefined);
     setPixelCrop(null);
     setCroppedBlob(null);
@@ -145,6 +158,13 @@ export function UploadZone({
     setCrop(undefined);
     setPixelCrop(null);
     setCroppedBlob(null);
+    // any earlier crop is invalid for the new frame — drop its preview too so
+    // the meta step can't show a stale crop (notably when switching to "none",
+    // which never re-crops)
+    setCroppedPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
   }, []);
 
   const onCropImageLoad = useCallback(
@@ -189,6 +209,15 @@ export function UploadZone({
 
   async function handleUpload() {
     if (!file || !selectedFrame || !title.trim()) return;
+    // Framed images get their size checked on the cropped blob in confirmCrop,
+    // which never runs for unframed pieces — check the raw file instead so both
+    // paths land under the same final size budget.
+    if (!isPdf && skipFraming && file.size > MAX_UPLOAD_BYTES) {
+      setError(
+        "this image is too large to upload. try a smaller file, lower resolution, or compress it at squoosh.app"
+      );
+      return;
+    }
     if (isUploadingRef.current) {
       console.warn(
         "[upload] handleUpload re-entry blocked — already uploading"
@@ -256,16 +285,24 @@ export function UploadZone({
       const artworkId = crypto.randomUUID();
       let uploadBody: Blob | File;
       let ext: string;
+      let contentType: string;
 
-      if (fileType === "image") {
+      if (fileType === "pdf") {
+        uploadBody = file;
+        ext = "pdf";
+        contentType = "application/pdf";
+      } else if (skipFraming) {
+        // no crop step ran — upload the original file untouched
+        uploadBody = file;
+        contentType = file.type;
+        ext = EXT_BY_MIME[file.type] ?? "jpg";
+      } else {
         if (!croppedBlob) {
           throw new Error("Missing cropped image data.");
         }
         uploadBody = croppedBlob;
         ext = "jpg";
-      } else {
-        uploadBody = file;
-        ext = "pdf";
+        contentType = "image/jpeg";
       }
 
       const storagePath = `${effectiveArtistId}/${artworkId}.${ext}`;
@@ -273,7 +310,7 @@ export function UploadZone({
       const { data: storageData, error: storageError } = await supabase.storage
         .from("artworks")
         .upload(storagePath, uploadBody, {
-          contentType: fileType === "pdf" ? "application/pdf" : "image/jpeg",
+          contentType,
           upsert: false,
         });
 
@@ -359,7 +396,7 @@ export function UploadZone({
     <section className="space-y-4">
       <h2 className="font-serif text-xl text-brown">upload new artwork</h2>
 
-      <StepIndicator step={step} isPdf={isPdf} />
+      <StepIndicator step={step} skipCrop={skipCrop} />
 
       {step === "pick" && (
         isGalleryFull ? (
@@ -411,6 +448,12 @@ export function UploadZone({
             <span className="font-medium">{file.name}</span>
           </p>
 
+          <div
+            className={
+              skipFraming ? "grayscale opacity-40 pointer-events-none" : ""
+            }
+            aria-hidden={skipFraming}
+          >
           {/* category tabs */}
           <div className="mb-3 flex gap-2">
             {FRAME_CATEGORIES.map((cat) => (
@@ -458,6 +501,7 @@ export function UploadZone({
               );
             })}
           </div>
+          </div>
 
           <div className="mt-4 flex items-center justify-between gap-2">
             <button
@@ -467,14 +511,33 @@ export function UploadZone({
             >
               cancel
             </button>
-            <button
-              type="button"
-              disabled={!selectedFrame}
-              onClick={() => setStep(isPdf ? "meta" : "crop")}
-              className="rounded-lg bg-[#c8a040] px-6 py-2 text-sm font-medium text-[#1a1208] hover:bg-[#e0c060] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              next
-            </button>
+            <div className="flex items-center gap-4">
+              <label className="flex cursor-pointer select-none items-center gap-1.5 text-xs text-brown-muted">
+                <input
+                  type="checkbox"
+                  checked={skipFraming}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSkipFraming(true);
+                      onSelectFrame(NO_FRAME);
+                    } else {
+                      setSkipFraming(false);
+                      setSelectedFrame(null);
+                    }
+                  }}
+                  className="h-3.5 w-3.5 accent-[#c8a040]"
+                />
+                skip framing
+              </label>
+              <button
+                type="button"
+                disabled={!selectedFrame}
+                onClick={() => setStep(skipCrop ? "meta" : "crop")}
+                className="rounded-lg bg-[#c8a040] px-6 py-2 text-sm font-medium text-[#1a1208] hover:bg-[#e0c060] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                next
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -541,13 +604,17 @@ export function UploadZone({
               <PdfIcon />
               <span className="text-sm text-brown truncate">{file.name}</span>
             </div>
-          ) : croppedPreviewUrl ? (
+          ) : croppedPreviewUrl || previewUrl ? (
+            // unframed pieces never get cropped, so fall back to the original
+            // file's preview
             <div className="relative mx-auto aspect-[4/5] max-h-48 w-full max-w-[160px] overflow-hidden rounded-md bg-[#ede7da]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={croppedPreviewUrl}
-                alt="Cropped preview"
-                className="h-full w-full object-cover"
+                src={croppedPreviewUrl ?? previewUrl ?? ""}
+                alt="Preview"
+                className={`h-full w-full ${
+                  skipFraming ? "object-contain" : "object-cover"
+                }`}
               />
             </div>
           ) : null}
@@ -618,7 +685,7 @@ export function UploadZone({
           <div className="mt-4 flex items-center justify-between gap-2">
             <button
               type="button"
-              onClick={() => setStep(isPdf ? "frame" : "crop")}
+              onClick={() => setStep(skipCrop ? "frame" : "crop")}
               className="rounded-lg border border-[#d8ceb8] px-4 py-2 text-sm text-brown hover:bg-[#faf7f0]"
             >
               back
@@ -707,8 +774,8 @@ async function getCroppedBlob(
   });
 }
 
-function StepIndicator({ step, isPdf }: { step: Step; isPdf: boolean }) {
-  const steps: { id: Step; label: string }[] = isPdf
+function StepIndicator({ step, skipCrop }: { step: Step; skipCrop: boolean }) {
+  const steps: { id: Step; label: string }[] = skipCrop
     ? [
         { id: "pick", label: "file" },
         { id: "frame", label: "frame" },
