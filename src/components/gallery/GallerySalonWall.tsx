@@ -272,6 +272,7 @@ export function GallerySalonWall({
           <CustomLayoutView
             pieces={galleryPieces}
             artistName={artist.name}
+            handle={handle}
             isOwner={isOwner}
             isLoggedIn={isLoggedIn}
             collectableItems={collectableItems}
@@ -416,6 +417,7 @@ export function GallerySalonWall({
 function CustomLayoutView({
   pieces,
   artistName,
+  handle = "",
   isOwner = false,
   isLoggedIn = false,
   collectableItems = {},
@@ -423,6 +425,7 @@ function CustomLayoutView({
 }: {
   pieces: GalleryPiece[];
   artistName: string;
+  handle?: string;
   isOwner?: boolean;
   isLoggedIn?: boolean;
   collectableItems?: Record<string, string>;
