@@ -501,22 +501,37 @@ function CustomLayoutView({
                     transformOrigin: "top left",
                   }}
                 >
-                <a 
-                  href={`https://${(art as any).artist_handle}.galleryclub.online`}
-                  style={{ display: "block" }}
-                  onClick={e => e.stopPropagation()}
-                >
-                  <FramedArtwork
-                    frame_file={art.frame_file || DEFAULT_FRAME_FILE}
-                    artSrc={art.file_url}
-                    width={baseWidth}
-                    title={art.title}
-                    medium={art.medium}
-                    artistName={(art as any).artist_display_name || artistName}
-                    fileType={art.file_type}
-                    showTooltip={false}
-                  />
-                </a>
+                {(art as any).artist_handle?.toLowerCase() !== handle?.toLowerCase() ? (
+                  <a 
+                    href={`https://${(art as any).artist_handle}.galleryclub.online`}
+                    style={{ display: "block" }}
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <FramedArtwork
+                      frame_file={art.frame_file || DEFAULT_FRAME_FILE}
+                      artSrc={art.file_url}
+                      width={baseWidth}
+                      title={art.title}
+                      medium={art.medium}
+                      artistName={(art as any).artist_display_name || artistName}
+                      fileType={art.file_type}
+                      showTooltip={false}
+                    />
+                  </a>
+                ) : (
+                  <div style={{ display: "block" }}>
+                    <FramedArtwork
+                      frame_file={art.frame_file || DEFAULT_FRAME_FILE}
+                      artSrc={art.file_url}
+                      width={baseWidth}
+                      title={art.title}
+                      medium={art.medium}
+                      artistName={(art as any).artist_display_name || artistName}
+                      fileType={art.file_type}
+                      showTooltip={false}
+                    />
+                  </div>
+                )}
                 </div>
                 <div
                   style={{
