@@ -42,9 +42,12 @@ export function AuthForm({ mode }: AuthFormProps) {
         if (signInError) throw signInError;
         window.location.replace("/dashboard");
         } else {
-        if (!agreedNotAI || !agreedToS) {
-          throw new Error("Please confirm both checkboxes before creating your account.");
-        }
+          if (!agreedNotAI || !agreedToS) {
+            throw new Error("Please confirm both checkboxes before creating your account.");
+          }
+          if (!email.includes("@")) {
+            throw new Error("Please enter a valid email address.");
+          }
         const normalized = normalizeHandle(handle);
         const supabase = createClient();
         if (!isValidHandle(normalized)) {
@@ -115,6 +118,7 @@ export function AuthForm({ mode }: AuthFormProps) {
               value={displayName}
               onChange={setDisplayName}
               placeholder="hella"
+              maxLength={50}
             />
             <Field
               label="handle"
@@ -122,6 +126,7 @@ export function AuthForm({ mode }: AuthFormProps) {
               onChange={setHandle}
               placeholder="badartrat"
               hint={`${handle ? normalizeHandle(handle) : "your-handle"}.galleryclub.online`}
+              maxLength={30}
             />
           </>
         )}
@@ -227,6 +232,7 @@ function Field({
   hint,
   required,
   minLength,
+  maxLength,
 }: {
   label: string;
   value: string;
@@ -236,6 +242,7 @@ function Field({
   hint?: string;
   required?: boolean;
   minLength?: number;
+  maxLength?: number;
 }) {
   return (
     <label className="block">
@@ -249,6 +256,7 @@ function Field({
         placeholder={placeholder}
         required={required}
         minLength={minLength}
+        maxLength={maxLength}
         className="mt-1 w-full rounded-lg border border-[#d8ceb8] bg-white/60 px-3 py-2.5 text-brown placeholder:text-brown-muted/50 focus:border-[#c8a040] focus:outline-none focus:ring-1 focus:ring-[#c8a040]/40"
       />
       {hint && <span className="mt-1 block text-xs text-brown-muted">{hint}</span>}
