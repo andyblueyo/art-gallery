@@ -21,6 +21,8 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [password, setPassword] = useState("");
   const [handle, setHandle] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [agreedNotAI, setAgreedNotAI] = useState(false);
+  const [agreedToS, setAgreedToS] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -39,7 +41,10 @@ export function AuthForm({ mode }: AuthFormProps) {
         });
         if (signInError) throw signInError;
         window.location.replace("/dashboard");
-      } else {
+        } else {
+        if (!agreedNotAI || !agreedToS) {
+          throw new Error("Please confirm both checkboxes before creating your account.");
+        }
         const normalized = normalizeHandle(handle);
         const supabase = createClient();
         if (!isValidHandle(normalized)) {
@@ -116,7 +121,7 @@ export function AuthForm({ mode }: AuthFormProps) {
               value={handle}
               onChange={setHandle}
               placeholder="badartrat"
-              hint="your-handle.galleryclub.online"
+              hint={`${handle ? normalizeHandle(handle) : "your-handle"}.galleryclub.online`}
             />
           </>
         )}
@@ -135,6 +140,43 @@ export function AuthForm({ mode }: AuthFormProps) {
           required
           minLength={6}
         />
+        
+        {mode === "signup" && (
+          <div className="space-y-3 pt-1">
+            <label className="flex items-start gap-2 text-sm text-brown-muted">
+              <input
+                type="checkbox"
+                checked={agreedNotAI}
+                onChange={(e) => setAgreedNotAI(e.target.checked)}
+                required
+                className="mt-0.5 h-4 w-4 rounded border-[#d8ceb8] text-[#c8a040] focus:ring-[#c8a040]/40"
+              />
+              <span>
+                By checking this box, I solemnly swear that I will only share art that is made by me and no AI generated images will hang in my collection, which I swear upon my still-beating heart. 
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-sm text-brown-muted">
+              <input
+                type="checkbox"
+                checked={agreedToS}
+                onChange={(e) => setAgreedToS(e.target.checked)}
+                required
+                className="mt-0.5 h-4 w-4 rounded border-[#d8ceb8] text-[#c8a040] focus:ring-[#c8a040]/40"
+              />
+              <span>
+                I agree to the{" "}
+                <a
+                  href="https://galleryclub.online/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gold hover:underline"
+                >
+                  Terms of Service
+                </a>
+              </span>
+            </label>
+          </div>
+        )}
 
         {error && (
           <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
@@ -144,7 +186,7 @@ export function AuthForm({ mode }: AuthFormProps) {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || (mode === "signup" && (!agreedNotAI || !agreedToS))}
           className="w-full rounded-lg bg-[#c8a040] py-3 text-sm font-medium text-[#1a1208] transition-colors hover:bg-[#e0c060] disabled:opacity-50"
         >
           {loading
