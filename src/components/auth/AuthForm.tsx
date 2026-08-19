@@ -24,13 +24,43 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [agreedNotAI, setAgreedNotAI] = useState(false);
   const [agreedToS, setAgreedToS] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [handleError, setHandleError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setLoading(true);
+    setHandleError(null);
+    setEmailError(null);
+    setPasswordError(null);
 
+    let hasFieldError = false;
+
+    // Simple sanity check, same for both modes: something@something
+    if (!email.includes("@") || email.trim().startsWith("@") || email.trim().endsWith("@")) {
+      setEmailError("Please enter a valid email address.");
+      hasFieldError = true;
+    }
+
+    if (password.length < 6) {
+      setPasswordError("Password must be at least 6 characters.");
+      hasFieldError = true;
+    }
+
+    let normalized = "";
+    if (mode === "signup") {
+      normalized = normalizeHandle(handle);
+      if (!isValidHandle(normalized)) {
+        setHandleError("Handle must be 3–30 characters, lowercase letters, numbers, and hyphens only.");
+        hasFieldError = true;
+      }
+    }
+
+    if (hasFieldError) return;
+
+    setLoading(true);
 
     try {
       if (mode === "login") {
@@ -41,20 +71,11 @@ export function AuthForm({ mode }: AuthFormProps) {
         });
         if (signInError) throw signInError;
         window.location.replace("/dashboard");
-        } else {
-          if (!agreedNotAI || !agreedToS) {
-            throw new Error("Please confirm both checkboxes before creating your account.");
-          }
-          if (!email.includes("@")) {
-            throw new Error("Please enter a valid email address.");
-          }
-        const normalized = normalizeHandle(handle);
-        const supabase = createClient();
-        if (!isValidHandle(normalized)) {
-          throw new Error(
-            "Handle must be 3–30 characters, lowercase letters, numbers, and hyphens only."
-          );
+      } else {
+        if (!agreedNotAI || !agreedToS) {
+          throw new Error("Please confirm both checkboxes before creating your account.");
         }
+        const supabase = createClient();
 
         const { data: existing } = await supabase
           .from("profiles")
@@ -63,7 +84,9 @@ export function AuthForm({ mode }: AuthFormProps) {
           .maybeSingle();
 
         if (existing) {
-          throw new Error("That handle is already taken.");
+          setHandleError("That handle is already taken.");
+          setLoading(false);
+          return;
         }
 
         const { data: authData, error: signUpError } =
@@ -110,7 +133,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           : "Start sharing your art."}
       </p>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+      <form onSubmit={handleSubmit} noValidate className="mt-8 space-y-4">
         {mode === "signup" && (
           <>
             <Field
@@ -123,10 +146,19 @@ export function AuthForm({ mode }: AuthFormProps) {
             <Field
               label="handle"
               value={handle}
-              onChange={setHandle}
+              onChange={(v) => {
+                setHandle(v);
+                if (handleError) setHandleError(null);
+              }}
               placeholder="badartrat"
-              hint={`${handle ? normalizeHandle(handle) : "your-handle"}.galleryclub.online`}
               maxLength={30}
+              hint={
+                handleError
+                  ? undefined
+                  : `${handle ? normalizeHandle(handle) : "your-handle"}.galleryclub.online`
+              }
+              hasError={!!handleError}
+              errorMessage={handleError ?? undefined}
             />
           </>
         )}
@@ -134,18 +166,28 @@ export function AuthForm({ mode }: AuthFormProps) {
           label="email"
           type="email"
           value={email}
-          onChange={setEmail}
+          onChange={(v) => {
+            setEmail(v);
+            if (emailError) setEmailError(null);
+          }}
           required
+          hasError={!!emailError}
+          errorMessage={emailError ?? undefined}
         />
         <Field
           label="password"
           type="password"
           value={password}
-          onChange={setPassword}
+          onChange={(v) => {
+            setPassword(v);
+            if (passwordError) setPasswordError(null);
+          }}
           required
           minLength={6}
+          hasError={!!passwordError}
+          errorMessage={passwordError ?? undefined}
         />
-        
+
         {mode === "signup" && (
           <div className="space-y-3 pt-1">
             <label className="flex items-start gap-2 text-sm text-brown-muted">
@@ -233,6 +275,8 @@ function Field({
   required,
   minLength,
   maxLength,
+  hasError,
+  errorMessage,
 }: {
   label: string;
   value: string;
@@ -243,6 +287,8 @@ function Field({
   required?: boolean;
   minLength?: number;
   maxLength?: number;
+  hasError?: boolean;
+  errorMessage?: string;
 }) {
   return (
     <label className="block">
@@ -257,9 +303,16 @@ function Field({
         required={required}
         minLength={minLength}
         maxLength={maxLength}
-        className="mt-1 w-full rounded-lg border border-[#d8ceb8] bg-white/60 px-3 py-2.5 text-brown placeholder:text-brown-muted/50 focus:border-[#c8a040] focus:outline-none focus:ring-1 focus:ring-[#c8a040]/40"
+        className={`mt-1 w-full rounded-lg border bg-white/60 px-3 py-2.5 text-brown placeholder:text-brown-muted/50 focus:outline-none focus:ring-1 ${
+          hasError
+            ? "border-red-500 focus:border-red-500 focus:ring-red-500/40"
+            : "border-[#d8ceb8] focus:border-[#c8a040] focus:ring-[#c8a040]/40"
+        }`}
       />
       {hint && <span className="mt-1 block text-xs text-brown-muted">{hint}</span>}
+      {hasError && errorMessage && (
+        <span className="mt-1 block text-xs text-red-700">{errorMessage}</span>
+      )}
     </label>
   );
 }
