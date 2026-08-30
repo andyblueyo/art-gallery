@@ -4,7 +4,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import React from "react";
 import { useRouter } from "next/navigation";
 import type { Artwork, GalleryPiece, InventoryTrayItem } from "@/lib/types";
-import { FramedArtwork } from "./FramedArtwork";
+import {
+  GalleryPieceCard,
+  GalleryPieceFrame,
+  GalleryPieceOverlay,
+  type CollectConfig,
+} from "./GalleryPieceCard";
 import { ArtistBubble, type ArtistBubbleData } from "./ArtistBubble";
 import { GallerySeeAllGrid } from "./GallerySeeAllGrid";
 import { GalleryEditorCanvas } from "./GalleryEditorCanvas";
@@ -14,8 +19,6 @@ import {
 } from "@/lib/gallery-wall-data";
 import { DEFAULT_FRAME_FILE } from "@/lib/frames";
 import { createClient } from "@/lib/supabase/client";
-import { HeartButton } from "@/components/ui/HeartButton";
-import { CollectButton } from "@/components/gallery/CollectButton";
 
 interface GallerySalonWallProps {
   artist: ArtistBubbleData;
@@ -92,6 +95,23 @@ export function GallerySalonWall({
   const artworkMap = useMemo(
     () => new Map(allArtworks.map((a) => [a.id, a])),
     [allArtworks]
+  );
+
+  // Auto-layout resolves sale data through allArtworks; the custom layout reads
+  // it off the piece instead. Kept separate so each wall keeps its own rules.
+  const resolveAutoCollect = useCallback(
+    (artworkId: string): CollectConfig | null => {
+      if (isOwner || !collectableItems[artworkId]) return null;
+      const full = artworkMap.get(artworkId);
+      if (!full?.for_sale || !full.price_coins) return null;
+      return {
+        inventoryItemId: collectableItems[artworkId],
+        priceCoins: full.price_coins,
+        editionsRemaining: full.editions_remaining ?? 0,
+        collectorCoinBalance: collectorCoinBalance ?? 0,
+      };
+    },
+    [isOwner, collectableItems, artworkMap, collectorCoinBalance]
   );
 
   useEffect(() => {
@@ -292,49 +312,22 @@ export function GallerySalonWall({
               const frameFile = art.frame_file || DEFAULT_FRAME_FILE;
               const width = 280;
               return (
-                <div
+                <GalleryPieceCard
                   key={`${frameFile}-${item.artIndex}-${index}`}
-                  className="flex flex-col items-center group"
-                >
-                  <FramedArtwork
-                    frame_file={frameFile}
-                    artSrc={art.src}
-                    width={Math.min(width, 280)}
-                    title={art.title}
-                    medium={art.medium}
-                    artistName={artist.name}
-                    fileType={art.fileType}
-                    innerPadding={item.innerPadding}
-                    showTooltip={false}
-                  />
-                  <div className="mt-3 flex items-center gap-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200 [&_.opacity-0]:opacity-100">
-                    <div className="whitespace-nowrap rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-3 py-2 text-center shadow-lg">
-                    <p className="font-serif text-sm text-[#f5e6c8]">{art.title}</p>
-                    {art.medium && <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{art.medium}</p>}
-                    </div>
-                    {isLoggedIn && (
-                        <HeartButton
-                          pieceId={art.id}
-                          isOwner={isOwner}
-                          initialHeartCount={art.heartCount}
-                          isLoggedIn={isLoggedIn}
-                        />
-                    )}
-                    {!isOwner && collectableItems[art.id] && (() => {
-                      const full = artworkMap.get(art.id);
-                      if (!full?.for_sale || !full.price_coins) return null;
-                      return (
-                        <CollectButton
-                          inventoryItemId={collectableItems[art.id]}
-                          artworkId={art.id}
-                          priceCoins={full.price_coins}
-                          editionsRemaining={full.editions_remaining ?? 0}
-                          collectorCoinBalance={collectorCoinBalance ?? 0}
-                        />
-                      );
-                    })()}
-                  </div>
-                </div>
+                  frameFile={frameFile}
+                  artSrc={art.src}
+                  width={Math.min(width, 280)}
+                  title={art.title}
+                  medium={art.medium}
+                  artistName={artist.name}
+                  fileType={art.fileType}
+                  innerPadding={item.innerPadding}
+                  artworkId={art.id}
+                  heartCount={art.heartCount}
+                  isOwner={isOwner}
+                  isLoggedIn={isLoggedIn}
+                  collect={resolveAutoCollect(art.id)}
+                />
               );
             })}
           </main>
@@ -347,49 +340,22 @@ export function GallerySalonWall({
                 if (!art) return null;
                 const frameFile = art.frame_file || DEFAULT_FRAME_FILE;
                 return (
-                  <div
+                  <GalleryPieceCard
                     key={`${frameFile}-${item.artIndex}-${index}`}
-                    className="flex flex-col items-center group"
-                  >
-                    <FramedArtwork
-                      frame_file={frameFile}
-                      artSrc={art.src}
-                      width={280}
-                      title={art.title}
-                      medium={art.medium}
-                      artistName={artist.name}
-                      fileType={art.fileType}
-                      innerPadding={item.innerPadding}
-                      showTooltip={false}
-                    />
-                    <div className="mt-3 flex items-center gap-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200 [&_.opacity-0]:opacity-100">
-                      <div className="whitespace-nowrap rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-3 py-2 text-center shadow-lg">
-                        <p className="font-serif text-sm text-[#f5e6c8]">{art.title}</p>
-                        {art.medium && <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{art.medium}</p>}
-                      </div>
-                      {isLoggedIn && (
-                          <HeartButton
-                            pieceId={art.id}
-                            isOwner={isOwner}
-                            initialHeartCount={art.heartCount}
-                            isLoggedIn={isLoggedIn}
-                          />
-                      )}
-                      {!isOwner && collectableItems[art.id] && (() => {
-                        const full = artworkMap.get(art.id);
-                        if (!full?.for_sale || !full.price_coins) return null;
-                        return (
-                          <CollectButton
-                            inventoryItemId={collectableItems[art.id]}
-                            artworkId={art.id}
-                            priceCoins={full.price_coins}
-                            editionsRemaining={full.editions_remaining ?? 0}
-                            collectorCoinBalance={collectorCoinBalance ?? 0}
-                          />
-                        );
-                      })()}
-                    </div>
-                  </div>
+                    frameFile={frameFile}
+                    artSrc={art.src}
+                    width={280}
+                    title={art.title}
+                    medium={art.medium}
+                    artistName={artist.name}
+                    fileType={art.fileType}
+                    innerPadding={item.innerPadding}
+                    artworkId={art.id}
+                    heartCount={art.heartCount}
+                    isOwner={isOwner}
+                    isLoggedIn={isLoggedIn}
+                    collect={resolveAutoCollect(art.id)}
+                  />
                 );
               })}
             </div>
@@ -503,80 +469,58 @@ function CustomLayoutView({
                     transformOrigin: "top left",
                   }}
                 >
-                {(art as any).artist_handle?.toLowerCase() !== handle?.toLowerCase() ? (
-                  <a 
-                    href={`https://${(art as any).artist_handle}.galleryclub.online`}
-                    style={{ display: "block" }}
-                    onClick={e => e.stopPropagation()}
-                  >
-                    <FramedArtwork
-                      frame_file={art.frame_file || DEFAULT_FRAME_FILE}
-                      artSrc={art.file_url}
-                      width={baseWidth}
-                      title={art.title}
-                      medium={art.medium}
-                      artistName={(art as any).artist_display_name || artistName}
-                      fileType={art.file_type}
-                      showTooltip={false}
-                    />
-                  </a>
-                ) : (
-                  <div style={{ display: "block" }}>
-                    <FramedArtwork
-                      frame_file={art.frame_file || DEFAULT_FRAME_FILE}
-                      artSrc={art.file_url}
-                      width={baseWidth}
-                      title={art.title}
-                      medium={art.medium}
-                      artistName={(art as any).artist_display_name || artistName}
-                      fileType={art.file_type}
-                      showTooltip={false}
-                    />
-                  </div>
-                )}
+                <GalleryPieceFrame
+                  wrapper="block"
+                  linkHref={
+                    (art as any).artist_handle?.toLowerCase() !== handle?.toLowerCase()
+                      ? `https://${(art as any).artist_handle}.galleryclub.online`
+                      : null
+                  }
+                  frameFile={art.frame_file || DEFAULT_FRAME_FILE}
+                  artSrc={art.file_url}
+                  width={baseWidth}
+                  title={art.title}
+                  medium={art.medium}
+                  artistName={(art as any).artist_display_name || artistName}
+                  fileType={art.file_type}
+                />
                 </div>
-                <div
-                  style={{
-                    position: "absolute",
-                    top: `${tooltipTops[piece.id] ?? Math.round(baseWidth * scale) + 8}px`,
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    zIndex: 20,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    opacity: hoveredId === piece.id ? 1 : 0,
-                    transition: "opacity 0.15s",
-                    pointerEvents: hoveredId === piece.id ? "auto" : "none",
-                    whiteSpace: "nowrap",
+                <GalleryPieceOverlay
+                  placement={{
+                    mode: "anchored",
+                    style: {
+                      position: "absolute",
+                      top: `${tooltipTops[piece.id] ?? Math.round(baseWidth * scale) + 8}px`,
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      zIndex: 20,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      opacity: hoveredId === piece.id ? 1 : 0,
+                      transition: "opacity 0.15s",
+                      pointerEvents: hoveredId === piece.id ? "auto" : "none",
+                      whiteSpace: "nowrap",
+                    },
                   }}
-                  className="[&_.opacity-0]:opacity-100"
-                >
-                  <div className="rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-3 py-2 text-center shadow-lg">
-                  <p className="font-serif text-sm text-[#f5e6c8]">{art.title}</p>
-                  {art.medium && <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{art.medium}</p>}
-                  <p className="mt-0.5 text-xs text-[#c8a040]/60">
-                    by {(art as any).artist_display_name || artistName}
-                  </p>
-                  </div>
-                  {isLoggedIn && (
-                    <HeartButton
-                      pieceId={art.id}
-                      isOwner={isOwner}
-                      initialHeartCount={art.heart_count ?? 0}
-                      isLoggedIn={isLoggedIn}
-                    />
-                  )}
-                  {!isOwner && piece.inventory_item?.artwork_id && collectableItems[piece.inventory_item.artwork_id] && art.for_sale && art.price_coins != null && (
-                    <CollectButton
-                      inventoryItemId={collectableItems[piece.inventory_item.artwork_id]}
-                      artworkId={art.id}
-                      priceCoins={art.price_coins}
-                      editionsRemaining={art.editions_remaining ?? 0}
-                      collectorCoinBalance={collectorCoinBalance ?? 0}
-                    />
-                  )}
-                </div>
+                  artworkId={art.id}
+                  title={art.title}
+                  medium={art.medium}
+                  byLine={(art as any).artist_display_name || artistName}
+                  heartCount={art.heart_count ?? 0}
+                  isOwner={isOwner}
+                  isLoggedIn={isLoggedIn}
+                  collect={
+                    !isOwner && piece.inventory_item?.artwork_id && collectableItems[piece.inventory_item.artwork_id] && art.for_sale && art.price_coins != null
+                      ? {
+                          inventoryItemId: collectableItems[piece.inventory_item.artwork_id],
+                          priceCoins: art.price_coins,
+                          editionsRemaining: art.editions_remaining ?? 0,
+                          collectorCoinBalance: collectorCoinBalance ?? 0,
+                        }
+                      : null
+                  }
+                />
               </div>
             );
           })}
