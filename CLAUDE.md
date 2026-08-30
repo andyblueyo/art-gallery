@@ -1,7 +1,7 @@
 # Project Rules
 
 ## Git
-- Do NOT run git commands
+- Do NOT run git commands that modify state (add, commit, push, reset, checkout, merge, rebase). Read-only commands (log, show, diff, status, blame) are fine.
 - Do NOT commit, push, or pull
 - User handles all version control manually
 
