@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { getInitials } from "@/lib/initials";
 import { isValidHandle, normalizeHandle } from "@/lib/handle";
 import type { Profile } from "@/lib/types";
+import { TextInput } from "@/components/ui/TextInput";
+import { PrimaryButton } from "@/components/ui/PrimaryButton";
 
 const BIO_MAX = 160;
 
@@ -277,13 +279,9 @@ export function ProfileEditor({
       )}
 
       <div className="flex gap-3 pt-1">
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-lg bg-[#c8a040] px-5 py-2 text-sm font-medium text-[#1a1208] hover:bg-[#e0c060] disabled:opacity-50"
-        >
+        <PrimaryButton type="submit" size="sm" disabledCursor={false} disabled={saving}>
           {saving ? "saving…" : "save"}
-        </button>
+        </PrimaryButton>
         <button
           type="button"
           onClick={onCancel}
@@ -318,22 +316,17 @@ function FormField({
   maxLength?: number;
 }) {
   return (
-    <label className="block">
-      <span className="text-xs font-medium uppercase tracking-wide text-brown-muted">
-        {label}
-      </span>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={onBlur}
-        placeholder={placeholder}
-        maxLength={maxLength}
-        className={`mt-1 w-full rounded-lg border bg-white/60 px-3 py-2.5 text-brown focus:outline-none focus:ring-1 ${hasError ? "border-red-500 focus:border-red-500 focus:ring-red-500/40" : "border-[#d8ceb8] focus:border-[#c8a040] focus:ring-[#c8a040]/40"}`}
-      />
-      {hint && <span className="mt-1 block text-xs text-brown-muted">{hint}</span>}
-      {hasError && errorMessage && (
-        <span className="mt-1 block text-xs text-red-700">{errorMessage}</span>
-      )}
-    </label>
+    <TextInput
+      focusRing
+      label={label}
+      value={value}
+      onChange={onChange}
+      onBlur={onBlur}
+      placeholder={placeholder}
+      maxLength={maxLength}
+      hint={hint}
+      hasError={hasError}
+      errorMessage={errorMessage}
+    />
   );
 }

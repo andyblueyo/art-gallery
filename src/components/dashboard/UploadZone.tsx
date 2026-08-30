@@ -11,6 +11,9 @@ import "react-image-crop/dist/ReactCrop.css";
 import { createClient } from "@/lib/supabase/client";
 import { FRAMES, FRAME_CATEGORIES, DEFAULT_FRAME_FILE, NO_FRAME, type FrameConfig, type FrameCategory } from "@/lib/frames";
 import type { DashboardArtwork } from "@/lib/types";
+import { TextInput } from "@/components/ui/TextInput";
+import { PrimaryButton } from "@/components/ui/PrimaryButton";
+import { SecondaryButton } from "@/components/ui/SecondaryButton";
 
 const IMAGE_LIMIT = 25;
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
@@ -492,13 +495,7 @@ export function UploadZone({
           </div>
 
           <div className="mt-4 flex items-center justify-between gap-2">
-            <button
-              type="button"
-              onClick={resetAll}
-              className="rounded-lg border border-[#d8ceb8] px-4 py-2 text-sm text-brown hover:bg-[#faf7f0]"
-            >
-              cancel
-            </button>
+            <SecondaryButton onClick={resetAll}>cancel</SecondaryButton>
             <div className="flex items-center gap-4">
               <label className="flex cursor-pointer select-none items-center gap-1.5 text-xs text-brown-muted">
                 <input
@@ -517,14 +514,12 @@ export function UploadZone({
                 />
                 skip framing
               </label>
-              <button
-                type="button"
+              <PrimaryButton
                 disabled={!selectedFrame}
                 onClick={() => setStep(skipCrop ? "meta" : "crop")}
-                className="rounded-lg bg-[#c8a040] px-6 py-2 text-sm font-medium text-[#1a1208] hover:bg-[#e0c060] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 next
-              </button>
+              </PrimaryButton>
             </div>
           </div>
         </div>
@@ -566,21 +561,13 @@ export function UploadZone({
           </div>
 
           <div className="mt-4 flex items-center justify-between gap-2">
-            <button
-              type="button"
-              onClick={() => setStep("frame")}
-              className="rounded-lg border border-[#d8ceb8] px-4 py-2 text-sm text-brown hover:bg-[#faf7f0]"
-            >
-              back
-            </button>
-            <button
-              type="button"
+            <SecondaryButton onClick={() => setStep("frame")}>back</SecondaryButton>
+            <PrimaryButton
               onClick={confirmCrop}
               disabled={!pixelCrop || pixelCrop.width === 0}
-              className="rounded-lg bg-[#c8a040] px-6 py-2 text-sm font-medium text-[#1a1208] hover:bg-[#e0c060] disabled:cursor-not-allowed disabled:opacity-50"
             >
               looks good
-            </button>
+            </PrimaryButton>
           </div>
         </div>
       )}
@@ -608,58 +595,47 @@ export function UploadZone({
           ) : null}
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <label className="block sm:col-span-2">
-              <span className="text-xs font-medium uppercase tracking-wide text-brown-muted">
-                title <span className="text-red-600">*</span>
-              </span>
-              <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                maxLength={50}
-                className="mt-1 w-full rounded-lg border border-[#d8ceb8] bg-white/60 px-3 py-2.5 text-brown focus:border-[#c8a040] focus:outline-none"
-                placeholder="my really cool art"
-              />
-              <p className="text-right text-xs text-brown-muted">{title.length}/50</p>
-            </label>
-            <label className="block sm:col-span-2">
-              <span className="text-xs font-medium uppercase tracking-wide text-brown-muted">
-                medium
-              </span>
-              <input
-                value={medium}
-                onChange={(e) => setMedium(e.target.value)}
-                maxLength={50}
-                list="medium-suggestions"
-                className="mt-1 w-full rounded-lg border border-[#d8ceb8] bg-white/60 px-3 py-2.5 text-brown focus:border-[#c8a040] focus:outline-none"
-                placeholder="pencils, markers"
-              />
-              <p className="text-right text-xs text-brown-muted">{medium.length}/50</p>
+            <TextInput
+              labelClassName="sm:col-span-2"
+              label={<>title <span className="text-red-600">*</span></>}
+              value={title}
+              onChange={setTitle}
+              maxLength={50}
+              counter
+              placeholder="my really cool art"
+            />
+            <TextInput
+              labelClassName="sm:col-span-2"
+              label="medium"
+              value={medium}
+              onChange={setMedium}
+              maxLength={50}
+              list="medium-suggestions"
+              counter
+              placeholder="pencils, markers"
+            >
               <datalist id="medium-suggestions">
                 {MEDIUM_SUGGESTIONS.map((m) => (
                   <option key={m} value={m} />
                 ))}
               </datalist>
-            </label>
-            <label className="block sm:col-span-2">
-              <span className="text-xs font-medium uppercase tracking-wide text-brown-muted">
-                editions
-              </span>
-              <input
-                type="number"
-                value={editionTouched ? editionTotal : ""}
-                onChange={(e) => {
-                  setEditionTouched(true);
-                  const val = e.target.value;
-                  if (val === "") {
-                    setEditionTotal(0);
-                  } else {
-                    setEditionTotal(Math.min(10, Math.max(0, parseInt(val) || 0)));
-                  }
-                }}
-                min={0}
-                max={10}
-                className="mt-1 w-full rounded-lg border border-[#d8ceb8] bg-white/60 px-3 py-2.5 text-brown focus:border-[#c8a040] focus:outline-none"
-              />
+            </TextInput>
+            <TextInput
+              labelClassName="sm:col-span-2"
+              label="editions"
+              type="number"
+              value={editionTouched ? editionTotal : ""}
+              onChange={(val) => {
+                setEditionTouched(true);
+                if (val === "") {
+                  setEditionTotal(0);
+                } else {
+                  setEditionTotal(Math.min(10, Math.max(0, parseInt(val) || 0)));
+                }
+              }}
+              min={0}
+              max={10}
+            >
               <p className="mt-1 text-xs text-brown-muted">
                 {!editionTouched
                   ? "enter 0 for a personal piece, or 1–10 to list editions for sale"
@@ -667,19 +643,16 @@ export function UploadZone({
                   ? "personal piece — won't be listed for sale"
                   : `${editionTotal} edition${editionTotal === 1 ? "" : "s"} available for sale — you'll keep a personal copy`}
               </p>
-          </label>
+            </TextInput>
           </div>
 
           <div className="mt-4 flex items-center justify-between gap-2">
-            <button
-              type="button"
-              onClick={() => setStep(skipCrop ? "frame" : "crop")}
-              className="rounded-lg border border-[#d8ceb8] px-4 py-2 text-sm text-brown hover:bg-[#faf7f0]"
-            >
+            <SecondaryButton onClick={() => setStep(skipCrop ? "frame" : "crop")}>
               back
-            </button>
-            <button
-              type="button"
+            </SecondaryButton>
+            <PrimaryButton
+              flex
+              size="lg"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -687,11 +660,10 @@ export function UploadZone({
                 handleUpload();
               }}
               disabled={!title.trim() || !editionTouched || uploading}
-              className="flex items-center justify-center gap-2 rounded-lg bg-[#c8a040] px-6 py-2.5 text-sm font-medium text-[#1a1208] hover:bg-[#e0c060] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {uploading && <Spinner />}
               {uploading ? "uploading…" : "upload piece"}
-            </button>
+            </PrimaryButton>
           </div>
         </div>
       )}
