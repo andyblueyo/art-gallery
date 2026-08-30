@@ -206,10 +206,6 @@ export function GalleryEditorCanvas({ handle, placedPieces, unplacedInventory, p
         z_index: item.zIndex,
       }));
 
-      //testing, need to delete later
-      console.log("[save] all items:", items.map(i => ({ title: i.title, ownedBy: i.ownedBy, profileId })));
-console.log("[save] valid upserts after filter:", validUpserts.length);
-
       if (validUpserts.length > 0) {
         const { error: upsertError } = await supabase
           .from("gallery_pieces")

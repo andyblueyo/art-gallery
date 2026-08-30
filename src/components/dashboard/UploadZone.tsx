@@ -263,12 +263,6 @@ export function UploadZone({
         throw sessionError;
       }
       const sessionUserId = sessionData.user?.id;
-      console.log(
-        "[upload] session user id:",
-        sessionUserId,
-        "prop artistId:",
-        artistId
-      );
       if (!sessionUserId) {
         throw new Error(
           "Not signed in — no Supabase session on the browser client."
@@ -306,8 +300,7 @@ export function UploadZone({
       }
 
       const storagePath = `${effectiveArtistId}/${artworkId}.${ext}`;
-      console.log("[upload] uploading to storage:", storagePath);
-      const { data: storageData, error: storageError } = await supabase.storage
+      const { error: storageError } = await supabase.storage
         .from("artworks")
         .upload(storagePath, uploadBody, {
           contentType,
@@ -318,12 +311,10 @@ export function UploadZone({
         console.error("[upload] storage upload error:", storageError);
         throw storageError;
       }
-      console.log("[upload] storage upload ok:", storageData);
 
       const { data: urlData } = supabase.storage
         .from("artworks")
         .getPublicUrl(storagePath);
-      console.log("[upload] getPublicUrl result:", urlData);
 
       const fileUrl = urlData?.publicUrl ?? "";
       if (!fileUrl) {
@@ -343,8 +334,6 @@ export function UploadZone({
         edition_total: editionTotal,
         editions_remaining: editionTotal,
       };
-      console.log("[upload] inserting artwork row:", row);
-
       const { data, error: insertError } = await supabase
         .from("artworks")
         .insert(row)
@@ -355,7 +344,6 @@ export function UploadZone({
         console.error("[upload] artworks insert error:", insertError);
         throw insertError;
       }
-      console.log("[upload] insert ok:", data);
 
       const failedEditions: number[] = [];
       for (let i = 0; i <= editionTotal; i++) {

@@ -44,19 +44,12 @@ export async function generateMetadata({
 }
 
 export default async function PublicGalleryPage({ params }: PageProps) {
-  console.log("[page /[handle]] rendering for handle =", params.handle);
   const gallery = await getGalleryByHandle(params.handle);
 
   if (!gallery) {
     console.warn("[page /[handle]] no gallery found for handle:", params.handle);
     notFound();
   }
-
-  console.log("[page /[handle]] gallery fetched:", {
-    profileId: gallery.profile.id,
-    handle: gallery.profile.handle,
-    artworkCount: gallery.artworks.length,
-  });
 
   let galleryPieces: GalleryPiece[] = [];
   const primaryGallery = await getPrimaryGallery(gallery.profile.id);
@@ -116,10 +109,6 @@ export default async function PublicGalleryPage({ params }: PageProps) {
     const supabase = await createClient();
     const placedInventoryItemIds = galleryPieces.map(p => p.inventory_item_id);
 
-    //delete after testing
-    console.log("[unplaced] placedInventoryItemIds:", placedInventoryItemIds);
-console.log("[unplaced] galleryPieces count:", galleryPieces.length);
-    
     const { data: unplaced } = placedInventoryItemIds.length > 0
       ? await supabase
           .from("inventory_items")
@@ -171,12 +160,6 @@ console.log("[unplaced] galleryPieces count:", galleryPieces.length);
   const wallPieces = gallery.artworks.slice(0, GALLERY_WALL_MAX);
   const layout = buildGalleryLayout(wallPieces.length);
   const wallArtworks = artworksToWallArtworks(wallPieces);
-
-  console.log("[page /[handle]] passing to GallerySalonWall:", {
-    wallArtworkCount: wallArtworks.length,
-    layoutCount: layout.length,
-    firstWallArt: wallArtworks[0],
-  });
 
   const artist = {
     ...profileToWallArtist(

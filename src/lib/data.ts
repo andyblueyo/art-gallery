@@ -7,13 +7,11 @@ export async function getProfileByHandle(
   handle: string
 ): Promise<Profile | null> {
   if (!isSupabaseConfigured()) {
-    console.log("[data] getProfileByHandle: Supabase NOT configured — using demo data for", handle);
     const demo = getDemoGallery(handle);
     return demo?.profile ?? null;
   }
 
   const supabase = await createClient();
-  console.log("[data] getProfileByHandle querying profiles.handle =", handle.toLowerCase());
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
@@ -23,7 +21,6 @@ export async function getProfileByHandle(
   if (error) {
     console.error("[data] getProfileByHandle error:", error);
   }
-  console.log("[data] getProfileByHandle result:", data ? { id: data.id, handle: data.handle } : null);
   if (error || !data) return null;
   return data as Profile;
 }
@@ -32,13 +29,11 @@ export async function getArtworksByArtistId(
   artistId: string
 ): Promise<Artwork[]> {
   if (!isSupabaseConfigured()) {
-    console.log("[data] getArtworksByArtistId: Supabase NOT configured — returning demo artworks");
     const demo = getDemoGallery("maya-lin");
     return demo?.artworks ?? [];
   }
 
   const supabase = await createClient();
-  console.log("[data] getArtworksByArtistId querying artworks.artist_id =", artistId);
   const { data, error } = await supabase
     .from("artworks")
     .select("*")
@@ -49,12 +44,6 @@ export async function getArtworksByArtistId(
   if (error) {
     console.error("[data] getArtworksByArtistId error:", error);
   }
-  console.log(
-    "[data] getArtworksByArtistId returned",
-    data?.length ?? 0,
-    "rows:",
-    data?.map((a) => ({ id: a.id, title: a.title, file_url: a.file_url }))
-  );
   if (error || !data) return [];
   return data as Artwork[];
 }
@@ -142,6 +131,5 @@ export async function getGalleryPieces(galleryId: string): Promise<GalleryPiece[
     console.error("[data] getGalleryPieces error:", error);
     return [];
   }
-  console.log("[getGalleryPieces] rpc returned:", JSON.stringify(data, null, 2));
   return (data ?? []) as unknown as GalleryPiece[];
 }

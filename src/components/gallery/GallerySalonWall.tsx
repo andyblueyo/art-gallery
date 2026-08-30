@@ -71,7 +71,6 @@ export function GallerySalonWall({
   backgroundImageMode,
   gallery = null,
 }: GallerySalonWallProps) {
-  console.log("GallerySalonWall props:", { isOwner, isLoggedIn });
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [isMobile, setIsMobile] = useState(false);

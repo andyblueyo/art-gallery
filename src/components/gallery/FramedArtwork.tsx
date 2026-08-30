@@ -65,8 +65,6 @@ export function FramedArtwork({
           left: cp.left * 100,
         });
 
-  console.log("FramedArtwork rendering:", { artSrc, frameSrc, width });
-
   const [frameAspect, setFrameAspect] = useState<number | null>(null);
   const [hovered, setHovered] = useState(false);
 
