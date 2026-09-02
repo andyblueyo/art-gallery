@@ -400,19 +400,34 @@ function CustomLayoutView({
   const [hoveredId, setHoveredId] = React.useState<string | null>(null);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const frameRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
-  const [tooltipTops, setTooltipTops] = React.useState<Record<string, number>>({});
+  const wrapperRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
+  const [tooltipPos, setTooltipPos] = React.useState<
+    Record<string, { left: number; top: number }>
+  >({});
 
   const CANVAS_W = 1400;
   const CANVAS_H = 1200;
 
+  /**
+   * The tooltip lives in the piece's unrotated wrapper, so it can't inherit the
+   * frame's rotate()/scale(). Measure the frame's post-transform box instead:
+   * getBoundingClientRect is axis-aligned around the rotated frame, so its
+   * horizontal centre is the artwork's true centre and its bottom edge is the
+   * artwork's lowest visible point at any angle.
+   */
   const handleMouseEnter = (pieceId: string) => {
     setHoveredId(pieceId);
-    const el = frameRefs.current[pieceId];
-    if (el) {
-      const artScale = parseFloat(el.getAttribute("data-scale") ?? "1");
-      setTooltipTops((prev) => ({
+    const frameEl = frameRefs.current[pieceId];
+    const wrapperEl = wrapperRefs.current[pieceId];
+    if (frameEl && wrapperEl) {
+      const frameRect = frameEl.getBoundingClientRect();
+      const wrapperRect = wrapperEl.getBoundingClientRect();
+      setTooltipPos((prev) => ({
         ...prev,
-        [pieceId]: el.offsetHeight * artScale + 8,
+        [pieceId]: {
+          left: frameRect.left + frameRect.width / 2 - wrapperRect.left,
+          top: frameRect.bottom - wrapperRect.top + 8,
+        },
       }));
     }
   };
@@ -444,10 +459,12 @@ function CustomLayoutView({
             const scale = piece.scale ?? 1;
             const zIndex = piece.z_index ?? i + 1;
             const baseWidth = 220;
+            const tip = tooltipPos[piece.id];
 
             return (
               <div
                 key={piece.id}
+                ref={(el) => { wrapperRefs.current[piece.id] = el; }}
                 style={{
                   position: "absolute",
                   left: `${piece.position_x}%`,
@@ -461,7 +478,6 @@ function CustomLayoutView({
               >
                 <div
                   ref={(el) => { frameRefs.current[piece.id] = el; }}
-                  data-scale={scale}
                   style={{
                     position: "absolute",
                     left: 0,
@@ -491,8 +507,8 @@ function CustomLayoutView({
                     mode: "anchored",
                     style: {
                       position: "absolute",
-                      top: `${tooltipTops[piece.id] ?? Math.round(baseWidth * scale) + 8}px`,
-                      left: "50%",
+                      top: tip ? `${tip.top}px` : `${Math.round(baseWidth * scale) + 8}px`,
+                      left: tip ? `${tip.left}px` : "50%",
                       transform: "translateX(-50%)",
                       zIndex: 20,
                       display: "flex",
