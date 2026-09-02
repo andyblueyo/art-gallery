@@ -462,7 +462,6 @@ export function GalleryEditorCanvas({ handle, placedPieces, unplacedInventory, p
           const frameConfig = getFrameConfig(item.frame_file);
           const sel = frameConfig.selectionScale ?? 1.0;
           const W = BASE_WIDTH, H = (BASE_WIDTH / frameConfig.aspect) * sel, s = item.scale;
-          const pad = 8 + (BASE_WIDTH * (sel - 1)) / 2; 
           const cx: number[] = [0, s*W*cosA, s*(W*cosA-H*sinA), s*(-H*sinA)];
           const cy: number[] = [0, s*W*sinA, s*(W*sinA+H*cosA), s*H*cosA];
           const minX = Math.min(...cx), maxX = Math.max(...cx);
@@ -498,23 +497,6 @@ export function GalleryEditorCanvas({ handle, placedPieces, unplacedInventory, p
                   setSelectedId(item.id);
                 }}
               >
-                {/* Selection ring — exact bounding box of rotated artwork */}
-                {isSelected && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: minX - pad,
-                      top: minY - pad,
-                      width: (maxX - minX) + pad * 2,
-                      height: (maxY - minY) + pad * 2,
-                      border: "2px dashed #c8a040",
-                      borderRadius: 6,
-                      pointerEvents: "none",
-                      zIndex: 10,
-                    }}
-                  />
-                )}
-
                 <div
                   style={{
                     transform: `rotate(${item.rotation}deg) scale(${item.scale})`,
