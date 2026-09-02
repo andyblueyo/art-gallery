@@ -407,6 +407,8 @@ function CustomLayoutView({
 
   const CANVAS_W = 1400;
   const CANVAS_H = 1200;
+  /** Gap in px between the frame's lowest visible edge and the hover card. */
+  const TOOLTIP_GAP = 16;
 
   /**
    * The tooltip lives in the piece's unrotated wrapper, so it can't inherit the
@@ -426,7 +428,7 @@ function CustomLayoutView({
         ...prev,
         [pieceId]: {
           left: frameRect.left + frameRect.width / 2 - wrapperRect.left,
-          top: frameRect.bottom - wrapperRect.top + 8,
+          top: frameRect.bottom - wrapperRect.top + TOOLTIP_GAP,
         },
       }));
     }
@@ -507,7 +509,7 @@ function CustomLayoutView({
                     mode: "anchored",
                     style: {
                       position: "absolute",
-                      top: tip ? `${tip.top}px` : `${Math.round(baseWidth * scale) + 8}px`,
+                      top: tip ? `${tip.top}px` : `${Math.round(baseWidth * scale) + TOOLTIP_GAP}px`,
                       left: tip ? `${tip.left}px` : "50%",
                       transform: "translateX(-50%)",
                       zIndex: 20,
