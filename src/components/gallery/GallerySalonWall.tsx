@@ -471,9 +471,19 @@ function CustomLayoutView({
                   position: "absolute",
                   left: `${piece.position_x}%`,
                   top: `${piece.position_y}%`,
+                  // Width stays: the overlay's pre-measurement `left: 50%`
+                  // resolves against it. Height is deliberately unset — both
+                  // children are absolutely positioned, so a box height would
+                  // only ever have been a hit area, and this box is not one.
                   width: `${Math.round(baseWidth * scale)}px`,
-                  height: `${Math.round(baseWidth * scale * 1.7)}px`,
                   zIndex: hoveredId === piece.id ? 9999 : zIndex,
+                  // A positioning box, not a hit target. It can't know the
+                  // frame's aspect ratio or rotation, so hovering it would
+                  // claim space the artwork doesn't occupy and steal hover
+                  // from the piece below. Only the transformed frame and the
+                  // visible overlay take pointer events; their events bubble
+                  // up here, so the handlers below still fire.
+                  pointerEvents: "none",
                 }}
                 onMouseEnter={() => handleMouseEnter(piece.id)}
                 onMouseLeave={handleMouseLeave}
@@ -486,6 +496,10 @@ function CustomLayoutView({
                     top: 0,
                     transform: `rotate(${rotation}deg) scale(${scale})`,
                     transformOrigin: "top left",
+                    // The hit area for the whole piece. Hit testing respects
+                    // the transform above, so it tracks the frame's real
+                    // rendered corners at any rotation or scale.
+                    pointerEvents: "auto",
                   }}
                 >
                 <GalleryPieceFrame
@@ -509,7 +523,20 @@ function CustomLayoutView({
                     mode: "anchored",
                     style: {
                       position: "absolute",
-                      top: tip ? `${tip.top}px` : `${Math.round(baseWidth * scale) + TOOLTIP_GAP}px`,
+                      // The box's top edge sits flush with the frame's bottom
+                      // and paddingTop re-creates the gap as transparent
+                      // space, so the card looks unchanged but is contiguous
+                      // with the frame: the cursor can travel down to the
+                      // heart and collect buttons without crossing a dead
+                      // strip that would fire mouseleave and hide the card.
+                      //
+                      // The un-measured fallback is a placeholder that never
+                      // paints — handleMouseEnter batches the measurement with
+                      // setHoveredId, so the first visible render already has
+                      // `tip`. (It's a width standing in for a height; there's
+                      // no honest height to use before measuring.)
+                      top: tip ? `${tip.top - TOOLTIP_GAP}px` : `${Math.round(baseWidth * scale)}px`,
+                      paddingTop: `${TOOLTIP_GAP}px`,
                       left: tip ? `${tip.left}px` : "50%",
                       transform: "translateX(-50%)",
                       zIndex: 20,
