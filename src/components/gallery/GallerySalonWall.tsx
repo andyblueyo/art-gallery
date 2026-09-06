@@ -11,6 +11,7 @@ import {
   type CollectConfig,
 } from "./GalleryPieceCard";
 import { GalleryMinimap } from "./GalleryMinimap";
+import { GalleryScrollHint } from "./GalleryScrollHint";
 import { ArtistBubble, type ArtistBubbleData } from "./ArtistBubble";
 import { GallerySeeAllGrid } from "./GallerySeeAllGrid";
 import { GalleryEditorCanvas } from "./GalleryEditorCanvas";
@@ -572,6 +573,7 @@ function CustomLayoutView({
           })}
         </div>
       </div>
+      <GalleryScrollHint scrollRef={scrollRef} />
       <GalleryMinimap pieces={pieces} scrollRef={scrollRef} />
     </>
   );
