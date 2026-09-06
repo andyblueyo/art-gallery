@@ -111,50 +111,25 @@ export function GalleryScrollHint({
     <div
       style={{
         position: "fixed",
-        left: "50%",
-        top: "50%",
-        transform: "translate(-50%, -50%)",
+        inset: 0,
         // Under the minimap's 50, over the wall's own z-10 stacking context.
         zIndex: 40,
         display: "flex",
         alignItems: "center",
-        gap: 8,
-        padding: "10px 16px",
-        borderRadius: 999,
-        border: "0.5px solid rgba(200,160,64,0.4)",
-        background: "rgba(18,12,6,0.92)",
-        color: "#f5e6c8",
-        fontSize: 12.5,
-        whiteSpace: "nowrap",
-        // Sits over artwork: taps and hovers must reach the piece underneath.
+        justifyContent: "center",
+        // Keeps the line off the edges when it wraps on a narrow screen.
+        padding: "0 32px",
+        background: "rgba(18,12,6,0.42)",
+        // The scrim covers the whole viewport, so without this nothing on the
+        // wall would be clickable while the hint is up.
         pointerEvents: "none",
         opacity: phase === "fading" ? 0 : 1,
         transition: `opacity ${FADE_MS}ms ease-out`,
       }}
     >
-      <MoveIcon />
-      Scroll any direction to explore
+      <p className="text-center font-serif text-[17px] leading-[1.5] text-[#f5e6c8] sm:text-[19px]">
+        scroll in any direction to explore the gallery
+      </p>
     </div>
-  );
-}
-
-function MoveIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden
-      style={{ color: "#c8a040", flexShrink: 0 }}
-    >
-      <path
-        d="M12 3v18M3 12h18M12 3 9 6M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
   );
 }
