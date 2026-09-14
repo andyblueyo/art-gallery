@@ -16,6 +16,35 @@ component as the wall renderer, or the two will drift.
 
 ---
 
+## Status — 2026-09-14
+
+**Phase 0:** complete.
+**Phase 1a:** complete — commit pending.
+
+Done:
+- `004_frames_catalog.sql` written and applied. Verification passed cold: 31 frames rows,
+  30 real frames, 372 artworks rows across 31 distinct `frame_file` values, **0 unresolved**.
+- Admin model live: `admin_users`, `is_admin()` (SECURITY DEFINER), RLS on both tables and the
+  bucket. Bootstrapped to `badartrat` / `helloabchen@gmail.com`
+  (`2b20a3ec-6a9b-481b-a235-e2f4f9b652af`) — this is the real primary account, not a test one.
+- Column renamed `window` → `window_shape`; `window` is a reserved keyword in Postgres.
+- All 30 PNGs uploaded to the `frames` bucket, byte-verified against local. Public read confirmed
+  in a browser.
+
+Remaining:
+- Commit the migration and the upload script.
+
+Tracked, not blocking:
+- Regenerate `supabase/schema.sql` as a `supabase db dump` snapshot and fix its header — it's
+  stale by many months, not just missing `frame_file`.
+- `005` repair migration so the chain can rebuild production. Needs a diff of the fresh dump
+  against 001–004.
+
+Nothing reads any of this yet — the app is still on `frames.ts` until Phase 2 — so none of the
+above is user-visible or risky to leave open briefly.
+
+---
+
 ## Phase 0 — COMPLETE. Findings below are load-bearing for everything that follows.
 
 ### 1. The frame key is a file path string
@@ -29,8 +58,11 @@ the frame lives on the artwork.
 - **`none` is a literal sentinel used by 8 artworks.** Code treats falsy as "use the default
   frame", so `none` must survive as a non-empty string.
 - **`frame_file` is not in `supabase/schema.sql` or any tracked migration** — added out-of-band.
-  The new migration can't assume it's documented. Add it to `schema.sql` as part of this work so
-  the drift gets fixed rather than deepened.
+  The new migration can't assume it's documented. Follow-up (see below): `supabase/schema.sql` is
+  stale well beyond this one column — it predates `inventory_items`, `gallery_pieces`, the coin
+  economy and the support links, and still calls the project "artpenny". Regenerate it as a
+  `supabase db dump` snapshot rather than hand-patching, and write a `005` repair migration for
+  everything the chain can't rebuild.
 
 **Consequence:** the moment images move to Storage, `digis/nokia.png` stops describing where the
 file lives and becomes an opaque identifier that merely looks like a path. `frame_file` (the key)
@@ -101,7 +133,7 @@ A table rather than an enum so you can add or rename a group without a migration
 | `category_slug` | text FK | → `frame_categories`, nullable for `none` |
 | `sort_order` | int | order within category |
 | `image_path` | text | Storage path — **separate from `frame_file`** |
-| `window` | jsonb | geometry, see below |
+| `window_shape` | jsonb | geometry, see below. **Not `window`** — reserved keyword in Postgres |
 | `bbox` | jsonb | derived bounding box, denormalized at save |
 | `aspect` | numeric | derived w/h ratio, denormalized at save |
 | `crop_padding` | numeric | carried over; see Phase 4 on whether it survives |
@@ -116,10 +148,10 @@ no image). The picker filters on `kind = 'frame'`; the resolver then never retur
 value that exists on a live artwork. The alternative — special-casing `none` in application code —
 puts the same logic in every consumer instead of one place.
 
-`bbox` and `aspect` are computed from `window` at save time so nothing at runtime parses a polygon
+`bbox` and `aspect` are computed from `window_shape` at save time so nothing at runtime parses a polygon
 to find out how big the crop box should be.
 
-### The `window` format
+### The `window_shape` format
 
 Discriminated union, all coordinates **normalized 0–1** against the frame image's intrinsic
 dimensions:
@@ -182,7 +214,7 @@ is filed alongside `test3` as a test account.
 
 ### Backfill and verification
 
-Backfill inserts all 31 rows (30 frames + the `none` sentinel) with `window` left null — Phase 1b
+Backfill inserts all 31 rows (30 frames + the `none` sentinel) with `window_shape` left null — Phase 1b
 fills those in. Then one verification query before anything else proceeds: every distinct
 `frame_file` on `artworks` (31 values, 372 rows) must resolve to exactly one `frames` row. Anything
 other than 31 clean matches means stop. This is the check that protects existing pieces, and it's
@@ -203,7 +235,7 @@ One-off Node script, fully specified by the Phase 0 alpha findings:
 3. Douglas–Peucker simplify to ~20–40 points.
 4. Snap to `rect` or `ellipse` when within tolerance — cleaner data and cheaper to render than a
    40-point polygon approximating a rectangle.
-5. Normalize to 0–1, emit seed `window` values for all 30 frames.
+5. Normalize to 0–1, emit seed `window_shape` values for all 30 frames.
 6. Flag Circle and Heart for manual review (zero `cropPadding`, unreliable seed box).
 
 ---
@@ -329,7 +361,7 @@ exactly the category of thing that reads as slop.
 | Phase | What | Model | Ship? |
 |---|---|---|---|
 | 0 | Recon | — | **done** |
-| 1a | Schema, storage, access control, backfill | Sonnet | migration only |
+| 1a | Schema, storage, access control, backfill | Sonnet | **done** |
 | 1b | Tracer + window backfill | Sonnet | data only |
 | 2 | `getFrames()` + fallback + Storage transforms | Sonnet | yes |
 | 3 | Crop step honors window | Sonnet | yes — fixes Heart + Nokia |
@@ -344,8 +376,10 @@ One phase per Claude Code session, each with its own review and push.
 
 1. **`frame_file` is frozen.** 372 artworks depend on those exact strings, including the `none`
    sentinel. It looks like a path but is an opaque key — reorganizing Storage must never touch it.
-2. **`frame_file` is undocumented** in tracked migrations. Add it to `schema.sql` during Phase 1
-   rather than building more on top of undocumented drift.
+2. **The migration chain can't rebuild production.** `frame_file` — and likely more — exists in the
+   live database but in no tracked migration, and `supabase/schema.sql` is stale by many months.
+   Regenerate the dump, diff it against 001–004, and write a `005` repair migration. Until then the
+   live database is the only source of truth.
 3. **No staging.** Phases 2–4 touch the live upload flow. Rollback is Vercel Instant Rollback plus
    the committed fallback snapshot. Separate pushes so rollback stays surgical.
 4. **Rotation drift regression** (Phase 4). Re-test at 60° before pushing.
