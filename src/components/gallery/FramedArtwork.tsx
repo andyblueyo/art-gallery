@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getFrameConfig, type FrameInnerPadding } from "@/lib/frames";
+import { frameImageUrl, type FrameInnerPadding } from "@/lib/frames";
+import { useFrameConfig } from "@/components/frames/FramesProvider";
 
 export type InnerPadding = FrameInnerPadding;
 
@@ -34,11 +35,13 @@ export function FramedArtwork({
   rotation = 0,
   showTooltip = true,  
 }: FramedArtworkProps) {
-  const frameConfig = getFrameConfig(frame_file);
+  const frameConfig = useFrameConfig(frame_file);
   // The unframed option: no frame PNG exists, so there is nothing to overlay
   // and the box is sized from the artwork itself rather than from a frame.
-  const isUnframed = frameConfig.file === "none";
-  const frameSrc = `/frames/${frameConfig.file}`;
+  const isUnframed = frameConfig.kind === "none";
+  // Resized at the CDN. Floor of 800px: wall pieces get CSS-scaled up to
+  // ~3x and the picker/tray render at 2x DPR, so anything smaller goes soft.
+  const frameSrc = isUnframed ? "" : frameImageUrl(frameConfig, Math.max(800, width * 2));
   const shape = frameConfig.shape;
 
   // cropPadding is the per-frame art window, measured from each PNG's alpha
@@ -68,19 +71,22 @@ export function FramedArtwork({
   const [frameAspect, setFrameAspect] = useState<number | null>(null);
   const [hovered, setHovered] = useState(false);
 
-  // Unframed pieces are never cropped to a frame's aspect, so their box height
-  // has to come from the uploaded image's own proportions.
-  const aspectSrc = isUnframed ? artSrc : frameSrc;
-
+  // Framed pieces take their h/w from the catalog (measured from the PNG at
+  // trace time). Unframed pieces are never cropped to a frame's aspect, so
+  // their box height has to come from the uploaded image's own proportions.
   useEffect(() => {
+    if (!isUnframed) {
+      setFrameAspect(frameConfig.aspect > 0 ? 1 / frameConfig.aspect : null);
+      return;
+    }
     const img = new window.Image();
     img.onload = () => {
       if (img.naturalWidth > 0) {
         setFrameAspect(img.naturalHeight / img.naturalWidth);
       }
     };
-    img.src = aspectSrc;
-  }, [aspectSrc]);
+    img.src = artSrc;
+  }, [isUnframed, frameConfig.aspect, artSrc]);
 
   const height = frameAspect ? width * frameAspect : undefined;
 

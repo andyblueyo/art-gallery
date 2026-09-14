@@ -7,7 +7,8 @@ import { FramedArtwork } from "./FramedArtwork";
 import { GallerySettingsPanel, type GallerySettings } from "./GallerySettingsPanel";
 import { createClient } from "@/lib/supabase/client";
 import type { Artwork, GalleryPiece, InventoryTrayItem } from "@/lib/types";
-import { DEFAULT_FRAME_FILE, getFrameConfig } from "@/lib/frames";
+import { DEFAULT_FRAME_FILE, resolveFrame } from "@/lib/frames";
+import { useFrames } from "@/components/frames/FramesProvider";
 import { useRouter } from "next/navigation";
 
 const GRID_SIZE = 20;
@@ -64,6 +65,7 @@ interface Props {
 
 export function GalleryEditorCanvas({ handle, placedPieces, unplacedInventory, profileId, onCancel, onSaved, onReset, gallery }: Props) {
   const router = useRouter();
+  const frameCatalog = useFrames();
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const [canvasDims] = useState({ width: 1400, height: 1200 });
@@ -459,7 +461,7 @@ export function GalleryEditorCanvas({ handle, placedPieces, unplacedInventory, p
           const radians = (item.rotation * Math.PI) / 180;
           const cosA = Math.cos(radians);
           const sinA = Math.sin(radians);
-          const frameConfig = getFrameConfig(item.frame_file);
+          const frameConfig = resolveFrame(frameCatalog, item.frame_file);
           const sel = frameConfig.selectionScale ?? 1.0;
           const W = BASE_WIDTH, H = (BASE_WIDTH / frameConfig.aspect) * sel, s = item.scale;
           const cx: number[] = [0, s*W*cosA, s*(W*cosA-H*sinA), s*(-H*sinA)];

@@ -9,7 +9,8 @@ import ReactCrop, {
 } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { createClient } from "@/lib/supabase/client";
-import { FRAMES, FRAME_CATEGORIES, DEFAULT_FRAME_FILE, NO_FRAME, type FrameConfig, type FrameCategory } from "@/lib/frames";
+import { NO_FRAME_FILE, frameImageUrl, resolveFrame, type FrameConfig, type FrameCategory } from "@/lib/frames";
+import { useFrames } from "@/components/frames/FramesProvider";
 import type { DashboardArtwork } from "@/lib/types";
 import { TextInput } from "@/components/ui/TextInput";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
@@ -65,6 +66,12 @@ export function UploadZone({
   const [step, setStep] = useState<Step>("pick");
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const frameCatalog = useFrames();
+  // Picker shows real, active frames only; the resolver still knows every row.
+  const pickerCategories = frameCatalog.categories.filter((c) => c.active);
+  const pickerFrames = frameCatalog.frames.filter((f) => f.kind === "frame" && f.active);
+  const noFrame = resolveFrame(frameCatalog, NO_FRAME_FILE);
+
   const [selectedFrame, setSelectedFrame] = useState<FrameConfig | null>(null);
   const [crop, setCrop] = useState<Crop>();
   const [pixelCrop, setPixelCrop] = useState<PixelCrop | null>(null);
@@ -80,7 +87,9 @@ export function UploadZone({
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [editionTouched, setEditionTouched] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<FrameCategory>("classic");
+  const [activeCategory, setActiveCategory] = useState<FrameCategory>(
+    pickerCategories[0]?.id ?? "classic"
+  );
   // Unframed pieces are uploaded as-is, so they skip the crop step entirely —
   // same routing as the existing PDF path.
   const [skipFraming, setSkipFraming] = useState(false);
@@ -246,7 +255,7 @@ export function UploadZone({
       title: title.trim(),
       medium: medium.trim(),
       description: "",
-      file_url: localPreview || `/frames/${selectedFrame.file}`,
+      file_url: localPreview || frameImageUrl(selectedFrame, 480),
       file_type: fileType,
       frame_file: selectedFrame.file,
       heart_count: 0,
@@ -447,7 +456,7 @@ export function UploadZone({
           >
           {/* category tabs */}
           <div className="mb-3 flex gap-2">
-            {FRAME_CATEGORIES.map((cat) => (
+            {pickerCategories.map((cat) => (
               <button
                 key={cat.id}
                 type="button"
@@ -464,7 +473,7 @@ export function UploadZone({
           </div>
 
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-            {FRAMES.filter((f) => f.category === activeCategory).map((f) => {
+            {pickerFrames.filter((f) => f.category === activeCategory).map((f) => {
               const isSelected = selectedFrame?.file === f.file;
               return (
                 <button
@@ -480,8 +489,10 @@ export function UploadZone({
                   <div className="aspect-square w-full">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={`/frames/${f.file}`}
+                      src={frameImageUrl(f, 240)}
                       alt={f.label}
+                      loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-contain"
                     />
                   </div>
@@ -504,7 +515,7 @@ export function UploadZone({
                   onChange={(e) => {
                     if (e.target.checked) {
                       setSkipFraming(true);
-                      onSelectFrame(NO_FRAME);
+                      onSelectFrame(noFrame);
                     } else {
                       setSkipFraming(false);
                       setSelectedFrame(null);

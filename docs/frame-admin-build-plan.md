@@ -19,9 +19,10 @@ component as the wall renderer, or the two will drift.
 ## Status — 2026-09-14
 
 **Phase 0:** complete.
-**Phase 1a:** complete — commit pending.
+**Phase 1a:** complete.
+**Phase 1b:** complete — commit pending.
 
-Done:
+Done in 1a:
 - `004_frames_catalog.sql` written and applied. Verification passed cold: 31 frames rows,
   30 real frames, 372 artworks rows across 31 distinct `frame_file` values, **0 unresolved**.
 - Admin model live: `admin_users`, `is_admin()` (SECURITY DEFINER), RLS on both tables and the
@@ -31,8 +32,40 @@ Done:
 - All 30 PNGs uploaded to the `frames` bucket, byte-verified against local. Public read confirmed
   in a browser.
 
+Done in 1b:
+- `scripts/trace-frame-windows.mjs` — built-in PNG alpha decoder, no new packages. Seeds at the
+  crop-padding box centre, floods enclosed alpha, marching squares, Douglas–Peucker, then snaps to
+  rect/ellipse where the pixel mask agrees. No frame errored, no flood leaked to the border.
+- `005_frame_windows_seed.sql` applied. **13 rect, 2 ellipse, 15 polygon — 0 null across
+  `window_shape`, `bbox` and `aspect`.** Each update writes all three columns together and matches
+  on `frame_file`.
+- `aspect` is recomputed from the traced shape, not carried over from `frames.ts` (frame1:
+  0.749766 vs the legacy 0.750000). This was the silent-Phase-3 risk and it's handled.
+- Tuning note: the ellipse test must run before the rounded-rect test — a circle is also a
+  rounded rect with radius half the side, and Circle Gold snapped wrong until the order changed.
+
 Remaining:
-- Commit the migration and the upload script.
+- Commit 004, 005, the upload script and the tracer scripts.
+
+Open question, cheap to settle before Phase 3 reads `aspect`:
+- Eight frames came out at exactly `aspect = 1` (Cherry, Red Plaid, White, White Horizontal, Angel
+  Tama, Apple Tama, Blue Tama, Pink Tama). Correct if those PNGs are square canvases; wrong if any
+  are portrait, since several of those bboxes are clearly taller than wide in normalized terms.
+  Check the tracer's JSON for image dimensions rather than re-measuring.
+
+Tracer review flags carried forward:
+- Heart traced 20% off the old `cropPadding`, Oval Gold 14.8% off on the bottom edge. Both are the
+  bug being fixed, but both are worth eyeballing on the contact sheet — a wrong trace there is
+  invisible until someone frames a piece.
+- Ten frames flagged "nearly rectangular" (IoU 0.925–0.985). Leaving them as polygons: at that IoU
+  against a real photographed screen the polygon is tracking genuine off-axis geometry, not noise,
+  and substituting an idealized rect would reintroduce corner gaps.
+
+Tracked, not blocking:
+- Regenerate `supabase/schema.sql` as a `supabase db dump` snapshot and fix its header — it's
+  stale by many months, not just missing `frame_file`.
+- `005` repair migration so the chain can rebuild production. Needs a diff of the fresh dump
+  against 001–005. (Note: number it `006` now that `005` is taken.)
 
 Tracked, not blocking:
 - Regenerate `supabase/schema.sql` as a `supabase db dump` snapshot and fix its header — it's
@@ -362,7 +395,7 @@ exactly the category of thing that reads as slop.
 |---|---|---|---|
 | 0 | Recon | — | **done** |
 | 1a | Schema, storage, access control, backfill | Sonnet | **done** |
-| 1b | Tracer + window backfill | Sonnet | data only |
+| 1b | Tracer + window backfill | Sonnet | **done** |
 | 2 | `getFrames()` + fallback + Storage transforms | Sonnet | yes |
 | 3 | Crop step honors window | Sonnet | yes — fixes Heart + Nokia |
 | 4 | Renderer clip-path + positioning | Sonnet | yes |
