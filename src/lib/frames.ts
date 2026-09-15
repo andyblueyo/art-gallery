@@ -193,5 +193,5 @@ export function frameImageUrl(
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
   // Without Supabase configured (local demo mode) fall back to the static copy.
   if (!base) return `/frames/${frame.imagePath}`;
-  return `${base}/storage/v1/render/image/public/frames/${frame.imagePath}?width=${w}&quality=${quality}`;
+  return `${base}/storage/v1/render/image/public/frames/${frame.imagePath}?width=${w}&resize=contain&quality=${quality}`;
 }
