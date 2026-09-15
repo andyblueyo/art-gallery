@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { FramedArtwork, type InnerPadding } from "./FramedArtwork";
+import { FramedArtwork } from "./FramedArtwork";
 import { HeartButton } from "@/components/ui/HeartButton";
 import { CollectButton } from "@/components/gallery/CollectButton";
 
@@ -30,7 +30,6 @@ export interface GalleryPieceFrameProps {
   medium: string;
   artistName: string;
   fileType?: "image" | "pdf";
-  innerPadding?: InnerPadding;
   /** Cross-artist link-out. Falsy renders no anchor. */
   linkHref?: string | null;
   /**
@@ -49,7 +48,6 @@ export function GalleryPieceFrame({
   medium,
   artistName,
   fileType,
-  innerPadding,
   linkHref,
   wrapper = "none",
 }: GalleryPieceFrameProps) {
@@ -62,7 +60,6 @@ export function GalleryPieceFrame({
       medium={medium}
       artistName={artistName}
       fileType={fileType}
-      innerPadding={innerPadding}
       showTooltip={false}
     />
   );
@@ -181,7 +178,6 @@ export function GalleryPieceCard({
   medium,
   artistName,
   fileType,
-  innerPadding,
   linkHref,
   wrapper,
   artworkId,
@@ -201,7 +197,6 @@ export function GalleryPieceCard({
         medium={medium}
         artistName={artistName}
         fileType={fileType}
-        innerPadding={innerPadding}
         linkHref={linkHref}
         wrapper={wrapper}
       />

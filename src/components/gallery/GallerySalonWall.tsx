@@ -323,7 +323,6 @@ export function GallerySalonWall({
                   medium={art.medium}
                   artistName={artist.name}
                   fileType={art.fileType}
-                  innerPadding={item.innerPadding}
                   artworkId={art.id}
                   heartCount={art.heartCount}
                   isOwner={isOwner}
@@ -351,7 +350,6 @@ export function GallerySalonWall({
                     medium={art.medium}
                     artistName={artist.name}
                     fileType={art.fileType}
-                    innerPadding={item.innerPadding}
                     artworkId={art.id}
                     heartCount={art.heartCount}
                     isOwner={isOwner}

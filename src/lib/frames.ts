@@ -11,7 +11,6 @@
 
 import fallbackSnapshot from "./frames.fallback.json";
 
-export type FrameShape = "rect" | "circle" | "oval";
 // Slug from frame_categories. "none" is the pseudo-category of the unframed
 // sentinel row and is never a picker tab.
 export type FrameCategory = string;
@@ -72,11 +71,11 @@ export interface FrameConfig {
   aspect: number; // frame image w/h
   window: FrameWindow | null;
   bbox: FrameBBox | null;
+  // DEPRECATED. The hand-measured 4-sided window inset that predates
+  // `window`/`bbox`. Nothing renders from it any more; it survives only as
+  // the auto-tracer's seed (scripts/trace-frame-windows.mjs) and as the
+  // frameWindowBBox() fallback for a row that has not been traced yet.
   cropPadding: FrameInnerPadding; // 0..1 fractions of the image
-  // Legacy render tuning, not stored in the DB — see LEGACY_RENDER_TUNING.
-  shape: FrameShape;
-  innerPadding: FrameInnerPadding; // percent
-  selectionScale?: number;
 }
 
 export interface FrameCategoryConfig {
@@ -94,28 +93,9 @@ export interface FrameCatalog {
 export const DEFAULT_FRAME_FILE = "frame1.png";
 export const NO_FRAME_FILE = "none";
 
-// Per-frame render tuning that predates the DB `window` column and is not
-// stored there: the classic frames' hand-tuned innerPadding, the circle/oval
-// crop shape, and the editor's selection-box scale. Everything else renders
-// off cropPadding. Phase 4 replaces all of this with `window`; delete it then.
 const ZERO_PAD: FrameInnerPadding = { top: 0, right: 0, bottom: 0, left: 0 };
-const DEFAULT_PAD: FrameInnerPadding = { top: 10, right: 10, bottom: 10, left: 10 };
-const LEGACY_RENDER_TUNING: Record<
-  string,
-  Partial<Pick<FrameConfig, "shape" | "innerPadding" | "selectionScale">>
-> = {
-  "frame1.png": { innerPadding: { top: 10, right: 10, bottom: 9, left: 10 } },
-  "frame2.png": { shape: "circle", innerPadding: { top: 16, right: 16, bottom: 16, left: 16 } },
-  "frame3.png": { innerPadding: { top: 12, right: 10, bottom: 12, left: 10 } },
-  "frame5.png": { shape: "circle", innerPadding: { top: 12, right: 12, bottom: 10, left: 12 } },
-  "frame6.png": { shape: "oval", innerPadding: { top: 15, right: 18, bottom: 15, left: 18 } },
-  "frame7.png": { innerPadding: { top: 13, right: 13, bottom: 13, left: 13 }, selectionScale: 1.04 },
-  "frame8.png": { innerPadding: { top: 13, right: 8, bottom: 8, left: 8 }, selectionScale: 1.1 },
-  [NO_FRAME_FILE]: { innerPadding: ZERO_PAD },
-};
 
 export function frameRowToConfig(row: FrameRow): FrameConfig {
-  const legacy = LEGACY_RENDER_TUNING[row.frame_file] ?? {};
   return {
     file: row.frame_file,
     kind: row.kind,
@@ -128,9 +108,6 @@ export function frameRowToConfig(row: FrameRow): FrameConfig {
     window: row.window,
     bbox: row.bbox,
     cropPadding: row.crop_padding ?? ZERO_PAD,
-    shape: legacy.shape ?? "rect",
-    innerPadding: legacy.innerPadding ?? DEFAULT_PAD,
-    selectionScale: legacy.selectionScale,
   };
 }
 
@@ -167,6 +144,35 @@ export function resolveFrame(
   const fallback = frames.find((f) => f.file === DEFAULT_FRAME_FILE) ?? frames[0];
   if (!frameFile) return fallback;
   return frames.find((f) => f.file === frameFile) ?? fallback;
+}
+
+// ── Window geometry helpers ─────────────────────────────────────────────────
+const FULL_BBOX: FrameBBox = { x: 0, y: 0, w: 1, h: 1 };
+
+// Bounding box of the art window in image-normalised coords. Prefers the
+// traced bbox; falls back to the legacy cropPadding box (pre-Phase-1b rows),
+// then to the whole image.
+export function frameWindowBBox(
+  frame: Pick<FrameConfig, "bbox" | "cropPadding">
+): FrameBBox {
+  const b = frame.bbox;
+  if (b && b.w > 0 && b.h > 0) return b;
+  const cp = frame.cropPadding;
+  const w = 1 - cp.left - cp.right;
+  const h = 1 - cp.top - cp.bottom;
+  if (w > 0 && h > 0 && (w < 1 || h < 1)) return { x: cp.left, y: cp.top, w, h };
+  return FULL_BBOX;
+}
+
+// w/h of the art window itself, in image pixels — what a crop box must be
+// constrained to. NOT `aspect`: that is the frame graphic's ratio (Nokia is
+// 0.43, a tall phone) while its window is 1.42 (a wide screen).
+export function frameWindowAspect(
+  frame: Pick<FrameConfig, "aspect" | "bbox" | "cropPadding">
+): number {
+  const image = frame.aspect > 0 ? frame.aspect : 1;
+  const b = frameWindowBBox(frame);
+  return (b.w / b.h) * image;
 }
 
 // ── Images ──────────────────────────────────────────────────────────────────

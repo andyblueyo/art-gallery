@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { frameImageUrl, type FrameInnerPadding } from "@/lib/frames";
+import { useEffect, useId, useState } from "react";
+import { frameImageUrl, frameWindowBBox } from "@/lib/frames";
 import { useFrameConfig } from "@/components/frames/FramesProvider";
-
-export type InnerPadding = FrameInnerPadding;
+import { FrameWindowShape } from "@/components/frames/FrameWindowShape";
 
 export interface FramedArtworkProps {
   frame_file: string;
@@ -14,7 +13,6 @@ export interface FramedArtworkProps {
   medium: string;
   artistName: string;
   fileType?: "image" | "pdf";
-  innerPadding?: InnerPadding;
   className?: string;
   style?: React.CSSProperties;
   rotation?: number; 
@@ -29,7 +27,6 @@ export function FramedArtwork({
   medium,
   artistName,
   fileType = "image",
-  innerPadding,
   className = "",
   style,
   rotation = 0,
@@ -42,53 +39,46 @@ export function FramedArtwork({
   // Resized at the CDN. Floor of 800px: wall pieces get CSS-scaled up to
   // ~3x and the picker/tray render at 2x DPR, so anything smaller goes soft.
   const frameSrc = isUnframed ? "" : frameImageUrl(frameConfig, Math.max(800, width * 2));
-  const shape = frameConfig.shape;
 
-  // cropPadding is the per-frame art window, measured from each PNG's alpha
-  // channel (see scripts/frame-window-inscribe.py) and stored as 0..1
-  // fractions. For polaroid/digis it's the tuned source of truth, where
-  // innerPadding is just a flat 10% placeholder.
-  //
-  // Classic frames stay on innerPadding: their cropPadding was never tuned
-  // and measures far worse (frame2 70%, frame5 69% of the box outside the
-  // real window). The circle/oval/heart ones also need a non-rectangular
-  // fit, which a 4-sided padding can't express.
-  //
-  // An explicit innerPadding prop still wins, and stays in percent units.
-  const cp = frameConfig.cropPadding;
-  const padding = isUnframed
-    ? { top: 0, right: 0, bottom: 0, left: 0 }
-    : innerPadding ??
-    (frameConfig.category === "classic"
-      ? frameConfig.innerPadding
-      : {
-          top: cp.top * 100,
-          right: cp.right * 100,
-          bottom: cp.bottom * 100,
-          left: cp.left * 100,
-        });
+  // Geometry comes from the catalog's traced window (Phase 1b), normalised
+  // 0..1 against the frame image. The box below is exactly the frame image
+  // scaled to `width`, so bbox percentages land the art on the real window
+  // at any rendered size, and the window shape clips it — a heart shows a
+  // heart, a rotated tama screen shows a rotated screen.
+  const bbox = frameWindowBBox(frameConfig);
+  const win = frameConfig.window;
+  // A plain axis-aligned rect is already exactly the bbox: no clip needed.
+  const needsClip = !isUnframed && win !== null && !(win.kind === "rect" && !win.radius);
+  // useId() output contains colons, which are fine in an id but not in url().
+  const clipId = `fw-${useId().replace(/:/g, "")}`;
+  // window is in image coords; the clipped element is the bbox.
+  const toBBoxLocal = `scale(${1 / bbox.w} ${1 / bbox.h}) translate(${-bbox.x} ${-bbox.y})`;
 
-  const [frameAspect, setFrameAspect] = useState<number | null>(null);
   const [hovered, setHovered] = useState(false);
 
-  // Framed pieces take their h/w from the catalog (measured from the PNG at
-  // trace time). Unframed pieces are never cropped to a frame's aspect, so
-  // their box height has to come from the uploaded image's own proportions.
+  // Framed pieces are sized synchronously from the catalog aspect, so the box
+  // never renders at a placeholder height (which the editor's drag bounds and
+  // the wall's measured hover card both used to see mid-load). Unframed
+  // pieces have no frame to size from, so they measure the artwork itself.
+  const [artAspect, setArtAspect] = useState<number | null>(null);
   useEffect(() => {
-    if (!isUnframed) {
-      setFrameAspect(frameConfig.aspect > 0 ? 1 / frameConfig.aspect : null);
-      return;
-    }
+    if (!isUnframed) return;
     const img = new window.Image();
     img.onload = () => {
       if (img.naturalWidth > 0) {
-        setFrameAspect(img.naturalHeight / img.naturalWidth);
+        setArtAspect(img.naturalHeight / img.naturalWidth);
       }
     };
     img.src = artSrc;
-  }, [isUnframed, frameConfig.aspect, artSrc]);
+  }, [isUnframed, artSrc]);
 
-  const height = frameAspect ? width * frameAspect : undefined;
+  const height = isUnframed
+    ? artAspect
+      ? width * artAspect
+      : undefined
+    : frameConfig.aspect > 0
+      ? width / frameConfig.aspect
+      : undefined;
 
   return (
     <div
@@ -114,17 +104,26 @@ export function FramedArtwork({
           transformOrigin: "center center",
         }}
       >
+        {needsClip && win && (
+          <svg width={0} height={0} aria-hidden style={{ position: "absolute" }}>
+            <defs>
+              <clipPath id={clipId} clipPathUnits="objectBoundingBox">
+                <FrameWindowShape window={win} imageAspect={frameConfig.aspect} transform={toBBoxLocal} />
+              </clipPath>
+            </defs>
+          </svg>
+        )}
         <div
           style={{
             position: "absolute",
-            top: `${padding.top}%`,
-            left: `${padding.left}%`,
-            right: `${padding.right}%`,
-            bottom: `${padding.bottom}%`,
+            left: isUnframed ? 0 : `${bbox.x * 100}%`,
+            top: isUnframed ? 0 : `${bbox.y * 100}%`,
+            width: isUnframed ? "100%" : `${bbox.w * 100}%`,
+            height: isUnframed ? "100%" : `${bbox.h * 100}%`,
             overflow: "hidden",
             zIndex: 1,
             backgroundColor: "transparent",
-            borderRadius: shape === "rect" ? 0 : "50%",
+            clipPath: needsClip ? `url(#${clipId})` : undefined,
             // stands in for the frame's own depth on unframed pieces
             boxShadow: isUnframed ? "0 6px 14px rgba(0,0,0,0.35)" : undefined,
           }}

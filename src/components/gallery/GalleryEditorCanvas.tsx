@@ -457,13 +457,15 @@ export function GalleryEditorCanvas({ handle, placedPieces, unplacedInventory, p
           const py = (item.yPct / 100) * canvasDims.height;
           const isSelected = item.id === selectedId;
 
-          // Bounding box: rotate all 4 corners around top-left origin (0,0)
+          // Axis-aligned bounds of the rotated+scaled piece, relative to its
+          // top-left origin — the same transform FramedArtwork is rendered
+          // with below, using the same catalog aspect it sizes itself from,
+          // so this box and the painted frame can't disagree.
           const radians = (item.rotation * Math.PI) / 180;
           const cosA = Math.cos(radians);
           const sinA = Math.sin(radians);
           const frameConfig = resolveFrame(frameCatalog, item.frame_file);
-          const sel = frameConfig.selectionScale ?? 1.0;
-          const W = BASE_WIDTH, H = (BASE_WIDTH / frameConfig.aspect) * sel, s = item.scale;
+          const W = BASE_WIDTH, H = BASE_WIDTH / frameConfig.aspect, s = item.scale;
           const cx: number[] = [0, s*W*cosA, s*(W*cosA-H*sinA), s*(-H*sinA)];
           const cy: number[] = [0, s*W*sinA, s*(W*sinA+H*cosA), s*H*cosA];
           const minX = Math.min(...cx), maxX = Math.max(...cx);
@@ -477,11 +479,14 @@ export function GalleryEditorCanvas({ handle, placedPieces, unplacedInventory, p
               position={{ x: px, y: py }}
               grid={[GRID_SIZE, GRID_SIZE]}
               onStop={(_e, data) => handleDragStop(_e, data, item.id)}
+              // Draggable clamps the origin, so offset each edge by how far
+              // the rotated corners reach past it (minX/minY go negative as
+              // the piece turns).
               bounds={{
-                left: 0,
-                top: 0,
-                right: Math.max(0, canvasDims.width - (maxX - minX) - 20),
-                bottom: Math.max(0, canvasDims.height - (maxX - minX) - 20),
+                left: -minX,
+                top: -minY,
+                right: Math.max(-minX, canvasDims.width - maxX - 20),
+                bottom: Math.max(-minY, canvasDims.height - maxY - 20),
               }}
             >
               <div

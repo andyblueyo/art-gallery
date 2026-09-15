@@ -9,8 +9,9 @@ import ReactCrop, {
 } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { createClient } from "@/lib/supabase/client";
-import { NO_FRAME_FILE, frameImageUrl, resolveFrame, type FrameConfig, type FrameCategory } from "@/lib/frames";
+import { NO_FRAME_FILE, frameImageUrl, frameWindowAspect, resolveFrame, type FrameConfig, type FrameCategory } from "@/lib/frames";
 import { useFrames } from "@/components/frames/FramesProvider";
+import { CropWindowOverlay } from "./CropWindowOverlay";
 import type { DashboardArtwork } from "@/lib/types";
 import { TextInput } from "@/components/ui/TextInput";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
@@ -183,10 +184,13 @@ export function UploadZone({
     (e: React.SyntheticEvent<HTMLImageElement>) => {
       if (!selectedFrame) return;
       const { width, height } = e.currentTarget;
+      // Constrain to the window's aspect, not the frame graphic's — see
+      // frameWindowAspect(). This is what stops a tall crop being force-fit
+      // into a small wide window.
       const initial = centerCrop(
         makeAspectCrop(
-          { unit: "%", width: selectedFrame.shape === "circle" || selectedFrame.shape === "oval" ? 60 : 80 },
-          selectedFrame.aspect,
+          { unit: "%", width: 80 },
+          frameWindowAspect(selectedFrame),
           width,
           height
         ),
@@ -550,14 +554,16 @@ export function UploadZone({
             >
               <ReactCrop
                 crop={crop}
-                aspect={selectedFrame.aspect}
-                circularCrop={
-                  selectedFrame.shape === "circle" ||
-                  selectedFrame.shape === "oval"
-                }
+                aspect={frameWindowAspect(selectedFrame)}
                 onChange={(_pixel, percent) => setCrop(percent)}
                 onComplete={(pixel) => setPixelCrop(pixel)}
                 keepSelection
+                // The selection is the window's bounding box; the addon draws
+                // the window's real shape inside it and ghosts the frame
+                // around it so the step is WYSIWYG.
+                renderSelectionAddon={() => (
+                  <CropWindowOverlay frame={selectedFrame} crop={crop} />
+                )}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img

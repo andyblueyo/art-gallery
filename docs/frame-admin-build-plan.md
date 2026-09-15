@@ -20,7 +20,10 @@ component as the wall renderer, or the two will drift.
 
 **Phase 0:** complete.
 **Phase 1a:** complete.
-**Phase 1b:** complete — commit pending.
+**Phase 1b:** complete.
+**Phase 2:** built, not yet pushed.
+**006 (frame dimensions):** applied — commit pending.
+**Next:** Phase 3.
 
 Done in 1a:
 - `004_frames_catalog.sql` written and applied. Verification passed cold: 31 frames rows,
@@ -39,19 +42,66 @@ Done in 1b:
 - `005_frame_windows_seed.sql` applied. **13 rect, 2 ellipse, 15 polygon — 0 null across
   `window_shape`, `bbox` and `aspect`.** Each update writes all three columns together and matches
   on `frame_file`.
-- `aspect` is recomputed from the traced shape, not carried over from `frames.ts` (frame1:
-  0.749766 vs the legacy 0.750000). This was the silent-Phase-3 risk and it's handled.
+- `aspect` holds the **image** w/h ratio, not the window's — see the resolved section below. The 1b
+  report described it as recomputed from the trace; that was a misreading.
 - Tuning note: the ellipse test must run before the rounded-rect test — a circle is also a
   rounded rect with radius half the side, and Circle Gold snapped wrong until the order changed.
 
 Remaining:
 - Commit 004, 005, the upload script and the tracer scripts.
 
-Open question, cheap to settle before Phase 3 reads `aspect`:
-- Eight frames came out at exactly `aspect = 1` (Cherry, Red Plaid, White, White Horizontal, Angel
-  Tama, Apple Tama, Blue Tama, Pink Tama). Correct if those PNGs are square canvases; wrong if any
-  are portrait, since several of those bboxes are clearly taller than wide in normalized terms.
-  Check the tracer's JSON for image dimensions rather than re-measuring.
+Done in 2:
+- `src/lib/frames-server.ts` — `getFrames()` in `unstable_cache` under tag `frames`, one-hour
+  safety revalidate, bare anon client (cookies are a dynamic API and can't run inside the cache).
+  Throws inside the cache on failure so nothing bad is stored, then serves the snapshot.
+- `src/lib/frames.fallback.json` — all 31 rows in database-row shape.
+  `scripts/snapshot-frames.mjs` regenerates it from live. Run it before pushing when frames change;
+  a CI step is overkill, its job is preventing an empty picker, not mirroring the DB.
+- `FramesProvider` hands the server-loaded catalog to client components; context default is the
+  snapshot, so nothing outside the provider sees an empty list.
+- Images through the Storage transform endpoint. Widths snap to four buckets to keep the CDN cache
+  hot: picker asks 240, wall asks 2× CSS width with an 800 floor. **Classic tab picker 4.9 MB →
+  ~150 KB; wall 4.9 MB → ~590 KB.**
+- Debt: `frames.ts` keeps a small map of the classic frames' inner padding, the circle/oval crop
+  shapes, and two selection scales — not in the DB. **This must die in Phase 4.** While it exists,
+  the DB and the code disagree about the same frames with the DB inert, and a frame added via the
+  Phase 5 admin tool can't have inner padding or selection scale without a deploy — which undercuts
+  the reason the Supabase version was chosen.
+- Not yet verified by eye. "Identical by construction" is an argument, not a check; frame height now
+  comes from the catalog rather than probing the PNG. Load a real gallery against production before
+  pushing.
+
+### `aspect` is the image ratio, not the window ratio — resolved
+
+The eight frames at exactly `aspect = 1.000000` exposed it: all 30 rows store the **image** w/h
+ratio, not the window's. Confirmed against pixels — frame1 800×1067 = 0.7498 (stored 0.749766),
+Nokia 326×765 = 0.4261 (stored 0.426144). The 1b note claiming `aspect` was recomputed from the
+trace was wrong; it's a more precise version of the same quantity `frames.ts` already held.
+
+Nothing was broken by this. Phase 2 wants the image ratio for sizing the frame graphic, which is
+why rendering matched. **The bug was queued for Phase 3**, which would have constrained crop boxes
+to image ratios and fixed Nokia not at all.
+
+`006_frame_dimensions.sql` adds `image_width` / `image_height`, backfilled from the PNGs. Verified:
+0 missing, 0 mismatches against the independently-computed `aspect`.
+
+**Two different numbers, both needed:**
+
+| | what it is | who uses it |
+|---|---|---|
+| `aspect` | image w/h | `FramedArtwork`, sizing the frame graphic |
+| window aspect | `(bbox.w × image_width) / (bbox.h × image_height)` | Phase 3, constraining the crop box |
+
+Window aspect is **not stored** — it's redundant with `bbox` plus dimensions, and a third
+denormalized copy is a third thing to drift. `bbox` already solves the runtime polygon-parsing
+problem that justified denormalizing in 1a; this is two multiplications.
+
+Nokia: image aspect 0.426 (tall phone) vs window aspect ≈ 1.42 (wide screen). **That gap is the
+entire Nokia bug.** The eight square-canvas polaroids are the best test case — image aspect exactly
+1, window aspects ranging 0.754 to 1.589.
+
+`aspect` → `image_aspect` rename deliberately deferred: Phase 2 reads it in three places plus the
+snapshot JSON, and renaming freshly-working code is churn.
 
 Tracer review flags carried forward:
 - Heart traced 20% off the old `cropPadding`, Oval Gold 14.8% off on the bottom edge. Both are the
@@ -297,11 +347,19 @@ the classic tab drops from 4.9 MB to a fraction of it*.
 
 Where Heart and Nokia get fixed.
 
-1. Constrain the crop box aspect ratio to the selected frame's `aspect`.
-2. Render the crop selection **in the window's actual shape** via clip-path — you see a heart while
-   cropping a heart, a near-square while cropping Nokia.
+1. Constrain the crop box to the frame's **window aspect** —
+   `(bbox.w × image_width) / (bbox.h × image_height)`. **Not the `aspect` column**, which holds the
+   image ratio and is what `FramedArtwork` uses to size the frame graphic. Using `aspect` here
+   fixes nothing: Nokia's image ratio is 0.426 (tall phone) while its window is ≈1.42 (wide
+   screen), so the crop box would stay exactly as wrong as it is today.
+2. Render the crop selection **in the window's actual shape** via clip-path, from `window_shape` —
+   you see a heart while cropping a heart, a wide near-square while cropping Nokia.
 3. Ideally overlay the real frame image around the crop region at reduced opacity, so the step is
    genuinely WYSIWYG rather than a shape you mentally map onto a frame.
+
+Test cases: Nokia (0.426 vs 1.42), Heart (circular crop box today, heart-shaped window), and the
+eight square-canvas polaroids where image aspect is exactly 1 and window aspects run 0.754 to 1.589.
+If a frame's crop box looks unchanged after this ships, suspect the wrong number is being read.
 
 Root cause in both open bugs is identical: crop to a tall rectangle, force-fit into a small square
 window, get a distorted fragment. Constraining aspect at selection time makes that structurally
@@ -396,7 +454,8 @@ exactly the category of thing that reads as slop.
 | 0 | Recon | — | **done** |
 | 1a | Schema, storage, access control, backfill | Sonnet | **done** |
 | 1b | Tracer + window backfill | Sonnet | **done** |
-| 2 | `getFrames()` + fallback + Storage transforms | Sonnet | yes |
+| 006 | `image_width` / `image_height` + backfill | — | **applied** |
+| 2 | `getFrames()` + fallback + Storage transforms | Sonnet | **built, not pushed** |
 | 3 | Crop step honors window | Sonnet | yes — fixes Heart + Nokia |
 | 4 | Renderer clip-path + positioning | Sonnet | yes |
 | 5 | Admin portal UI | Sonnet | yes |

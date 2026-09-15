@@ -1,5 +1,3 @@
-import type { InnerPadding } from "@/components/gallery/FramedArtwork";
-
 export interface WallArtist {
   name: string;
   handle: string;
@@ -26,7 +24,6 @@ export interface GalleryLayoutItem {
   top: string;
   width: number;
   rot: number;
-  innerPadding?: InnerPadding;
 }
 
 // All slots use frame1.png until landscape/oval frames are added to public/frames/
@@ -43,14 +40,4 @@ export const galleryLayout: GalleryLayoutItem[] = [
   { frameFile: "frame1.png", artIndex: 9, left: "88%", top: "45%", width: 160, rot: -2 },
 ];
 
-/** Per-frame inner padding (%). Add entries when new frame PNGs land in public/frames/ */
-const FRAME_PADDING: Record<string, InnerPadding> = {
-  "frame1.png": { top: 17, right: 15, bottom: 17, left: 15 },
-  "frame2.png": { top: 11, right: 14, bottom: 11, left: 14 },
-  "frame3.png": { top: 18, right: 16, bottom: 18, left: 16 },
-};
-
-export function getFramePadding(frameFile: string): InnerPadding | undefined {
-  return FRAME_PADDING[frameFile];
-}
 
