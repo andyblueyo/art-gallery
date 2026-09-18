@@ -175,6 +175,38 @@ export function frameWindowAspect(
   return (b.w / b.h) * image;
 }
 
+// Axis-aligned bounds of a window, in image coords. Denormalised into
+// frames.bbox at save time so the renderer never walks a polygon.
+export function windowToBBox(w: FrameWindow): FrameBBox {
+  const clamp = (b: FrameBBox): FrameBBox => {
+    const x = Math.max(0, Math.min(1, b.x));
+    const y = Math.max(0, Math.min(1, b.y));
+    return { x, y, w: Math.max(0, Math.min(1 - x, b.w)), h: Math.max(0, Math.min(1 - y, b.h)) };
+  };
+  switch (w.kind) {
+    case "rect":
+      return clamp({ x: w.x, y: w.y, w: w.w, h: w.h });
+    case "ellipse":
+      return clamp({ x: w.cx - w.rx, y: w.cy - w.ry, w: 2 * w.rx, h: 2 * w.ry });
+    case "polygon": {
+      const xs = w.points.map((p) => p[0]);
+      const ys = w.points.map((p) => p[1]);
+      const x = Math.min(...xs), y = Math.min(...ys);
+      return clamp({ x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y });
+    }
+    case "path": {
+      // Control points bound the curve, so their extent is a safe (slightly
+      // loose) bbox without a path parser.
+      const nums = (w.d.match(/-?\d*\.?\d+(?:e-?\d+)?/gi) ?? []).map(Number);
+      const xs: number[] = [], ys: number[] = [];
+      for (let i = 0; i + 1 < nums.length; i += 2) { xs.push(nums[i]); ys.push(nums[i + 1]); }
+      if (!xs.length) return { x: 0, y: 0, w: 1, h: 1 };
+      const x = Math.min(...xs), y = Math.min(...ys);
+      return clamp({ x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y });
+    }
+  }
+}
+
 // ── Images ──────────────────────────────────────────────────────────────────
 // Frame PNGs live in the public `frames` Storage bucket and are served through
 // Supabase's image transformation endpoint, which resizes and (when the
@@ -183,12 +215,23 @@ export function frameWindowAspect(
 export const FRAME_IMAGE_WIDTHS = [240, 480, 800, 1200] as const;
 export const FRAME_IMAGE_QUALITY = 80;
 
+// Untransformed original, for the admin tracer (pixel-accurate alpha).
+export function frameOriginalUrl(frame: Pick<FrameConfig, "imagePath">): string {
+  if (!frame.imagePath) return "";
+  if (frame.imagePath.startsWith("blob:") || frame.imagePath.startsWith("data:")) return frame.imagePath;
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!base) return `/frames/${frame.imagePath}`;
+  return `${base}/storage/v1/object/public/frames/${frame.imagePath}`;
+}
+
 export function frameImageUrl(
   frame: Pick<FrameConfig, "imagePath">,
   width: number,
   quality: number = FRAME_IMAGE_QUALITY
 ): string {
   if (!frame.imagePath) return "";
+  // Admin drafts preview a not-yet-uploaded PNG straight from an object URL.
+  if (frame.imagePath.startsWith("blob:") || frame.imagePath.startsWith("data:")) return frame.imagePath;
   const w = FRAME_IMAGE_WIDTHS.find((b) => b >= width) ?? FRAME_IMAGE_WIDTHS[FRAME_IMAGE_WIDTHS.length - 1];
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
   // Without Supabase configured (local demo mode) fall back to the static copy.

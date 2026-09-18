@@ -21,9 +21,29 @@ component as the wall renderer, or the two will drift.
 **Phase 0:** complete.
 **Phase 1a:** complete.
 **Phase 1b:** complete.
-**Phase 2:** built, not yet pushed.
-**006 (frame dimensions):** applied — commit pending.
-**Next:** Phase 3.
+**Phase 2:** complete, pushed.
+**Phase 3:** complete, pushed.
+**Phase 4:** complete, pushed.
+**006 (frame dimensions):** applied.
+**Next:** QA regression pass, then Phase 5.
+
+### Incident: frames rendered with their sides cut off (live, ~Sept 15)
+
+Artwork appeared to be drawn *over* the frame — top and bottom rails visible, sides buried.
+Diagnosed initially as a clip-path or art-box-sizing bug in Phase 4. It was neither.
+
+Root cause was in Phase 2's `frameImageUrl()`: the Supabase transform endpoint **defaults to
+`resize=cover`**, so requesting a width center-cropped the frame PNG and sliced its left and right
+rails off. The geometry was correct the whole time; the frame graphic arriving was wrong.
+
+Fix: add `resize=contain` to the transform URL.
+
+Two lessons worth keeping:
+- The bug was introduced in Phase 2 and surfaced in Phase 4, because Phases 2–4 all shipped in one
+  push. Separate pushes exist for exactly this — the plan said so and it went unheeded.
+- Still to confirm: `resize=contain` preserves ratio, but check whether it *fits* or *letterboxes*.
+  The bbox math assumes the delivered image is the source scaled uniformly. If contain pads with
+  transparent margins, window coordinates drift.
 
 Done in 1a:
 - `004_frames_catalog.sql` written and applied. Verification passed cold: 31 frames rows,
@@ -102,6 +122,48 @@ entire Nokia bug.** The eight square-canvas polaroids are the best test case —
 
 `aspect` → `image_aspect` rename deliberately deferred: Phase 2 reads it in three places plus the
 snapshot JSON, and renaming freshly-working code is churn.
+
+Done in 3:
+- `frameWindowAspect()` in `frames.ts` — bbox w/h × image aspect. The crop step reads only this,
+  never the `aspect` column.
+- `frameWindowBBox()` prefers the traced bbox, falls back to legacy crop padding for untraced rows,
+  then the whole image — so the crop step degrades rather than breaks.
+- Crop box locked to window aspect; `CropWindowOverlay` ghosts the frame at 60% opacity behind the
+  selection and masks outside the window shape. `FrameWindowShape` renders rect/ellipse/polygon/path
+  in 0–1 coordinates, reused by Phase 4's clip paths.
+- The saved crop is still the rectangular bounding box — intentional. Phase 4 clips to shape on the
+  wall.
+
+Done in 4:
+- Art box positioned from bbox as percentages of the frame box; window shape applied as clip-path in
+  `objectBoundingBox` units. Framed pieces size synchronously from the catalog instead of rendering
+  at a placeholder height and jumping.
+- **Apple Tama root cause found:** `frames.ts` held 469/372 for a 500×500 PNG. `FramedArtwork`
+  measured the true PNG while the editor's bounding box used the wrong ratio, so the two disagreed.
+  The mid-QA "removed the boundary box" fix papered over a bad constant rather than fixing geometry.
+  Same mismatch drove the two selection-scale fudge factors on frame7 and frame8. Both sides now
+  read the same catalog aspect.
+- `crop_padding` **deprecated, not deleted** — the tracer seeds from it, and untraced rows fall back
+  to it via `frameWindowBBox`. The legacy shape, inner padding and selection-scale knobs are gone
+  from the catalog, and the dead per-item padding override is removed from `GalleryPieceCard`,
+  `GallerySalonWall` and the wall data module. One geometry source now.
+- Editor drag bounds fixed: the bottom bound used the horizontal extent, and bounds ignored that a
+  rotated piece's corners reach past its origin (~190px spill at 60°).
+
+### Open before Phase 5 — run the 30-frame QA protocol
+
+Four bugs are nominally closed; two are **unverified reasoning, not tested fixes**:
+- **Hover card on rotated pieces.** Phase 4 argues synchronous sizing removes the placeholder-height
+  window that caused it. Plausible, but the original anchored the card near an unrelated piece
+  across the wall — a bigger displacement than placeholder height alone explains. If it's still
+  broken, don't assume it's nearly fixed.
+- **Apple Tama at 60°.** Real fix this time, so this confirms rather than regression-checks.
+- **Drag bounds behaviour change.** Pieces parked near an edge may now clamp. Load a real gallery
+  with edge-parked pieces and confirm nothing moves on load or on an incidental re-save — 372 live
+  artworks, arranged by real artists.
+- **heart-border:** force to a plain rect window. The tracer flagged it nearly rectangular, and its
+  polygon leaves hairline gaps along the wavy edge. The frame border is opaque and sits above the
+  art, so the polygon buys nothing. One update statement, not a migration.
 
 Tracer review flags carried forward:
 - Heart traced 20% off the old `cropPadding`, Oval Gold 14.8% off on the bottom edge. Both are the
@@ -455,10 +517,11 @@ exactly the category of thing that reads as slop.
 | 1a | Schema, storage, access control, backfill | Sonnet | **done** |
 | 1b | Tracer + window backfill | Sonnet | **done** |
 | 006 | `image_width` / `image_height` + backfill | — | **applied** |
-| 2 | `getFrames()` + fallback + Storage transforms | Sonnet | **built, not pushed** |
-| 3 | Crop step honors window | Sonnet | yes — fixes Heart + Nokia |
-| 4 | Renderer clip-path + positioning | Sonnet | yes |
-| 5 | Admin portal UI | Sonnet | yes |
+| 2 | `getFrames()` + fallback + Storage transforms | Sonnet | **done** |
+| 3 | Crop step honors window | Sonnet | **done** |
+| 4 | Renderer clip-path + positioning | Sonnet | **done** |
+| QA | 30-frame regression protocol | agent | **next** |
+| 5 | Admin portal UI | Sonnet | |
 | 6 | Artwork compression | Sonnet | independent |
 | 7 | Gallery loading state | Sonnet | independent |
 
