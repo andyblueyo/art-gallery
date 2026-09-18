@@ -183,6 +183,25 @@ export async function updateCategory(slug: string, patch: { name?: string; activ
   } catch (e) { return fail((e as Error).message); }
 }
 
+// Hard delete is allowed only when no frame (of either activity state) still
+// references the category — the FK has no ON DELETE clause, so a stale
+// reference would otherwise fail as an opaque constraint violation.
+export async function deleteCategory(slug: string): Promise<ActionResult> {
+  try {
+    if (slug === "none") return fail("reserved slug");
+    const supabase = await adminClient();
+    const { count, error: countErr } = await supabase
+      .from("frames").select("frame_file", { count: "exact", head: true })
+      .eq("category_slug", slug);
+    if (countErr) return fail(countErr.message);
+    if ((count ?? 0) > 0) return fail(`${count} frame(s) still belong to this group — move or delete them first`);
+    const { error } = await supabase.from("frame_categories").delete().eq("slug", slug);
+    if (error) return fail(error.message);
+    bust();
+    return ok;
+  } catch (e) { return fail((e as Error).message); }
+}
+
 export async function reorderCategories(orderedSlugs: string[]): Promise<ActionResult> {
   try {
     const supabase = await adminClient();

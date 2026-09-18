@@ -5,7 +5,7 @@
 
 import { useState, useTransition } from "react";
 import type { FrameCategoryRow } from "@/lib/frames";
-import { reorderCategories, updateCategory, upsertCategory } from "@/app/admin/frames/actions";
+import { deleteCategory, reorderCategories, updateCategory, upsertCategory } from "@/app/admin/frames/actions";
 
 interface Props {
   categories: FrameCategoryRow[];
@@ -66,6 +66,15 @@ export function CategoryManager({ categories, frameCounts, onChanged, onError }:
               title={c.active ? "shown in picker" : "hidden from picker"}
             >
               {c.active ? "active" : "inactive"}
+            </button>
+            <button
+              type="button"
+              disabled={pending || (frameCounts[c.slug] ?? 0) > 0}
+              onClick={() => { if (confirm(`Delete the "${c.name}" group? This cannot be undone.`)) run(deleteCategory(c.slug)); }}
+              className="rounded-lg border border-transparent px-2 py-1 text-xs text-red-700 hover:border-red-300 disabled:pointer-events-none disabled:opacity-30"
+              title={(frameCounts[c.slug] ?? 0) > 0 ? "move or delete its frames first" : "hard delete — only offered at zero frames"}
+            >
+              delete
             </button>
           </li>
         ))}
