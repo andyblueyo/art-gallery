@@ -4,6 +4,7 @@ import Image from "next/image";
 import type { Artwork } from "@/lib/types";
 import { HeartButton } from "@/components/ui/HeartButton";
 import { CollectButton } from "@/components/gallery/CollectButton";
+import { artworkImageUrl } from "@/lib/artwork-image";
 
 interface GallerySeeAllGridProps {
   artworks: Artwork[];
@@ -51,8 +52,10 @@ export function GallerySeeAllGrid({
               ) : art.file_url.startsWith("http") ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={art.file_url}
+                  src={artworkImageUrl(art.file_url, 800)}
                   alt={art.title}
+                  loading="lazy"
+                  decoding="async"
                   className="h-full w-full object-cover"
                 />
               ) : (

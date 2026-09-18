@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { frameImageUrl, frameWindowBBox } from "@/lib/frames";
+import { ARTWORK_LQIP_WIDTH, artworkImageUrl } from "@/lib/artwork-image";
 import { useFrameConfig } from "@/components/frames/FramesProvider";
 import { FrameWindowShape } from "@/components/frames/FrameWindowShape";
 
@@ -17,6 +18,11 @@ export interface FramedArtworkProps {
   style?: React.CSSProperties;
   rotation?: number; 
   showTooltip?: boolean;
+  /**
+   * Above-the-fold: fetch eagerly at high priority. Everything else lazy-loads
+   * as it scrolls into view. The skeleton renders either way.
+   */
+  priority?: boolean;
 }
 
 export function FramedArtwork({
@@ -31,6 +37,7 @@ export function FramedArtwork({
   style,
   rotation = 0,
   showTooltip = true,  
+  priority = false,
 }: FramedArtworkProps) {
   const frameConfig = useFrameConfig(frame_file);
   // The unframed option: no frame PNG exists, so there is nothing to overlay
@@ -39,6 +46,37 @@ export function FramedArtwork({
   // Resized at the CDN. Floor of 800px: wall pieces get CSS-scaled up to
   // ~3x and the picker/tray render at 2x DPR, so anything smaller goes soft.
   const frameSrc = isUnframed ? "" : frameImageUrl(frameConfig, Math.max(800, width * 2));
+  // The art is display-sized too: same 2x-with-floor rule as the frame, since
+  // it shares the frame's CSS scaling on the walls. Non-Storage URLs pass
+  // through untouched.
+  const artDisplaySrc = artworkImageUrl(artSrc, Math.max(800, width * 2));
+  // Blur-up placeholder: a ~32px transform of the same artwork, only when the
+  // source is a Storage object (elsewhere it would just be the full image).
+  const lqipSrc = fileType === "image" ? artworkImageUrl(artSrc, ARTWORK_LQIP_WIDTH) : "";
+  const hasLqip = lqipSrc !== "" && lqipSrc !== artSrc;
+
+  // Load state drives the skeleton → image fade. Cached images can finish
+  // before hydration attaches onLoad, so the effect below also checks
+  // `complete` on mount.
+  const [frameLoaded, setFrameLoaded] = useState(false);
+  const [artLoaded, setArtLoaded] = useState(false);
+  const frameImgRef = useRef<HTMLImageElement>(null);
+  const artImgRef = useRef<HTMLImageElement>(null);
+  // One effect per image: when its src changes (or on mount), the image is
+  // "loaded" iff the browser already has it; otherwise onLoad will say so.
+  useEffect(() => {
+    const f = frameImgRef.current;
+    setFrameLoaded(!!(f && f.complete && f.naturalWidth > 0));
+  }, [frameSrc]);
+  useEffect(() => {
+    const a = artImgRef.current;
+    setArtLoaded(!!(a && a.complete && a.naturalWidth > 0));
+  }, [artDisplaySrc]);
+
+  const loadingAttrs = priority
+    ? ({ loading: "eager", fetchpriority: "high" } as const)
+    : ({ loading: "lazy" } as const);
+  const fade = (on: boolean): React.CSSProperties => ({ opacity: on ? 1 : 0, transition: "opacity 0.25s ease-out" });
 
   // Geometry comes from the catalog's traced window (Phase 1b), normalised
   // 0..1 against the frame image. The box below is exactly the frame image
@@ -99,7 +137,11 @@ export function FramedArtwork({
         className="w-full transition-transform duration-300 ease-out group-hover:scale-[1.03] group-focus-within:scale-[1.03]"
         style={{
           position: "relative",
-          background: "transparent",
+          // Skeleton: the whole frame box as a tinted shape at its final
+          // size, so the wall is composed before any image arrives. Unframed
+          // pieces have no frame silhouette; their art box carries the tint.
+          background: !isUnframed && !frameLoaded ? "rgba(30, 20, 8, 0.16)" : "transparent",
+          borderRadius: !isUnframed && !frameLoaded ? 3 : 0,
           height: height ?? width * 1.3,
           transformOrigin: "center center",
         }}
@@ -122,7 +164,8 @@ export function FramedArtwork({
             height: isUnframed ? "100%" : `${bbox.h * 100}%`,
             overflow: "hidden",
             zIndex: 1,
-            backgroundColor: "transparent",
+            // Art-area tint sits under the blur-up and the image.
+            backgroundColor: artLoaded ? "transparent" : "rgba(30, 20, 8, 0.22)",
             clipPath: needsClip ? `url(#${clipId})` : undefined,
             // stands in for the frame's own depth on unframed pieces
             boxShadow: isUnframed ? "0 6px 14px rgba(0,0,0,0.35)" : undefined,
@@ -136,32 +179,63 @@ export function FramedArtwork({
               </span>
             </div>
           ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={artSrc}
-              alt={title}
-              onError={(e) => {
-                console.error("[FramedArtwork] art image failed to load", {
-                  artSrc,
-                  title,
-                  event: e,
-                });
-              }}
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-              }}
-            />
+            <>
+              {hasLqip && !artLoaded && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={lqipSrc}
+                  alt=""
+                  aria-hidden
+                  decoding="async"
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    // scale hides the blur's soft edge inside the clip
+                    filter: "blur(10px)",
+                    transform: "scale(1.15)",
+                  }}
+                />
+              )}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                ref={artImgRef}
+                src={artDisplaySrc}
+                alt={title}
+                decoding="async"
+                {...loadingAttrs}
+                onLoad={() => setArtLoaded(true)}
+                onError={(e) => {
+                  console.error("[FramedArtwork] art image failed to load", {
+                    artSrc: artDisplaySrc,
+                    title,
+                    event: e,
+                  });
+                }}
+                style={{
+                  position: "relative",
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  ...fade(artLoaded),
+                }}
+              />
+            </>
           )}
         </div>
 
         {!isUnframed && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
+            ref={frameImgRef}
             src={frameSrc}
             alt=""
             aria-hidden
+            decoding="async"
+            {...loadingAttrs}
+            onLoad={() => setFrameLoaded(true)}
             style={{
               position: "absolute",
               inset: 0,
@@ -169,6 +243,7 @@ export function FramedArtwork({
               height: "100%",
               zIndex: 2,
               pointerEvents: "none",
+              ...fade(frameLoaded),
             }}
           />
         )}

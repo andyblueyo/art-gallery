@@ -319,6 +319,7 @@ export function GallerySalonWall({
                   frameFile={frameFile}
                   artSrc={art.src}
                   width={Math.min(width, 280)}
+                  priority={index < 3}
                   title={art.title}
                   medium={art.medium}
                   artistName={artist.name}
@@ -346,6 +347,7 @@ export function GallerySalonWall({
                     frameFile={frameFile}
                     artSrc={art.src}
                     width={280}
+                    priority={index < 3}
                     title={art.title}
                     medium={art.medium}
                     artistName={artist.name}
@@ -511,6 +513,7 @@ function CustomLayoutView({
                   frameFile={art.frame_file || DEFAULT_FRAME_FILE}
                   artSrc={art.file_url}
                   width={baseWidth}
+                  priority={piece.position_y < 40}
                   title={art.title}
                   medium={art.medium}
                   artistName={(art as any).artist_display_name || artistName}

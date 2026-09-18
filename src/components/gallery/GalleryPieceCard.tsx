@@ -30,6 +30,8 @@ export interface GalleryPieceFrameProps {
   medium: string;
   artistName: string;
   fileType?: "image" | "pdf";
+  /** Above-the-fold hint; see FramedArtwork. */
+  priority?: boolean;
   /** Cross-artist link-out. Falsy renders no anchor. */
   linkHref?: string | null;
   /**
@@ -48,6 +50,7 @@ export function GalleryPieceFrame({
   medium,
   artistName,
   fileType,
+  priority,
   linkHref,
   wrapper = "none",
 }: GalleryPieceFrameProps) {
@@ -60,6 +63,7 @@ export function GalleryPieceFrame({
       medium={medium}
       artistName={artistName}
       fileType={fileType}
+      priority={priority}
       showTooltip={false}
     />
   );
@@ -178,6 +182,7 @@ export function GalleryPieceCard({
   medium,
   artistName,
   fileType,
+  priority,
   linkHref,
   wrapper,
   artworkId,
@@ -197,6 +202,7 @@ export function GalleryPieceCard({
         medium={medium}
         artistName={artistName}
         fileType={fileType}
+        priority={priority}
         linkHref={linkHref}
         wrapper={wrapper}
       />

@@ -10,6 +10,7 @@ import type { Artwork, GalleryPiece, InventoryTrayItem } from "@/lib/types";
 import { DEFAULT_FRAME_FILE, resolveFrame } from "@/lib/frames";
 import { useFrames } from "@/components/frames/FramesProvider";
 import { useRouter } from "next/navigation";
+import { artworkImageUrl } from "@/lib/artwork-image";
 
 const GRID_SIZE = 20;
 const BASE_WIDTH = 220;
@@ -611,8 +612,10 @@ export function GalleryEditorCanvas({ handle, placedPieces, unplacedInventory, p
                     </div>
                   ) : (
                     <img
-                      src={item.fileUrl}
+                      src={artworkImageUrl(item.fileUrl, 240)}
                       alt={item.title}
+                      loading="lazy"
+                      decoding="async"
                       style={{ width: "100%", height: "100%", objectFit: "cover" }}
                     />
                   )}

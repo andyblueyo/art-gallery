@@ -12,6 +12,8 @@ import { createClient } from "@/lib/supabase/client";
 import { NO_FRAME_FILE, frameImageUrl, frameWindowAspect, resolveFrame, type FrameConfig, type FrameCategory } from "@/lib/frames";
 import { useFrames } from "@/components/frames/FramesProvider";
 import { CropWindowOverlay } from "./CropWindowOverlay";
+import { encodeArtwork, encodeArtworkFile, type EncodedImage } from "@/lib/resize";
+import { artworkImageUrl } from "@/lib/artwork-image";
 import type { DashboardArtwork } from "@/lib/types";
 import { TextInput } from "@/components/ui/TextInput";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
@@ -36,14 +38,6 @@ const MEDIUM_SUGGESTIONS = [
 ];
 
 const ACCEPT = "image/jpeg,image/png,image/webp,application/pdf";
-
-// only needed for unframed uploads, where the original file is stored as-is
-// instead of being re-encoded to JPEG by the crop canvas
-const EXT_BY_MIME: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-};
 
 type Step = "pick" | "frame" | "crop" | "meta";
 
@@ -76,7 +70,7 @@ export function UploadZone({
   const [selectedFrame, setSelectedFrame] = useState<FrameConfig | null>(null);
   const [crop, setCrop] = useState<Crop>();
   const [pixelCrop, setPixelCrop] = useState<PixelCrop | null>(null);
-  const [croppedBlob, setCroppedBlob] = useState<Blob | null>(null);
+  const [croppedBlob, setCroppedBlob] = useState<EncodedImage | null>(null);
   const [croppedPreviewUrl, setCroppedPreviewUrl] = useState<string | null>(
     null
   );
@@ -208,14 +202,14 @@ export function UploadZone({
       return;
     }
     try {
-      const blob = await getCroppedBlob(cropImgRef.current, pixelCrop);
-      if (blob.size > MAX_UPLOAD_BYTES) {
+      const encoded = await getCroppedBlob(cropImgRef.current, pixelCrop);
+      if (encoded.blob.size > MAX_UPLOAD_BYTES) {
         setError("this image is too large to upload. try a smaller file, lower resolution, or compress it at squoosh.app");
         return;
       }
       if (croppedPreviewUrl) URL.revokeObjectURL(croppedPreviewUrl);
-      setCroppedBlob(blob);
-      setCroppedPreviewUrl(URL.createObjectURL(blob));
+      setCroppedBlob(encoded);
+      setCroppedPreviewUrl(URL.createObjectURL(encoded.blob));
       setStep("meta");
     } catch (err) {
       console.error("[upload] crop failed:", err);
@@ -225,14 +219,23 @@ export function UploadZone({
 
   async function handleUpload() {
     if (!file || !selectedFrame || !title.trim()) return;
-    // Framed images get their size checked on the cropped blob in confirmCrop,
-    // which never runs for unframed pieces — check the raw file instead so both
-    // paths land under the same final size budget.
-    if (!isPdf && skipFraming && file.size > MAX_UPLOAD_BYTES) {
-      setError(
-        "this image is too large to upload. try a smaller file, lower resolution, or compress it at squoosh.app"
-      );
-      return;
+    // Unframed pieces skip the crop step, so downscale + encode them here.
+    // The size budget is checked on the encoded result, like framed pieces.
+    let unframedEncoded: EncodedImage | null = null;
+    if (!isPdf && skipFraming) {
+      try {
+        unframedEncoded = await encodeArtworkFile(file);
+      } catch (err) {
+        console.error("[upload] encode failed:", err);
+        setError("Could not process this image. Try a JPG or PNG.");
+        return;
+      }
+      if (unframedEncoded.blob.size > MAX_UPLOAD_BYTES) {
+        setError(
+          "this image is too large to upload. try a smaller file, lower resolution, or compress it at squoosh.app"
+        );
+        return;
+      }
     }
     if (isUploadingRef.current) {
       console.warn(
@@ -301,18 +304,16 @@ export function UploadZone({
         uploadBody = file;
         ext = "pdf";
         contentType = "application/pdf";
-      } else if (skipFraming) {
-        // no crop step ran — upload the original file untouched
-        uploadBody = file;
-        contentType = file.type;
-        ext = EXT_BY_MIME[file.type] ?? "jpg";
       } else {
-        if (!croppedBlob) {
-          throw new Error("Missing cropped image data.");
+        // Both image paths land here as a downscaled WebP (or JPEG where the
+        // browser can't encode WebP) — see src/lib/resize.ts.
+        const encoded = skipFraming ? unframedEncoded : croppedBlob;
+        if (!encoded) {
+          throw new Error("Missing encoded image data.");
         }
-        uploadBody = croppedBlob;
-        ext = "jpg";
-        contentType = "image/jpeg";
+        uploadBody = encoded.blob;
+        ext = encoded.ext;
+        contentType = encoded.contentType;
       }
 
       const storagePath = `${effectiveArtistId}/${artworkId}.${ext}`;
@@ -718,36 +719,19 @@ export function UploadZone({
   );
 }
 
-async function getCroppedBlob(
+// Crop in the source image's natural pixels, then downscale to the upload
+// ceiling and encode (WebP, JPEG fallback).
+function getCroppedBlob(
   image: HTMLImageElement,
   crop: PixelCrop
-): Promise<Blob> {
+): Promise<EncodedImage> {
   const scaleX = image.naturalWidth / image.width;
   const scaleY = image.naturalHeight / image.height;
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(crop.width * scaleX);
-  canvas.height = Math.round(crop.height * scaleY);
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Could not get 2D context for crop canvas.");
-  ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(
-    image,
-    crop.x * scaleX,
-    crop.y * scaleY,
-    crop.width * scaleX,
-    crop.height * scaleY,
-    0,
-    0,
-    canvas.width,
-    canvas.height
-  );
-  return await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(
-      (b) =>
-        b ? resolve(b) : reject(new Error("canvas.toBlob returned null")),
-      "image/jpeg",
-      0.8
-    );
+  return encodeArtwork(image, {
+    x: crop.x * scaleX,
+    y: crop.y * scaleY,
+    width: crop.width * scaleX,
+    height: crop.height * scaleY,
   });
 }
 

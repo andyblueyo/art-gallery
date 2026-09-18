@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { returnArtwork } from "@/app/actions/return-artwork";
+import { artworkImageUrl } from "@/lib/artwork-image";
 
 interface MyCollectionProps {
   userId: string;
@@ -84,8 +85,10 @@ export function MyCollection({ userId }: MyCollectionProps) {
                 <a href={`https://${handle}.galleryclub.online`} className="block">
                   <div className="aspect-square bg-[#ede7da] overflow-hidden">
                     <img
-                      src={artwork.file_url}
+                      src={artworkImageUrl(artwork.file_url, 800)}
                       alt={artwork.title}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
                     />
                   </div>

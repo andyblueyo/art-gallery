@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { DashboardArtwork } from "@/lib/types";
+import { artworkImageUrl } from "@/lib/artwork-image";
 
 interface ArtworkCardProps {
   artwork: DashboardArtwork;
@@ -147,8 +148,10 @@ export function ArtworkCard({
           artwork.file_url.startsWith("http") ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={artwork.file_url}
+            src={artworkImageUrl(artwork.file_url, 800)}
             alt={artwork.title}
+            loading="lazy"
+            decoding="async"
             className="h-full w-full object-cover"
           />
         ) : (
