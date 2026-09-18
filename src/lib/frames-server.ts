@@ -22,7 +22,7 @@ import {
 export const FRAMES_CACHE_TAG = "frames";
 
 const FRAME_COLUMNS =
-  "frame_file, kind, name, category_slug, sort_order, image_path, window, bbox, aspect, crop_padding, active";
+  "frame_file, kind, name, category_slug, sort_order, image_path, window:window_shape, bbox, aspect, crop_padding, active";
 const CATEGORY_COLUMNS = "slug, name, sort_order, active";
 
 // Both tables are public-read, so a bare anon client is enough. Deliberately

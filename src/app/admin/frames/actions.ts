@@ -45,7 +45,7 @@ export async function saveFrameGeometry(frameFile: string, window: FrameWindow):
     if (!validWindow(window)) return fail("invalid window");
     const supabase = await adminClient();
     const bbox = windowToBBox(window);
-    const { error } = await supabase.from("frames").update({ window, bbox }).eq("frame_file", frameFile).eq("kind", "frame");
+    const { error } = await supabase.from("frames").update({ window_shape: window, bbox }).eq("frame_file", frameFile).eq("kind", "frame");
     if (error) return fail(error.message);
     bust();
     return ok;
@@ -116,7 +116,7 @@ export async function createFrame(input: {
       category_slug: input.category_slug,
       sort_order: ((last as { sort_order?: number } | null)?.sort_order ?? 0) + 1,
       image_path: key, // uploaded by the client to this exact path first
-      window: input.window,
+      window_shape: input.window,
       bbox: windowToBBox(input.window),
       aspect: +input.aspect.toFixed(6),
       active: true,

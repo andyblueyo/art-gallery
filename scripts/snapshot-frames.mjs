@@ -28,7 +28,7 @@ const supabase = createClient(url, key, { auth: { persistSession: false } });
 const [framesRes, catsRes] = await Promise.all([
   supabase
     .from("frames")
-    .select("frame_file, kind, name, category_slug, sort_order, image_path, window, bbox, aspect, crop_padding, active")
+    .select("frame_file, kind, name, category_slug, sort_order, image_path, window:window_shape, bbox, aspect, crop_padding, active")
     .order("category_slug")
     .order("sort_order"),
   supabase.from("frame_categories").select("slug, name, sort_order, active").order("sort_order"),

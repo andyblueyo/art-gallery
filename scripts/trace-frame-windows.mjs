@@ -302,7 +302,7 @@ ${review.map((e) => `--   ${e.frame_file}\n${e.flags.map((f) => `--       ${f}`)
 begin;
 
 ${ok.map((e) => `update public.frames
-   set window = ${q(JSON.stringify(e.window))}::jsonb,
+   set window_shape = ${q(JSON.stringify(e.window))}::jsonb,
        bbox   = ${q(JSON.stringify(e.bbox))}::jsonb,
        aspect = ${e.aspect}
  where frame_file = ${q(e.frame_file)};`).join("\n\n")}
@@ -312,7 +312,7 @@ do $$
 declare v_missing text[];
 begin
   select coalesce(array_agg(frame_file), '{}') into v_missing
-    from public.frames where kind = 'frame' and window is null;
+    from public.frames where kind = 'frame' and window_shape is null;
   if array_length(v_missing, 1) > 0 then
     raise exception 'frames without window: %', v_missing;
   end if;
