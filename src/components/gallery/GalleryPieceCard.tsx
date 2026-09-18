@@ -154,7 +154,6 @@ export function GalleryPieceOverlay({
       {collect && (
         <CollectButton
           inventoryItemId={collect.inventoryItemId}
-          artworkId={artworkId}
           priceCoins={collect.priceCoins}
           editionsRemaining={collect.editionsRemaining}
           collectorCoinBalance={collect.collectorCoinBalance}

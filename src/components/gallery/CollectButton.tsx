@@ -5,7 +5,6 @@ import { collectArtwork } from "@/app/actions/collect";
 
 interface CollectButtonProps {
   inventoryItemId: string;
-  artworkId: string;
   priceCoins: number;
   editionsRemaining: number;
   collectorCoinBalance: number;
@@ -13,7 +12,6 @@ interface CollectButtonProps {
 
 export function CollectButton({
   inventoryItemId,
-  artworkId,
   priceCoins,
   editionsRemaining,
   collectorCoinBalance,
@@ -31,7 +29,7 @@ export function CollectButton({
     setRemaining((r) => r - 1);
     setError(null);
 
-    const result = await collectArtwork(inventoryItemId, artworkId);
+    const result = await collectArtwork(inventoryItemId);
 
     if ("error" in result) {
       setCollected(false);

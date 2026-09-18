@@ -88,7 +88,6 @@ export function GallerySeeAllGrid({
                 <div className="mt-2">
                   <CollectButton
                     inventoryItemId={collectableItems[art.id]}
-                    artworkId={art.id}
                     priceCoins={art.price_coins}
                     editionsRemaining={art.editions_remaining ?? 0}
                     collectorCoinBalance={collectorCoinBalance}
