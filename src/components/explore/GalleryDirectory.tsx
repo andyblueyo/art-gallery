@@ -11,21 +11,46 @@ type DirectoryGallery = GalleryDirectoryEntry & { url: string };
 // Avatars show at 36px; this covers 2–3x screens.
 const AVATAR_PX = 96;
 
+type SortKey = "recent" | "pieces" | "name";
+
+// "recent" is the order the server already returns (newest work first).
+const SORTS: { key: SortKey; label: string }[] = [
+  { key: "recent", label: "recently updated" },
+  { key: "pieces", label: "most pieces" },
+  { key: "name", label: "a–z" },
+];
+
+const collator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
+const nameOf = (g: DirectoryGallery) => g.displayName || g.handle;
+
 export function GalleryDirectory({ galleries }: { galleries: DirectoryGallery[] }) {
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortKey>("recent");
+  const [hideEmpty, setHideEmpty] = useState(false);
+
+  const q = query.trim().toLowerCase();
 
   const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return galleries;
-    return galleries.filter(
-      (g) => g.handle.includes(q) || g.displayName.toLowerCase().includes(q)
+    const list = galleries.filter(
+      (g) =>
+        (!hideEmpty || g.pieceCount > 0) &&
+        (!q || g.handle.includes(q) || g.displayName.toLowerCase().includes(q))
     );
-  }, [galleries, query]);
+    // Sorts are stable, so ties keep the recency order.
+    if (sort === "pieces") list.sort((a, b) => b.pieceCount - a.pieceCount);
+    else if (sort === "name") list.sort((a, b) => collator.compare(nameOf(a), nameOf(b)));
+    return list;
+  }, [galleries, q, hideEmpty, sort]);
 
   const noun = (n: number) => (n === 1 ? "gallery" : "galleries");
-  const countLabel = query.trim()
+  const countLabel = q || hideEmpty
     ? `${visible.length} of ${galleries.length} ${noun(galleries.length)}`
     : `${galleries.length} ${noun(galleries.length)}`;
+
+  const emptyMessage =
+    galleries.length === 0 ? "no galleries yet."
+    : q ? `no galleries match “${query.trim()}”.`
+    : "no galleries with work up yet.";
 
   return (
     <>
@@ -38,6 +63,42 @@ export function GalleryDirectory({ galleries }: { galleries: DirectoryGallery[] 
           aria-label="Search galleries"
           className="w-full rounded-lg border border-[#D3CEBF] bg-transparent px-4 py-2.5 text-sm text-[#2C2A22] placeholder:text-[#888780] outline-none focus:border-[#2C2A22] transition-colors"
         />
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs">
+          <div role="group" aria-label="Sort galleries" className="inline-flex rounded-lg border border-[#D3CEBF] p-0.5">
+            {SORTS.map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={sort === key}
+                onClick={() => setSort(key)}
+                className={`rounded-md px-2.5 py-1 transition-colors ${
+                  sort === key ? "bg-[#2C2A22] text-[#F2EDE3]" : "text-[#888780] hover:text-[#2C2A22]"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={hideEmpty}
+            onClick={() => setHideEmpty((v) => !v)}
+            className="inline-flex items-center gap-2 text-[#888780] hover:text-[#2C2A22] transition-colors"
+          >
+            <span
+              aria-hidden
+              className={`relative h-4 w-7 rounded-full transition-colors ${hideEmpty ? "bg-[#2C2A22]" : "bg-[#D3CEBF]"}`}
+            >
+              <span
+                className={`absolute left-0.5 top-0.5 h-3 w-3 rounded-full bg-[#F2EDE3] transition-transform ${
+                  hideEmpty ? "translate-x-3" : ""
+                }`}
+              />
+            </span>
+            hide empty
+          </button>
+        </div>
         <p style={{ color: "#888780" }} className="text-xs text-center mt-3" aria-live="polite">
           {countLabel}
         </p>
@@ -45,7 +106,7 @@ export function GalleryDirectory({ galleries }: { galleries: DirectoryGallery[] 
 
       {visible.length === 0 ? (
         <p style={{ color: "#888780" }} className="text-sm text-center italic py-12">
-          {galleries.length === 0 ? "no galleries yet." : `no galleries match “${query.trim()}”.`}
+          {emptyMessage}
         </p>
       ) : (
         <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -61,7 +122,7 @@ export function GalleryDirectory({ galleries }: { galleries: DirectoryGallery[] 
 }
 
 function GalleryCard({ gallery }: { gallery: DirectoryGallery }) {
-  const name = gallery.displayName || gallery.handle;
+  const name = nameOf(gallery);
   const { pieceCount } = gallery;
 
   return (

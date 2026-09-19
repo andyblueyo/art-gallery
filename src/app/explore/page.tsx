@@ -42,7 +42,7 @@ export default async function ExplorePage() {
           explore galleries
         </h1>
         <p style={{ color: "#888780" }} className="text-center mb-10">
-          every artist on gallery club, most recently updated first.
+          every artist on gallery club.
         </p>
 
         <GalleryDirectory galleries={galleries} />

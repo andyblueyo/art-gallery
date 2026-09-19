@@ -403,6 +403,10 @@ begin
       acquired_at          = now()
   where id = p_inventory_item;
 
+  -- Take it off the seller's walls so the buyer can hang it
+  delete from gallery_pieces
+  where inventory_item_id = p_inventory_item;
+
   update artworks
   set editions_remaining = editions_remaining - 1
   where id = v_artwork;
@@ -438,6 +442,7 @@ create or replace function public.return_artwork(p_inventory_item uuid)
 returns void
 language plpgsql
 security definer
+set search_path = public
 as $$
 DECLARE
   v_artwork_id         UUID;
@@ -449,19 +454,24 @@ DECLARE
   v_artwork_title      TEXT;
   v_artwork_image_url  TEXT;
 BEGIN
-  -- Fetch item metadata + snapshot fields
+  -- Fetch item metadata + snapshot fields; lock the edition so concurrent
+  -- returns of it serialize
   SELECT ii.artwork_id, ii.edition_number, ii.owned_by,
          ii.acquired_price_coins, a.artist_id, a.title, a.file_url
   INTO v_artwork_id, v_edition_number, v_current_owner,
        v_acquired_price, v_artist_id, v_artwork_title, v_artwork_image_url
   FROM inventory_items ii
   JOIN artworks a ON a.id = ii.artwork_id
-  WHERE ii.id = p_inventory_item;
+  WHERE ii.id = p_inventory_item
+    AND ii.deleted_at IS NULL
+    AND a.deleted_at IS NULL
+  FOR UPDATE OF ii;
 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Inventory item not found';
   END IF;
-  IF v_current_owner != auth.uid() THEN
+  -- Not `!=`: with a null auth.uid() that is null, which IF treats as false
+  IF auth.uid() IS NULL OR v_current_owner IS DISTINCT FROM auth.uid() THEN
     RAISE EXCEPTION 'You do not own this item';
   END IF;
   IF v_edition_number = 0 THEN
@@ -516,6 +526,9 @@ BEGIN
   );
 END;
 $$;
+
+revoke all on function public.return_artwork(uuid) from public, anon;
+grant execute on function public.return_artwork(uuid) to authenticated;
 
 create or replace function public.remove_artwork(p_artwork_id uuid)
 returns void
@@ -770,20 +783,28 @@ grant update (listed_for_sale) on public.inventory_items to authenticated;
 create policy "gallery_pieces_read_all"
   on public.gallery_pieces for select using (true);
 
+-- Existing rows: your gallery (so you can move or take down anything on it).
+-- New/updated rows: your gallery AND an edition you own.
 create policy "gallery_pieces_write_own"
   on public.gallery_pieces for all
   using (
     exists (
-      select 1 from public.galleries
-      where galleries.id = gallery_pieces.gallery_id
-        and galleries.user_id = auth.uid()
+      select 1 from public.galleries g
+      where g.id = gallery_pieces.gallery_id
+        and g.user_id = auth.uid()
     )
   )
   with check (
     exists (
-      select 1 from public.galleries
-      where galleries.id = gallery_pieces.gallery_id
-        and galleries.user_id = auth.uid()
+      select 1 from public.galleries g
+      where g.id = gallery_pieces.gallery_id
+        and g.user_id = auth.uid()
+    )
+    and exists (
+      select 1 from public.inventory_items ii
+      where ii.id = gallery_pieces.inventory_item_id
+        and ii.owned_by = auth.uid()
+        and ii.deleted_at is null
     )
   );
 
