@@ -195,6 +195,26 @@ $$;
 revoke all on function public.is_admin() from public;
 grant execute on function public.is_admin() to anon, authenticated, service_role;
 
+-- Used by the gallery_pieces policy. Must be SECURITY DEFINER: inventory_items'
+-- read policy queries gallery_pieces, so a plain subquery there would recurse.
+create or replace function public.owns_inventory_item(p_item uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.inventory_items
+    where id = p_item
+      and owned_by = auth.uid()
+      and deleted_at is null
+  );
+$$;
+
+revoke all on function public.owns_inventory_item(uuid) from public;
+grant execute on function public.owns_inventory_item(uuid) to anon, authenticated, service_role;
+
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
@@ -819,12 +839,7 @@ create policy "gallery_pieces_write_own"
       where g.id = gallery_pieces.gallery_id
         and g.user_id = auth.uid()
     )
-    and exists (
-      select 1 from public.inventory_items ii
-      where ii.id = gallery_pieces.inventory_item_id
-        and ii.owned_by = auth.uid()
-        and ii.deleted_at is null
-    )
+    and public.owns_inventory_item(gallery_pieces.inventory_item_id)
   );
 
 -- Gallery views (no insert policy: record_gallery_view() is the only writer)

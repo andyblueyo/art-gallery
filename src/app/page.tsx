@@ -2,10 +2,52 @@ import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { SiteNav } from "@/components/layout/SiteNav";
+import { GalleryCarousel } from "@/components/explore/GalleryCarousel";
+import { getGalleryDirectory } from "@/lib/directory-server";
+import { getGalleryUrl } from "@/lib/url";
+import type { GalleryDirectoryEntry } from "@/lib/types";
+
+const FEATURED_COUNT = 8;
+const FEATURED_RECENT = 3;
+// Always in the rotation, as long as the wall has work on it.
+const FEATURED_PINNED = ["badartrat"];
+
+function shuffle<T>(list: T[]): T[] {
+  const out = [...list];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+// The pinned galleries, a few of the most recently updated (the directory's
+// own order), then a random pick of the rest, shuffled together. Empty walls
+// are left out.
+function pickFeatured(directory: GalleryDirectoryEntry[]): GalleryDirectoryEntry[] {
+  const filled = directory.filter((g) => g.pieceCount > 0 && g.wall.pieces.length > 0);
+  const pinned = filled.filter((g) => FEATURED_PINNED.includes(g.handle));
+  const rest = filled.filter((g) => !FEATURED_PINNED.includes(g.handle));
+  const recent = rest.slice(0, FEATURED_RECENT);
+  const others = shuffle(rest.slice(FEATURED_RECENT)).slice(
+    0,
+    FEATURED_COUNT - pinned.length - recent.length
+  );
+  return shuffle([...pinned, ...recent, ...others]);
+}
 
 export default async function HomePage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const [{ data: { user } }, directory] = await Promise.all([
+    supabase.auth.getUser(),
+    getGalleryDirectory(),
+  ]);
+  const featured = await Promise.all(
+    pickFeatured(directory).map(async (entry) => ({
+      ...entry,
+      url: await getGalleryUrl(entry.handle),
+    }))
+  );
   const handle = user
   ? (await supabase.from("profiles").select("handle").eq("id", user.id).single()).data?.handle
   : null;
@@ -74,29 +116,16 @@ export default async function HomePage() {
       </section>
 
       {/* Example Galleries */}
-      <section className="py-20 px-6">
+      <section className="py-20 px-6 overflow-hidden">
         <div className="max-w-6xl mx-auto">
-          <p style={{ color: "#888780" }} className="text-sm text-center mb-12">
-            example galleries
-          </p>
-
-          <div className="max-w-sm mx-auto">
-            <a
-              href="https://badartrat.galleryclub.online"
-              className="block rounded-lg overflow-hidden transition-transform hover:scale-[1.02]"
-              style={{ border: "1px solid #D3CEBF" }}
-            >
-              <div className="h-48 overflow-hidden">
-                <img src="/art/badartrat-preview.png" alt="badartrat gallery" className="w-full h-full object-cover" />
-              </div>
-              <div className="p-4" style={{ color: "#2C2A22" }}>
-                <p className="font-medium">badartrat</p>
-                <p style={{ color: "#888780" }} className="text-xs">
-                  badartrat.galleryclub.online
-                </p>
-              </div>
-            </a>
-          </div>
+          {featured.length > 0 && (
+            <>
+              <p style={{ color: "#888780" }} className="text-sm text-center mb-12">
+                example galleries
+              </p>
+              <GalleryCarousel galleries={featured} />
+            </>
+          )}
 
           <p className="text-center mt-8">
             <Link href="/explore" style={{ color: "#2C2A22" }} className="text-sm underline underline-offset-4 hover:opacity-70 transition-opacity">

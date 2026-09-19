@@ -6,7 +6,7 @@ import { getInitials } from "@/lib/initials";
 import type { GalleryDirectoryEntry } from "@/lib/types";
 import { WallCover } from "./WallCover";
 
-type DirectoryGallery = GalleryDirectoryEntry & { url: string };
+export type DirectoryGallery = GalleryDirectoryEntry & { url: string };
 
 // Avatars show at 36px; this covers 2–3x screens.
 const AVATAR_PX = 96;
@@ -134,7 +134,7 @@ export function GalleryDirectory({ galleries }: { galleries: DirectoryGallery[] 
   );
 }
 
-function GalleryCard({ gallery }: { gallery: DirectoryGallery }) {
+export function GalleryCard({ gallery }: { gallery: DirectoryGallery }) {
   const name = nameOf(gallery);
   const { pieceCount } = gallery;
 
