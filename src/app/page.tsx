@@ -1,15 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
-
-import { redirect } from "next/navigation";
-
-async function signOut() {
-  "use server";
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  redirect("/login");
-}
+import { SiteNav } from "@/components/layout/SiteNav";
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -19,30 +11,7 @@ export default async function HomePage() {
   : null;
   return (
     <div style={{ backgroundColor: "#F2EDE3" }} className="min-h-screen flex flex-col">
-      {/* Nav */}
-      <nav className="border-b" style={{ borderColor: "#D3CEBF", color: "#2C2A22" }}>
-        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
-          <div style={{ fontFamily: "'Crooked', serif", fontSize: "24px" }}>
-            gallery club
-          </div>
-          {user ? (
-            <div className="flex items-center gap-6">
-              <Link href="/dashboard" className="text-sm hover:opacity-70 transition-opacity">
-                my dashboard 
-              </Link>
-              <form action={signOut}>
-                <button type="submit" className="text-sm hover:opacity-70 transition-opacity">
-                  sign out
-                </button>
-              </form>
-          </div>
-            ) : (
-          <Link href="/login" className="text-sm hover:opacity-70 transition-opacity">
-            sign in
-          </Link>
-        )}
-        </div>
-      </nav>
+      <SiteNav signedIn={!!user} />
 
       {/* Hero */}
       <section className="flex-1 py-20 px-6 flex flex-col items-center justify-center">
@@ -128,6 +97,12 @@ export default async function HomePage() {
               </div>
             </a>
           </div>
+
+          <p className="text-center mt-8">
+            <Link href="/explore" style={{ color: "#2C2A22" }} className="text-sm underline underline-offset-4 hover:opacity-70 transition-opacity">
+              explore all galleries
+            </Link>
+          </p>
         </div>
       </section>
 

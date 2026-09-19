@@ -82,3 +82,12 @@ export interface InventoryTrayItem {
 export type FrameShape = "portrait" | "landscape" | "square";
 
 export type GalleryView = "wall" | "grid" | "about";
+
+export interface GalleryDirectoryEntry {
+  handle: string;
+  displayName: string;
+  avatarUrl: string;
+  pieceCount: number;
+  /** file_urls of the artist's most recent image pieces, newest first */
+  previews: string[];
+}

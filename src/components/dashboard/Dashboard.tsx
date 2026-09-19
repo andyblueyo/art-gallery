@@ -37,8 +37,8 @@ export function Dashboard({ userId, initialProfile }: DashboardProps) {
         .order("created_at", { ascending: false }),
       supabase
         .from("gallery_views")
-        .select("id", { count: "exact", head: true })
-        .eq("gallery_id", userId),
+        .select("id, galleries!inner(user_id)", { count: "exact", head: true })
+        .eq("galleries.user_id", userId),
     ]);
 
     const pieces = (artRes.data ?? []) as DashboardArtwork[];
