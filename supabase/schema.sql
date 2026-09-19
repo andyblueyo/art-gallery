@@ -827,17 +827,18 @@ create policy "transactions_read_own"
 -- Storage
 -- ---------------------------------------------------------------------------
 
-insert into storage.buckets (id, name, public, allowed_mime_types) values
-  ('artworks', 'artworks', true, null),
-  ('avatars', 'avatars', true, array['image/*']),
-  ('frames', 'frames', true, array['image/png', 'image/webp', 'image/avif']);
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types) values
+  ('artworks', 'artworks', true, 5242880, array['image/jpeg', 'image/png', 'image/webp', 'application/pdf']),
+  ('avatars', 'avatars', true, null, array['image/*']),
+  ('frames', 'frames', true, null, array['image/png', 'image/webp', 'image/avif']);
 
 -- artworks bucket
 create policy "public can view files"
   on storage.objects for select using (bucket_id = 'artworks');
 
-create policy "anyone can upload"
-  on storage.objects for insert with check (bucket_id = 'artworks');
+create policy "Users can upload their own artworks"
+  on storage.objects for insert to authenticated
+  with check (bucket_id = 'artworks' and auth.uid()::text = (storage.foldername(name))[1]);
 
 create policy "Users can update their own artworks"
   on storage.objects for update to authenticated
