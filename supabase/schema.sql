@@ -727,10 +727,44 @@ create policy "inventory_items_read"
     )
   );
 
-create policy "inventory_items_write"
-  on public.inventory_items for all
-  using (owned_by = auth.uid())
-  with check (owned_by = auth.uid());
+-- Browser writes are artist-only: upload creates editions, the for-sale toggle
+-- flips listed_for_sale. Everything else goes through security definer functions.
+create policy "inventory_items_artist_insert"
+  on public.inventory_items for insert
+  with check (
+    owned_by = auth.uid()
+    and exists (
+      select 1 from public.artworks a
+      where a.id = inventory_items.artwork_id
+        and a.artist_id = auth.uid()
+        and a.deleted_at is null
+        and inventory_items.edition_number between 0 and a.edition_total
+    )
+  );
+
+create policy "inventory_items_artist_update"
+  on public.inventory_items for update
+  using (
+    owned_by = auth.uid()
+    and exists (
+      select 1 from public.artworks a
+      where a.id = inventory_items.artwork_id
+        and a.artist_id = auth.uid()
+    )
+  )
+  with check (
+    owned_by = auth.uid()
+    and exists (
+      select 1 from public.artworks a
+      where a.id = inventory_items.artwork_id
+        and a.artist_id = auth.uid()
+    )
+  );
+
+revoke insert, update on public.inventory_items from anon, authenticated;
+
+grant insert (owned_by, artwork_id, edition_number) on public.inventory_items to authenticated;
+grant update (listed_for_sale) on public.inventory_items to authenticated;
 
 -- Gallery pieces
 create policy "gallery_pieces_read_all"

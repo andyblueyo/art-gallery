@@ -1,11 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { avatarImageUrl } from "@/lib/artwork-image";
 import { getInitials } from "@/lib/initials";
 import type { GalleryDirectoryEntry } from "@/lib/types";
 import { WallCover } from "./WallCover";
 
 type DirectoryGallery = GalleryDirectoryEntry & { url: string };
+
+// Avatars show at 36px; this covers 2–3x screens.
+const AVATAR_PX = 96;
 
 export function GalleryDirectory({ galleries }: { galleries: DirectoryGallery[] }) {
   const [query, setQuery] = useState("");
@@ -72,9 +76,10 @@ function GalleryCard({ gallery }: { gallery: DirectoryGallery }) {
         {gallery.avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={gallery.avatarUrl}
+            src={avatarImageUrl(gallery.avatarUrl, AVATAR_PX)}
             alt=""
             loading="lazy"
+            decoding="async"
             className="h-9 w-9 shrink-0 rounded-full object-cover"
           />
         ) : (

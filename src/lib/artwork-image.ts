@@ -32,3 +32,18 @@ export function artworkImageUrl(
   // original came back 800×1313), so the art showed zoomed in on the walls.
   return `${base}${sep}width=${w}&resize=contain&quality=${quality}`;
 }
+
+const AVATAR_OBJECT_PATH = "/storage/v1/object/public/avatars/";
+const AVATAR_RENDER_PATH = "/storage/v1/render/image/public/avatars/";
+
+// Square avatar thumbnail from the `avatars` bucket, cropped to fill. The
+// upload's ?t= cache-buster is kept, so a new avatar still shows at once.
+// Non-avatar URLs are returned as-is.
+export function avatarImageUrl(url: string, size: number): string {
+  if (!url) return url;
+  const i = url.indexOf(AVATAR_OBJECT_PATH);
+  if (i === -1) return url;
+  const base = url.slice(0, i) + AVATAR_RENDER_PATH + url.slice(i + AVATAR_OBJECT_PATH.length);
+  const sep = base.includes("?") ? "&" : "?";
+  return `${base}${sep}width=${size}&height=${size}&resize=cover&quality=${ARTWORK_IMAGE_QUALITY}`;
+}

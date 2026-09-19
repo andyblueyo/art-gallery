@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useFrames } from "@/components/frames/FramesProvider";
 import { FrameWindowShape } from "@/components/frames/FrameWindowShape";
 import { frameImageUrl, frameWindowBBox, resolveFrame, type FrameConfig } from "@/lib/frames";
@@ -38,6 +38,8 @@ const COVER_ASPECT = 15 / 8;
 // Roughly the widest a cover is ever drawn in device pixels (one-column cards
 // on a phone), used to pick image sizes. Most pieces land in the 240px bucket.
 const MAX_COVER_PX = 1000;
+// Wall backdrops are soft and full-bleed; 800px covers a 3-column card at 2x.
+const BACKGROUND_WIDTH = 800;
 
 interface Placed {
   art: WallCoverArt;
@@ -97,20 +99,56 @@ function placeAuto(wall: Extract<WallCoverData, { layout: "auto" }>, frames: Fra
   return { width: AUTO_PAGE_W, height: top - AUTO_GAP + AUTO_PAD_BOTTOM, placed };
 }
 
-// Same rules as GallerySalonWall's wallBgStyle.
-function wallBackgroundStyle(bg: WallBackground): React.CSSProperties {
-  return bg.type === "image" && bg.imageUrl
-    ? {
-        backgroundImage: `url(${bg.imageUrl})`,
-        backgroundSize: bg.imageMode === "tile" ? "auto" : "cover",
-        backgroundRepeat: bg.imageMode === "tile" ? "repeat" : "no-repeat",
-        backgroundPosition: "center",
-      }
-    : { backgroundColor: bg.color };
+// CSS backgrounds don't lazy-load, and all ~150 cards render at once, so a
+// tiled wall only gets its image once its card is near the screen.
+function useNearViewport(enabled: boolean) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!enabled || near || !el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setNear(true);
+      },
+      { rootMargin: "800px 0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [enabled, near]);
+  return [ref, near] as const;
+}
+
+// Same rules as GallerySalonWall's wallBgStyle, but on the stage (the
+// modelled page) so the backdrop pans with the wall like it scrolls on it.
+// Cover-mode images are a resized, lazy <img>. Tiles keep the original file:
+// resizing would change how the pattern repeats.
+function WallBackdrop({ background, near }: { background: WallBackground; near: boolean }) {
+  if (background.type !== "image" || !background.imageUrl) return null;
+  if (background.imageMode === "tile") {
+    return near ? (
+      <div
+        className="absolute inset-0"
+        style={{ backgroundImage: `url(${background.imageUrl})`, backgroundRepeat: "repeat", backgroundPosition: "center" }}
+      />
+    ) : null;
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={artworkImageUrl(background.imageUrl, BACKGROUND_WIDTH)}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      className="absolute inset-0 h-full w-full object-cover"
+    />
+  );
 }
 
 export function WallCover({ wall }: { wall: WallCoverData }) {
   const catalog = useFrames();
+  const bg = wall.background;
+  const [ref, near] = useNearViewport(bg.type === "image" && bg.imageMode === "tile");
   const frames = wall.pieces.map((p) => resolveFrame(catalog, p.frameFile));
   const page = wall.layout === "custom" ? placeCustom(wall, frames) : placeAuto(wall, frames);
 
@@ -119,11 +157,13 @@ export function WallCover({ wall }: { wall: WallCoverData }) {
   const pan = ((height - viewHeight) / height) * 100;
 
   return (
-    <div className="relative aspect-[15/8] overflow-hidden" style={wallBackgroundStyle(wall.background)}>
+    // The wall color sits underneath while a background image loads.
+    <div ref={ref} className="relative aspect-[15/8] overflow-hidden" style={{ backgroundColor: bg.color }}>
       <div
         className="absolute inset-x-0 top-0 transition-transform duration-[2600ms] ease-in-out motion-reduce:transition-none group-hover:[transform:translateY(var(--pan))] group-focus-visible:[transform:translateY(var(--pan))]"
         style={{ aspectRatio: `${page.width} / ${height}`, "--pan": `-${pan}%` } as React.CSSProperties}
       >
+        <WallBackdrop background={bg} near={near} />
         {page.placed.map((piece, i) => (
           <MiniPiece key={i} piece={piece} pageWidth={page.width} pageHeight={height} />
         ))}
