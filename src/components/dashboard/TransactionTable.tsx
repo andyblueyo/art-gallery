@@ -89,15 +89,11 @@ const CONFIG: Record<TransactionDirection, DirectionConfig> = {
     isMuted: (t) => t.type === "return",
     artworkCell: (t) => (
       <>
-        {t.artwork_image_url ? (
-          <img
-            src={t.artwork_image_url}
-            alt={t.artwork_title ?? ""}
-            className="w-10 h-10 rounded object-cover bg-[#ede7da] flex-shrink-0"
-          />
-        ) : (
-          <div className="w-10 h-10 rounded bg-[#ede7da] flex-shrink-0" />
-        )}
+        <img
+          src={t.artwork_image_url || "/art/no-file.png"}
+          alt={t.artwork_title ?? ""}
+          className="w-10 h-10 rounded object-cover bg-[#ede7da] flex-shrink-0"
+        />
         <span className="text-[#2a2018]">
           {t.type === "return"
             ? `${t.artwork_title ?? ""}`
@@ -157,7 +153,7 @@ const CONFIG: Record<TransactionDirection, DirectionConfig> = {
             />
           ) : (
             <img
-              src={t.artwork_image_url ?? ""}
+              src={t.artwork_image_url || "/art/no-file.png"}
               alt={t.artwork_title ?? ""}
               className="w-10 h-10 rounded object-cover bg-[#ede7da] flex-shrink-0"
             />

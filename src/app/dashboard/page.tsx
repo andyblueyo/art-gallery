@@ -5,6 +5,10 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { Dashboard } from "@/components/dashboard/Dashboard";
 import type { Profile } from "@/lib/types";
 
+// NODE_ENV is "production" in every `next build`, so this can never be true in a deployed build.
+const skipAuth =
+  process.env.NODE_ENV === "development" && process.env.SKIP_AUTH === "true";
+
 export default async function DashboardPage() {
   if (!isSupabaseConfigured()) {
     return (
@@ -38,11 +42,11 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user && !process.env.NEXT_PUBLIC_SKIP_AUTH) {
+  if (!user && !skipAuth) {
     redirect("/login");
   }
 
-  const { data: profile, error } = process.env.NEXT_PUBLIC_SKIP_AUTH 
+  const { data: profile, error } = skipAuth 
   ? { data: null, error: null }
   : await supabase
       .from("profiles")
@@ -50,7 +54,7 @@ export default async function DashboardPage() {
       .eq("id", user?.id ?? "")
       .single();
 
-    const effectiveProfile = profile ?? (process.env.NEXT_PUBLIC_SKIP_AUTH ? {
+    const effectiveProfile = profile ?? (skipAuth ? {
       id: "",
       handle: "localdev",
       display_name: "Local Dev",
@@ -61,7 +65,7 @@ export default async function DashboardPage() {
       layout_mode: "auto",
     } : null);
     
-    if (!effectiveProfile && !process.env.NEXT_PUBLIC_SKIP_AUTH) {
+    if (!effectiveProfile && !skipAuth) {
       redirect("/signup");
     }
 
