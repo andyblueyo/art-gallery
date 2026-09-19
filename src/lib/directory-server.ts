@@ -104,6 +104,16 @@ function toWall(background: WallBackground, pieces: GalleryPiece[], artworks: Ar
   };
 }
 
+// Test accounts stay out of the directory (explore and the landing page's
+// carousel); their galleries still load at their own address.
+const HIDDEN_HANDLES = new Set([
+  "test",
+  "test2",
+  "test3",
+  "qatest-artist-0830",
+  "qatest-buyer-0830",
+]);
+
 /**
  * Galleries with the most recently added work first, then galleries with
  * nothing up yet (newest sign-ups first).
@@ -124,6 +134,7 @@ function toEntries(
   const latest = (id: string) => byArtist.get(id)?.[0]?.created_at ?? "";
 
   return profiles
+    .filter((profile) => !HIDDEN_HANDLES.has(profile.handle))
     .map((profile, signupOrder) => ({ profile, signupOrder }))
     .sort((a, b) =>
       latest(b.profile.id).localeCompare(latest(a.profile.id)) ||
