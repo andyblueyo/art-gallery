@@ -32,15 +32,6 @@ create index if not exists artworks_artist_id_idx on public.artworks(artist_id);
 create index if not exists artworks_display_order_idx on public.artworks(artist_id, display_order);
 create index if not exists profiles_handle_idx on public.profiles(handle);
 
--- Page views (one row per gallery visit)
-create table if not exists public.page_views (
-  id uuid primary key default gen_random_uuid(),
-  artist_id uuid not null references public.profiles(id) on delete cascade,
-  viewed_at timestamptz not null default now()
-);
-
-create index if not exists page_views_artist_id_idx on public.page_views(artist_id);
-
 -- Hearts (anonymous fingerprint per artwork)
 create table if not exists public.hearts (
   id uuid primary key default gen_random_uuid(),
@@ -74,7 +65,6 @@ create trigger on_heart_insert
 -- Row Level Security
 alter table public.profiles enable row level security;
 alter table public.artworks enable row level security;
-alter table public.page_views enable row level security;
 alter table public.hearts enable row level security;
 
 -- Profiles
@@ -103,15 +93,6 @@ drop policy if exists "artists manage own artworks" on public.artworks;
 create policy "artists manage own artworks"
   on public.artworks for all using (auth.uid() = artist_id);
 
--- Page views
-drop policy if exists "anyone can record page views" on public.page_views;
-create policy "anyone can record page views"
-  on public.page_views for insert with check (true);
-
-drop policy if exists "owners can read own page views" on public.page_views;
-create policy "owners can read own page views"
-  on public.page_views for select using (auth.uid() = artist_id);
-
 -- Hearts
 drop policy if exists "anyone can view hearts" on public.hearts;
 create policy "anyone can view hearts"
@@ -120,19 +101,6 @@ create policy "anyone can view hearts"
 drop policy if exists "anyone can add hearts" on public.hearts;
 create policy "anyone can add hearts"
   on public.hearts for insert with check (true);
-
--- Legacy view counter on profiles (optional)
-create or replace function public.increment_gallery_views(profile_handle text)
-returns void
-language plpgsql
-security definer
-as $$
-begin
-  update public.profiles
-  set view_count = view_count + 1
-  where handle = profile_handle;
-end;
-$$;
 
 -- Storage: create buckets in Supabase dashboard
 -- insert into storage.buckets (id, name, public) values ('artworks', 'artworks', true);

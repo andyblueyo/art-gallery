@@ -27,5 +27,8 @@ export function artworkImageUrl(
   const base = fileUrl.slice(0, i) + RENDER_PATH + fileUrl.slice(i + OBJECT_PATH.length);
   // Preserve any existing query string, then add ours.
   const sep = base.includes("?") ? "&" : "?";
-  return `${base}${sep}width=${w}&quality=${quality}`;
+  // resize=contain is required: Supabase defaults to cover, which with only a
+  // width keeps the original height and crops a centre strip (a 1314×1313
+  // original came back 800×1313), so the art showed zoomed in on the walls.
+  return `${base}${sep}width=${w}&resize=contain&quality=${quality}`;
 }
