@@ -165,7 +165,7 @@ create table public.transactions (
   amount integer not null,
   type text not null check (type in (
     'purchase', 'resale', 'artist_cut', 'donation',
-    'signup_bonus', 'artist_deletion_refund', 'return'
+    'signup_bonus', 'artist_deletion_refund', 'return', 'removal'
   )),
   artwork_id uuid references public.artworks(id),
   inventory_item_id uuid references public.inventory_items(id),
@@ -517,30 +517,38 @@ BEGIN
 END;
 $$;
 
--- NOTE: inserts type 'removal', which transactions_type_check does not allow,
--- so this fails whenever a collector owns an edition of the artwork.
 create or replace function public.remove_artwork(p_artwork_id uuid)
 returns void
 language plpgsql
 security definer
+set search_path = public
 as $$
 DECLARE
   v_artist_id         UUID;
   v_artwork_title     TEXT;
   v_artwork_image_url TEXT;
+  v_deleted_at        TIMESTAMPTZ;
   v_item              RECORD;
 BEGIN
-  SELECT artist_id, title, file_url
-  INTO v_artist_id, v_artwork_title, v_artwork_image_url
+  -- Lock the artwork so two concurrent calls can't both pass the
+  -- already-removed check
+  SELECT artist_id, title, file_url, deleted_at
+  INTO v_artist_id, v_artwork_title, v_artwork_image_url, v_deleted_at
   FROM artworks
-  WHERE id = p_artwork_id;
+  WHERE id = p_artwork_id
+  FOR UPDATE;
 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Artwork not found';
   END IF;
 
-  IF v_artist_id != auth.uid() THEN
+  -- Not `!=`: with a null auth.uid() that is null, which IF treats as false
+  IF auth.uid() IS NULL OR v_artist_id IS DISTINCT FROM auth.uid() THEN
     RAISE EXCEPTION 'Only the artist can remove this artwork';
+  END IF;
+
+  IF v_deleted_at IS NOT NULL THEN
+    RAISE EXCEPTION 'This artwork has already been removed';
   END IF;
 
   UPDATE artworks
@@ -594,6 +602,9 @@ BEGIN
 END;
 $$;
 
+revoke all on function public.remove_artwork(uuid) from public, anon;
+grant execute on function public.remove_artwork(uuid) to authenticated;
+
 -- ---------------------------------------------------------------------------
 -- Triggers
 -- ---------------------------------------------------------------------------
@@ -634,8 +645,28 @@ alter table public.transactions enable row level security;
 create policy "public can view profiles"
   on public.profiles for select using (true);
 
+create policy "owners can insert profile"
+  on public.profiles for insert
+  with check (auth.uid() = id);
+
 create policy "owners can update profile"
-  on public.profiles for all using (auth.uid() = id);
+  on public.profiles for update
+  using (auth.uid() = id)
+  with check (auth.uid() = id);
+
+-- Column-level privileges: users can't write coin_balance, tier or created_at.
+-- A new user-editable profile column must be added to both grants.
+revoke insert, update on public.profiles from anon, authenticated;
+
+grant insert (
+  id, handle, display_name, bio, location, instagram_url, avatar_url, layout_mode,
+  venmo_handle, cashapp_handle, kofi_handle, patreon_handle, paypal_handle, buymeacoffee_handle
+) on public.profiles to authenticated;
+
+grant update (
+  handle, display_name, bio, location, instagram_url, avatar_url, layout_mode,
+  venmo_handle, cashapp_handle, kofi_handle, patreon_handle, paypal_handle, buymeacoffee_handle
+) on public.profiles to authenticated;
 
 -- Admin users (granted only via the SQL editor / service role)
 create policy "admins can view admin list"
