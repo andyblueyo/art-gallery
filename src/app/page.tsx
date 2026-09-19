@@ -121,7 +121,7 @@ export default async function HomePage() {
           {featured.length > 0 && (
             <>
               <p style={{ color: "#888780" }} className="text-sm text-center mb-12">
-                example galleries
+                featured artist galleries
               </p>
               <GalleryCarousel galleries={featured} />
             </>
