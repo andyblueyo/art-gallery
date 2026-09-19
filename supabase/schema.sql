@@ -56,7 +56,8 @@ create table public.artworks (
   edition_total integer default 1,
   editions_remaining integer default 1,
   deleted_at timestamptz,
-  constraint edition_total_max check (edition_total <= 10)
+  constraint edition_total_max check (edition_total <= 10),
+  constraint price_coins_min check (price_coins is null or price_coins >= 1)
 );
 
 create table public.frame_categories (
@@ -685,20 +686,38 @@ grant update (
 create policy "admins can view admin list"
   on public.admin_users for select using (public.is_admin());
 
--- Artworks (the two select and two write policies overlap; both pairs exist live)
+-- Artworks (the two select policies overlap; both exist live)
 create policy "public can view artworks"
   on public.artworks for select using (true);
 
 create policy "artworks_read_all"
   on public.artworks for select using (true);
 
-create policy "artists manage own artworks"
-  on public.artworks for all using (auth.uid() = artist_id);
+create policy "artists insert own artworks"
+  on public.artworks for insert
+  with check (
+    artist_id = auth.uid()
+    and editions_remaining = edition_total
+    and file_url like '%/storage/v1/object/public/artworks/' || auth.uid()::text || '/%'
+  );
 
-create policy "artworks_write_own"
-  on public.artworks for all
-  using (artist_id = auth.uid())
-  with check (artist_id = auth.uid());
+create policy "artists update own artworks"
+  on public.artworks for update
+  using (artist_id = auth.uid() and deleted_at is null)
+  with check (artist_id = auth.uid() and deleted_at is null);
+
+-- Column-level privileges: heart_count, editions_remaining, deleted_at and
+-- file_url change only through functions/triggers. A new artist-editable
+-- column must be added to these grants.
+revoke insert, update on public.artworks from anon, authenticated;
+
+grant insert (
+  id, artist_id, title, medium, description, file_url, file_type, frame_file,
+  edition_total, editions_remaining
+) on public.artworks to authenticated;
+
+grant update (title, medium, description, for_sale, price_coins)
+  on public.artworks to authenticated;
 
 -- Frames catalog
 create policy "frame_categories_read_all"

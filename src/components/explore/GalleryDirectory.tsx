@@ -54,50 +54,63 @@ export function GalleryDirectory({ galleries }: { galleries: DirectoryGallery[] 
 
   return (
     <>
-      <div className="max-w-md mx-auto mb-12">
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="search by name or handle"
-          aria-label="Search galleries"
-          className="w-full rounded-lg border border-[#D3CEBF] bg-transparent px-4 py-2.5 text-sm text-[#2C2A22] placeholder:text-[#888780] outline-none focus:border-[#2C2A22] transition-colors"
-        />
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs">
-          <div role="group" aria-label="Sort galleries" className="inline-flex rounded-lg border border-[#D3CEBF] p-0.5">
-            {SORTS.map(({ key, label }) => (
-              <button
-                key={key}
-                type="button"
-                aria-pressed={sort === key}
-                onClick={() => setSort(key)}
-                className={`rounded-md px-2.5 py-1 transition-colors ${
-                  sort === key ? "bg-[#2C2A22] text-[#F2EDE3]" : "text-[#888780] hover:text-[#2C2A22]"
-                }`}
+      <div className="max-w-2xl mx-auto mb-12">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="search by name or handle"
+            aria-label="Search galleries"
+            className="w-full sm:flex-1 rounded-lg border border-[#D3CEBF] bg-transparent px-4 py-2.5 text-sm text-[#2C2A22] placeholder:text-[#888780] outline-none focus:border-[#2C2A22] transition-colors"
+          />
+          <div className="flex items-center justify-between sm:justify-start gap-4">
+            <div className="relative">
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortKey)}
+                aria-label="Sort galleries"
+                className="appearance-none cursor-pointer rounded-lg border border-[#D3CEBF] bg-transparent pl-4 pr-9 py-2.5 text-sm text-[#2C2A22] outline-none focus:border-[#2C2A22] transition-colors"
               >
-                {label}
-              </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={hideEmpty}
-            onClick={() => setHideEmpty((v) => !v)}
-            className="inline-flex items-center gap-2 text-[#888780] hover:text-[#2C2A22] transition-colors"
-          >
-            <span
-              aria-hidden
-              className={`relative h-4 w-7 rounded-full transition-colors ${hideEmpty ? "bg-[#2C2A22]" : "bg-[#D3CEBF]"}`}
+                {SORTS.map(({ key, label }) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              <svg
+                aria-hidden
+                viewBox="0 0 12 12"
+                className="pointer-events-none absolute right-3.5 top-1/2 h-3 w-3 -translate-y-1/2 text-[#888780]"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M3 4.5 6 7.5 9 4.5" />
+              </svg>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={hideEmpty}
+              onClick={() => setHideEmpty((v) => !v)}
+              className="inline-flex shrink-0 items-center gap-2 text-sm text-[#888780] hover:text-[#2C2A22] transition-colors"
             >
               <span
-                className={`absolute left-0.5 top-0.5 h-3 w-3 rounded-full bg-[#F2EDE3] transition-transform ${
-                  hideEmpty ? "translate-x-3" : ""
-                }`}
-              />
-            </span>
-            hide empty
-          </button>
+                aria-hidden
+                className={`relative h-4 w-7 rounded-full transition-colors ${hideEmpty ? "bg-[#2C2A22]" : "bg-[#D3CEBF]"}`}
+              >
+                <span
+                  className={`absolute left-0.5 top-0.5 h-3 w-3 rounded-full bg-[#F2EDE3] transition-transform ${
+                    hideEmpty ? "translate-x-3" : ""
+                  }`}
+                />
+              </span>
+              hide empty
+            </button>
+          </div>
         </div>
         <p style={{ color: "#888780" }} className="text-xs text-center mt-3" aria-live="polite">
           {countLabel}
