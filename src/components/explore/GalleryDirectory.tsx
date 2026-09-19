@@ -1,14 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { artworkImageUrl } from "@/lib/artwork-image";
 import { getInitials } from "@/lib/initials";
 import type { GalleryDirectoryEntry } from "@/lib/types";
+import { WallCover } from "./WallCover";
 
 type DirectoryGallery = GalleryDirectoryEntry & { url: string };
-
-// Static class names so Tailwind keeps them.
-const PREVIEW_COLS = ["", "grid-cols-1", "grid-cols-2", "grid-cols-3"];
 
 export function GalleryDirectory({ galleries }: { galleries: DirectoryGallery[] }) {
   const [query, setQuery] = useState("");
@@ -61,39 +58,15 @@ export function GalleryDirectory({ galleries }: { galleries: DirectoryGallery[] 
 
 function GalleryCard({ gallery }: { gallery: DirectoryGallery }) {
   const name = gallery.displayName || gallery.handle;
-  const { previews, pieceCount } = gallery;
+  const { pieceCount } = gallery;
 
   return (
     <a
       href={gallery.url}
-      className="block rounded-lg overflow-hidden transition-transform hover:scale-[1.02]"
+      className="group block rounded-lg overflow-hidden transition-transform hover:scale-[1.02]"
       style={{ border: "1px solid #D3CEBF" }}
     >
-      {previews.length > 0 ? (
-        <div
-          className={`h-48 grid gap-px ${PREVIEW_COLS[previews.length]}`}
-          style={{ backgroundColor: "#D3CEBF" }}
-        >
-          {previews.map((src, i) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={i}
-              src={artworkImageUrl(src, previews.length === 1 ? 800 : 480)}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              className="h-full w-full object-cover"
-            />
-          ))}
-        </div>
-      ) : (
-        <div
-          className="h-48 flex items-center justify-center text-sm italic"
-          style={{ backgroundColor: "#EAE4D7", color: "#888780" }}
-        >
-          nothing on the walls yet
-        </div>
-      )}
+      <WallCover wall={gallery.wall} />
 
       <div className="p-4 flex items-center gap-3" style={{ color: "#2C2A22" }}>
         {gallery.avatarUrl ? (

@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import type { Artwork, GalleryDirectoryEntry, GalleryPiece, Profile } from "@/lib/types";
+import type { Artwork, GalleryPiece, Profile } from "@/lib/types";
 import { getDemoGallery } from "@/lib/demo-data";
 
 export async function getProfileByHandle(
@@ -108,95 +108,4 @@ export async function getGalleryPieces(galleryId: string): Promise<GalleryPiece[
     return [];
   }
   return (data ?? []) as unknown as GalleryPiece[];
-}
-
-const DIRECTORY_PREVIEW_COUNT = 3;
-const DIRECTORY_PAGE_SIZE = 1000;
-
-// PostgREST caps each response at 1000 rows by default, so page until a
-// short page comes back.
-async function selectAllRows<T>(
-  page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>
-): Promise<T[] | null> {
-  const rows: T[] = [];
-  for (let from = 0; ; from += DIRECTORY_PAGE_SIZE) {
-    const { data, error } = await page(from, from + DIRECTORY_PAGE_SIZE - 1);
-    if (error) {
-      console.error("[data] selectAllRows error:", error);
-      return null;
-    }
-    rows.push(...(data ?? []));
-    if (!data || data.length < DIRECTORY_PAGE_SIZE) return rows;
-  }
-}
-
-/**
- * Every gallery on the site, galleries with the most recently added work
- * first, then galleries with nothing up yet (newest sign-ups first).
- */
-export async function getGalleryDirectory(): Promise<GalleryDirectoryEntry[]> {
-  type ProfileRow = Pick<Profile, "id" | "handle" | "display_name" | "avatar_url">;
-  type ArtworkRow = Pick<Artwork, "artist_id" | "file_url" | "file_type" | "created_at">;
-
-  let profiles: ProfileRow[] | null;
-  let artworks: ArtworkRow[] | null;
-
-  if (!isSupabaseConfigured()) {
-    const demos = ["maya-lin", "mika"].flatMap((h) => getDemoGallery(h) ?? []);
-    profiles = demos.map((d) => d.profile);
-    artworks = demos.flatMap((d) => d.artworks);
-  } else {
-    const supabase = await createClient();
-    [profiles, artworks] = await Promise.all([
-      selectAllRows<ProfileRow>((from, to) =>
-        supabase
-          .from("profiles")
-          .select("id, handle, display_name, avatar_url")
-          .order("created_at", { ascending: false })
-          .order("id")
-          .range(from, to)
-      ),
-      selectAllRows<ArtworkRow>((from, to) =>
-        supabase
-          .from("artworks")
-          .select("artist_id, file_url, file_type, created_at")
-          .is("deleted_at", null)
-          .order("created_at", { ascending: false })
-          .order("id")
-          .range(from, to)
-      ),
-    ]);
-  }
-
-  if (!profiles) return [];
-
-  // Artworks arrive newest first, so each artist's list stays newest first.
-  const byArtist = new Map<string, ArtworkRow[]>();
-  for (const art of artworks ?? []) {
-    const list = byArtist.get(art.artist_id);
-    if (list) list.push(art);
-    else byArtist.set(art.artist_id, [art]);
-  }
-
-  const latest = (id: string) => byArtist.get(id)?.[0]?.created_at ?? "";
-
-  return profiles
-    .map((profile, signupOrder) => ({ profile, signupOrder }))
-    .sort((a, b) =>
-      latest(b.profile.id).localeCompare(latest(a.profile.id)) ||
-      a.signupOrder - b.signupOrder
-    )
-    .map(({ profile }) => {
-      const list = byArtist.get(profile.id) ?? [];
-      return {
-        handle: profile.handle,
-        displayName: profile.display_name ?? "",
-        avatarUrl: profile.avatar_url ?? "",
-        pieceCount: list.length,
-        previews: list
-          .filter((art) => art.file_type === "image")
-          .slice(0, DIRECTORY_PREVIEW_COUNT)
-          .map((art) => art.file_url),
-      };
-    });
 }

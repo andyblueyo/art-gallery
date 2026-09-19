@@ -83,11 +83,37 @@ export type FrameShape = "portrait" | "landscape" | "square";
 
 export type GalleryView = "wall" | "grid" | "about";
 
+export interface WallBackground {
+  type: "color" | "image";
+  color: string;
+  imageUrl: string | null;
+  imageMode: "cover" | "tile" | null;
+}
+
+export interface WallCoverArt {
+  fileUrl: string;
+  fileType: "image" | "pdf";
+  frameFile: string | null;
+}
+
+/** Where a piece hangs on a custom wall: gallery_pieces' own fields. */
+export interface WallCoverPlacement {
+  x: number;
+  y: number;
+  rotation: number;
+  scale: number;
+  zIndex: number;
+}
+
+/** What a directory card needs to redraw a gallery's wall in miniature. */
+export type WallCover =
+  | { layout: "custom"; background: WallBackground; pieces: (WallCoverArt & WallCoverPlacement)[] }
+  | { layout: "auto"; background: WallBackground; pieces: WallCoverArt[] };
+
 export interface GalleryDirectoryEntry {
   handle: string;
   displayName: string;
   avatarUrl: string;
   pieceCount: number;
-  /** file_urls of the artist's most recent image pieces, newest first */
-  previews: string[];
+  wall: WallCover;
 }

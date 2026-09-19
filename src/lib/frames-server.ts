@@ -10,7 +10,7 @@
 // frames.fallback.json is served instead — never an empty picker.
 
 import { unstable_cache } from "next/cache";
-import { createClient } from "@supabase/supabase-js";
+import { createAnonClient } from "./supabase/anon";
 import {
   catalogFromRows,
   FALLBACK_CATALOG,
@@ -25,20 +25,11 @@ const FRAME_COLUMNS =
   "frame_file, kind, name, category_slug, sort_order, image_path, window:window_shape, bbox, aspect, crop_padding, active";
 const CATEGORY_COLUMNS = "slug, name, sort_order, active";
 
-// Both tables are public-read, so a bare anon client is enough. Deliberately
-// not the cookie-bound server client: cookies() is a dynamic API and cannot be
-// called inside unstable_cache.
-function anonClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) throw new Error("Supabase env not configured");
-  return createClient(url, key, { auth: { persistSession: false } });
-}
-
 // Throws on any failure so nothing bad is ever written into the cache; the
-// caller decides what to serve instead.
+// caller decides what to serve instead. Both tables are public-read, so the
+// anon client is enough.
 async function fetchCatalogFromDb(): Promise<FrameCatalog> {
-  const supabase = anonClient();
+  const supabase = createAnonClient();
   const [framesRes, categoriesRes] = await Promise.all([
     supabase.from("frames").select(FRAME_COLUMNS),
     supabase.from("frame_categories").select(CATEGORY_COLUMNS),

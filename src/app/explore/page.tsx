@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getGalleryDirectory } from "@/lib/data";
+import { getGalleryDirectory } from "@/lib/directory-server";
 import { getGalleryUrl } from "@/lib/url";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
