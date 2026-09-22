@@ -526,6 +526,24 @@ function CustomLayoutView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zoomed]);
 
+  // The fitted wall is one screen tall (100dvh), but <body> is min-h-screen
+  // (100vh, the height with iOS toolbars hidden), so the page could scroll a
+  // toolbar's height past the wall into the cream body. Lock the page while
+  // fitted, unless the wall is taller than the screen (a phone in landscape).
+  React.useEffect(() => {
+    const el = scrollRef.current;
+    if (!fit || !el || el.offsetHeight > window.innerHeight + 1) return;
+    const html = document.documentElement;
+    const body = document.body;
+    const prev = [html.style.overflow, body.style.overflow, html.style.overscrollBehavior, body.style.overscrollBehavior];
+    html.style.overflow = body.style.overflow = "hidden";
+    html.style.overscrollBehavior = body.style.overscrollBehavior = "none";
+    window.scrollTo({ top: 0 });
+    return () => {
+      [html.style.overflow, body.style.overflow, html.style.overscrollBehavior, body.style.overscrollBehavior] = prev;
+    };
+  }, [fit, fitScale]);
+
   const walkTo = (index: number) => {
     const next = walkOrder[index];
     if (!next) return;
