@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Draggable from "react-draggable";
 import type { DraggableData, DraggableEvent } from "react-draggable";
 import { FramedArtwork } from "./FramedArtwork";
@@ -11,6 +11,7 @@ import { DEFAULT_FRAME_FILE, resolveFrame } from "@/lib/frames";
 import { useFrames } from "@/components/frames/FramesProvider";
 import { useRouter } from "next/navigation";
 import { artworkImageUrl } from "@/lib/artwork-image";
+import { useWallFitScale } from "./useWallFit";
 
 const GRID_SIZE = 20;
 const BASE_WIDTH = 220;
@@ -108,6 +109,14 @@ export function GalleryEditorCanvas({ handle, placedPieces, unplacedInventory, p
     unplacedInventory.map(item => ({ ...item }))
   );
   const [trayOpen, setTrayOpen] = useState(true);
+  const [confirmReset, setConfirmReset] = useState(false);
+
+  // Phone: the wall opens fitted to the screen width so every piece, including
+  // one just hung from the tray, is in view; "zoomed" is the 1:1 canvas.
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const fitScale = useWallFitScale();
+  const [zoomed, setZoomed] = useState(false);
+  const viewScale = isMobile && !zoomed ? fitScale : 1;
 
   const nodeRefsMap = useRef(new Map<string, React.RefObject<HTMLDivElement>>());
 
@@ -177,6 +186,74 @@ export function GalleryEditorCanvas({ handle, placedPieces, unplacedInventory, p
     if (!item) return;
     if (item.zIndex > 1) updateItem(selectedId, { zIndex: item.zIndex - 1 });
   }, [selectedId, items, updateItem]);
+
+  const storeSelected = useCallback(() => {
+    if (!selectedId) return;
+    const item = items.find(i => i.id === selectedId);
+    if (!item) return;
+    setItems(prev => prev.filter(i => i.id !== selectedId));
+    setTrayItems(prev => [...prev, {
+      inventoryItemId: item.inventoryItemId,
+      artworkId: item.id,
+      artistId: "",
+      editionNumber: 0,
+      title: item.title,
+      medium: item.medium,
+      fileUrl: item.src,
+      fileType: item.fileType,
+      frameFile: item.frame_file,
+      ownedBy: item.ownedBy
+    }]);
+    setSelectedId(null);
+  }, [selectedId, items]);
+
+  const hangFromTray = useCallback((item: InventoryTrayItem) => {
+    // Desktop keeps its fixed drop point. On a phone the piece lands in the
+    // middle of what's on screen: the fitted wall's centre, or the visible
+    // patch of the zoomed one, so it can't land off-screen.
+    let xPct = 40;
+    let yPct = 35;
+    const el = scrollerRef.current;
+    if (isMobile && el) {
+      const { width, height } = canvasDims;
+      const x = zoomed ? el.scrollLeft + el.clientWidth / 2 : width / 2;
+      const y = zoomed ? el.scrollTop + el.clientHeight / 2 : height / 2;
+      const clamp = (v: number, max: number) => Math.min(Math.max(v, 0), max);
+      xPct = (clamp(x - BASE_WIDTH / 2, width - BASE_WIDTH - 20) / width) * 100;
+      yPct = (clamp(y - BASE_WIDTH / 2, height - BASE_WIDTH * 1.4) / height) * 100;
+    }
+    setItems(prev => [...prev, {
+      id: item.artworkId,
+      inventoryItemId: item.inventoryItemId,
+      title: item.title,
+      medium: item.medium,
+      src: item.fileUrl,
+      fileType: item.fileType,
+      frame_file: item.frameFile ?? DEFAULT_FRAME_FILE,
+      ownedBy: item.ownedBy,
+      xPct,
+      yPct,
+      rotation: 0,
+      scale: 1,
+      zIndex: prev.length + 1,
+    }]);
+    setTrayItems(prev => prev.filter(t => t.inventoryItemId !== item.inventoryItemId));
+    // Selecting it on a phone swaps the tray for its controls right away.
+    if (isMobile) setSelectedId(item.artworkId);
+  }, [isMobile, zoomed, canvasDims]);
+
+  // Entering the zoomed wall on a phone, centre the selected piece (or the wall).
+  useLayoutEffect(() => {
+    const el = scrollerRef.current;
+    if (!isMobile || !zoomed || !el) return;
+    const target = items.find(i => i.id === selectedId);
+    const x = target ? (target.xPct / 100) * canvasDims.width + (BASE_WIDTH * target.scale) / 2 : canvasDims.width / 2;
+    const y = target ? (target.yPct / 100) * canvasDims.height + (BASE_WIDTH * target.scale) / 2 : canvasDims.height / 2;
+    el.scrollLeft = x - el.clientWidth / 2;
+    el.scrollTop = y - el.clientHeight / 2;
+    // Only on the switch itself; later selection changes shouldn't jump the view.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoomed]);
 
   const handleSave = useCallback(async () => {
     setIsSaving(true);
@@ -250,6 +327,9 @@ export function GalleryEditorCanvas({ handle, placedPieces, unplacedInventory, p
 
   const selectedItem = items.find(i => i.id === selectedId) ?? null;
 
+  const btnTouch =
+    "min-h-[44px] min-w-[44px] rounded-lg border border-[#c8a040]/30 px-3 text-sm text-[#f5e6c8]/80";
+
   const btnBase =
     "rounded border border-[#c8a040]/30 px-2 py-1 text-xs text-[#f5e6c8]/80 hover:bg-[#c8a040]/20 transition-colors";
 
@@ -270,7 +350,8 @@ export function GalleryEditorCanvas({ handle, placedPieces, unplacedInventory, p
         <span className="hidden sm:block shrink-0 font-serif text-[#c8a040]/85">gallery club</span>
 
         {/* Per-artwork controls (shown when something is selected) */}
-        {selectedItem ? (
+        {/* On a phone these live in the bottom panel instead, where they fit. */}
+        {selectedItem && !isMobile ? (
           <div className="flex flex-1 items-center justify-center gap-2 overflow-x-auto">
             {/* Rotation */}
             <div className="flex items-center gap-1">
@@ -341,25 +422,7 @@ export function GalleryEditorCanvas({ handle, placedPieces, unplacedInventory, p
             <button
               className={`${btnBase} text-[#f5e6c8]/50`}
               title="Store in inventory"
-              onClick={() => {
-                if (!selectedId) return;
-                const item = items.find(i => i.id === selectedId);
-                if (!item) return;
-                setItems(prev => prev.filter(i => i.id !== selectedId));
-                setTrayItems(prev => [...prev, {
-                  inventoryItemId: item.inventoryItemId,
-                  artworkId: item.id,
-                  artistId: "",
-                  editionNumber: 0,
-                  title: item.title,
-                  medium: item.medium,
-                  fileUrl: item.src,
-                  fileType: item.fileType,
-                  frameFile: item.frame_file,
-                  ownedBy: item.ownedBy
-                }]);
-                setSelectedId(null);
-              }}
+              onClick={storeSelected}
             >
               → store in inventory
             </button>
@@ -405,7 +468,7 @@ export function GalleryEditorCanvas({ handle, placedPieces, unplacedInventory, p
           </button>
           {onReset && (
             <button
-              onClick={onReset}
+              onClick={() => setConfirmReset(true)}
               className="rounded-lg border border-[#c8a040]/30 px-2 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm text-[#f5e6c8]/80 hover:border-[#c8a040]/60 transition-colors"
             >
               <span className="sm:hidden">reset</span>
@@ -445,11 +508,26 @@ export function GalleryEditorCanvas({ handle, placedPieces, unplacedInventory, p
       
 
       {/* ── Canvas ──────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-auto">
+      <div className="relative min-h-0 flex-1">
+      <div
+        ref={scrollerRef}
+        className={`absolute inset-0 overflow-auto ${viewScale < 1 ? "flex" : ""}`}
+      >
+      {/* Fitted on a phone: a box the size of the scaled wall holds it. */}
+      <div
+        style={viewScale < 1
+          ? { width: canvasDims.width * viewScale, height: canvasDims.height * viewScale, margin: "auto", flexShrink: 0 }
+          : undefined}
+      >
         <div
           ref={canvasRef}
           className="relative"
-          style={{ width: 1400, height: 1200, ...canvasBgStyle }}
+          style={{
+            width: 1400,
+            height: 1200,
+            ...canvasBgStyle,
+            ...(viewScale < 1 ? { transform: `scale(${viewScale})`, transformOrigin: "top left" } : null),
+          }}
           onClick={() => setSelectedId(null)}
         >
         {items.map(item => {
@@ -478,6 +556,7 @@ export function GalleryEditorCanvas({ handle, placedPieces, unplacedInventory, p
               key={item.id}
               nodeRef={nodeRef}
               position={{ x: px, y: py }}
+              scale={viewScale}
               grid={[GRID_SIZE, GRID_SIZE]}
               onStop={(_e, data) => handleDragStop(_e, data, item.id)}
               // Draggable clamps the origin, so offset each edge by how far
@@ -510,6 +589,11 @@ export function GalleryEditorCanvas({ handle, placedPieces, unplacedInventory, p
                     transform: `rotate(${item.rotation}deg) scale(${item.scale})`,
                     transformOrigin: "top left",
                     width: BASE_WIDTH,
+                    // Phones get a visible selection; it stays ~2px on screen
+                    // whatever the wall and piece are scaled to.
+                    ...(isMobile && isSelected
+                      ? { outline: `${2 / (viewScale * item.scale)}px solid #c8a040`, outlineOffset: `${3 / (viewScale * item.scale)}px` }
+                      : null),
                   }}
                 >
                   <FramedArtwork
@@ -538,8 +622,20 @@ export function GalleryEditorCanvas({ handle, placedPieces, unplacedInventory, p
         )}
       </div>
       </div>
+      </div>
+      {isMobile && (
+        <button
+          type="button"
+          onClick={() => setZoomed(z => !z)}
+          className="absolute bottom-3 right-3 z-10 min-h-[44px] rounded-full border border-[#c8a040]/50 bg-[rgba(18,12,6,0.85)] px-4 text-sm text-[#f5e6c8] shadow-lg"
+        >
+          {zoomed ? "fit wall" : "zoom in"}
+        </button>
+      )}
+      </div>
 
       {/* ── Inventory Tray ──────────────────────────────────────── */}
+      {!(isMobile && selectedItem) && (
       <div
         className="relative z-10 shrink-0"
         style={{ background: "rgba(18,12,6,0.92)", borderTop: "0.5px solid rgba(200,160,64,0.2)" }}
@@ -587,24 +683,7 @@ export function GalleryEditorCanvas({ handle, placedPieces, unplacedInventory, p
                 <div
                   className="relative cursor-pointer"
                   style={{ height: 64, overflow: "hidden" }}
-                  onClick={() => {
-                    setItems(prev => [...prev, {
-                      id: item.artworkId,
-                      inventoryItemId: item.inventoryItemId,
-                      title: item.title,
-                      medium: item.medium,
-                      src: item.fileUrl,
-                      fileType: item.fileType,
-                      frame_file: item.frameFile ?? DEFAULT_FRAME_FILE,
-                      ownedBy: item.ownedBy, 
-                      xPct: 40,
-                      yPct: 35,
-                      rotation: 0,
-                      scale: 1,
-                      zIndex: items.length + 1,
-                    }]);
-                    setTrayItems(prev => prev.filter(t => t.inventoryItemId !== item.inventoryItemId));
-                  }}
+                  onClick={() => hangFromTray(item)}
                 >
                   {item.fileType === "pdf" ? (
                     <div className="flex h-full items-center justify-center bg-[rgba(245,230,200,0.04)]">
@@ -655,11 +734,51 @@ export function GalleryEditorCanvas({ handle, placedPieces, unplacedInventory, p
         )}
       </div>
 
-      {/* Mobile: scale slider when selected */}
+      )}
+
+      {/* Mobile: piece controls replace the tray while something is selected */}
       {isMobile && selectedItem && (
-        <div className="relative z-10 shrink-0 border-t border-[#c8a040]/20 bg-[rgba(18,12,6,0.92)] p-4">
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-[#f5e6c8]/60">scale</span>
+        <div className="relative z-10 shrink-0 space-y-3 border-t border-[#c8a040]/20 bg-[rgba(18,12,6,0.92)] px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2">
+          <div className="flex items-center gap-2">
+            <p className="flex-1 truncate font-serif text-sm text-[#f5e6c8]/80">{selectedItem.title}</p>
+            <button className={btnTouch} onClick={() => setSelectedId(null)}>
+              done
+            </button>
+          </div>
+
+          {/* Tilt: a signed slider instead of typing an angle */}
+          <div className="flex items-center gap-2">
+            <span className="w-10 text-xs text-[#f5e6c8]/60">tilt</span>
+            <button
+              className={btnTouch}
+              aria-label="Rotate left 90°"
+              onClick={() => updateItem(selectedId!, { rotation: ((selectedItem.rotation - 90) % 360 + 360) % 360 })}
+            >
+              ↺
+            </button>
+            <input
+              type="range"
+              min={-180}
+              max={180}
+              step={1}
+              value={selectedItem.rotation > 180 ? selectedItem.rotation - 360 : selectedItem.rotation}
+              onChange={e => updateItem(selectedId!, { rotation: ((+e.target.value % 360) + 360) % 360 })}
+              className="h-11 min-w-0 flex-1 accent-[#c8a040]"
+            />
+            <button
+              className={btnTouch}
+              aria-label="Rotate right 90°"
+              onClick={() => updateItem(selectedId!, { rotation: (selectedItem.rotation + 90) % 360 })}
+            >
+              ↻
+            </button>
+            <span className="w-9 text-right text-xs tabular-nums text-[#f5e6c8]/60">
+              {Math.round(selectedItem.rotation > 180 ? selectedItem.rotation - 360 : selectedItem.rotation)}°
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="w-10 text-xs text-[#f5e6c8]/60">scale</span>
             <input
               type="range"
               min={0.5}
@@ -667,11 +786,55 @@ export function GalleryEditorCanvas({ handle, placedPieces, unplacedInventory, p
               step={0.05}
               value={selectedItem.scale}
               onChange={e => updateItem(selectedId!, { scale: +e.target.value })}
-              className="flex-1 accent-[#c8a040]"
+              className="h-11 min-w-0 flex-1 accent-[#c8a040]"
             />
-            <span className="w-10 text-right text-xs text-[#f5e6c8]/60">
+            <span className="w-9 text-right text-xs tabular-nums text-[#f5e6c8]/60">
               {selectedItem.scale.toFixed(1)}×
             </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button className={btnTouch} onClick={bringForward}>↑ forward</button>
+            <button className={btnTouch} onClick={sendBack}>↓ back</button>
+            <button className={`${btnTouch} ml-auto text-[#f5e6c8]/60`} onClick={storeSelected}>
+              → store
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Reset wipes the wall for good, so it asks first */}
+      {confirmReset && (
+        <div
+          className="fixed inset-0 z-[120] flex items-end justify-center bg-black/50 p-4 sm:items-center"
+          onClick={() => setConfirmReset(false)}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="reset-wall-title"
+            className="w-full max-w-sm rounded-xl border border-[#c8a040]/30 bg-[rgba(18,12,6,0.97)] p-5 shadow-xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <p id="reset-wall-title" className="font-serif text-lg text-[#f5e6c8]">reset your wall?</p>
+            <p className="mt-2 text-sm leading-relaxed text-[#f5e6c8]/70">
+              Every piece comes off your custom wall and it goes back to the automatic grid.
+              Your artwork stays, but this arrangement can&apos;t be undone.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button className={btnTouch} onClick={() => setConfirmReset(false)}>
+                keep my wall
+              </button>
+              <button
+                className="min-h-[44px] rounded-lg bg-[#c8a040] px-4 text-sm font-medium text-[#120c06]"
+                onClick={() => {
+                  setConfirmReset(false);
+                  onReset?.();
+                }}
+              >
+                reset wall
+              </button>
+            </div>
           </div>
         </div>
       )}

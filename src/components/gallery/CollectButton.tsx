@@ -8,6 +8,8 @@ interface CollectButtonProps {
   priceCoins: number;
   editionsRemaining: number;
   collectorCoinBalance: number;
+  /** "touch" grows the tap target to 44px under 768px; desktop is unchanged. */
+  size?: "default" | "touch";
 }
 
 export function CollectButton({
@@ -15,6 +17,7 @@ export function CollectButton({
   priceCoins,
   editionsRemaining,
   collectorCoinBalance,
+  size = "default",
 }: CollectButtonProps) {
   const [remaining, setRemaining] = useState(editionsRemaining);
   const [collected, setCollected] = useState(false);
@@ -44,7 +47,7 @@ export function CollectButton({
         type="button"
         onClick={handleCollect}
         disabled={!canAfford || collected}
-        className="rounded-md border border-[#c8a040]/60 bg-[rgba(18,12,6,0.85)] px-3 py-1.5 text-xs text-[#c8a040] backdrop-blur-sm transition-colors hover:border-[#c8a040] hover:bg-[rgba(18,12,6,0.95)] disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+        className={`${size === "touch" ? "max-md:min-h-[44px] max-md:px-4 max-md:text-sm " : ""}rounded-md border border-[#c8a040]/60 bg-[rgba(18,12,6,0.85)] px-3 py-1.5 text-xs text-[#c8a040] backdrop-blur-sm transition-colors hover:border-[#c8a040] hover:bg-[rgba(18,12,6,0.95)] disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap`}
       >
         {collected ? "Collected ✓" : `Collect · ✦ ${priceCoins}`}
       </button>

@@ -112,8 +112,10 @@ export interface GalleryPieceOverlayProps {
   placement: OverlayPlacement;
 }
 
+// Phones have no hover, so under 768px the flow overlay is always shown and
+// wraps instead of running off a narrow screen.
 const FLOW_CLASS =
-  "mt-3 flex items-center gap-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200 [&_.opacity-0]:opacity-100";
+  "mt-3 flex items-center gap-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200 [&_.opacity-0]:opacity-100 max-md:opacity-100 max-md:pointer-events-auto max-md:flex-wrap max-md:justify-center";
 const ANCHORED_CLASS = "[&_.opacity-0]:opacity-100";
 
 export function GalleryPieceOverlay({
@@ -134,7 +136,7 @@ export function GalleryPieceOverlay({
       className={isFlow ? FLOW_CLASS : ANCHORED_CLASS}
       style={isFlow ? undefined : placement.style}
     >
-      <div className="whitespace-nowrap rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-3 py-2 text-center shadow-lg">
+      <div className="whitespace-nowrap max-md:whitespace-normal max-md:max-w-[280px] rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-3 py-2 text-center shadow-lg">
         <p className="font-serif text-sm text-[#f5e6c8]">{title}</p>
         {medium && (
           <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{medium}</p>
@@ -149,10 +151,12 @@ export function GalleryPieceOverlay({
           isOwner={isOwner}
           initialHeartCount={heartCount}
           isLoggedIn={isLoggedIn}
+          size={isFlow ? "touch" : "default"}
         />
       )}
       {collect && (
         <CollectButton
+          size={isFlow ? "touch" : "default"}
           inventoryItemId={collect.inventoryItemId}
           priceCoins={collect.priceCoins}
           editionsRemaining={collect.editionsRemaining}

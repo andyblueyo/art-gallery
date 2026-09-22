@@ -8,6 +8,8 @@ interface HeartButtonProps {
   isOwner?: boolean;
   initialHeartCount?: number;
   isLoggedIn?: boolean;
+  /** "touch" grows the tap target to 44px under 768px; desktop is unchanged. */
+  size?: "default" | "touch";
 }
 
 export function HeartButton({
@@ -15,6 +17,7 @@ export function HeartButton({
   isOwner = false,
   initialHeartCount = 0,
   isLoggedIn = false,
+  size = "default",
 }: HeartButtonProps) {
   const [hearted, setHearted] = useState(false);
   const [count, setCount] = useState(initialHeartCount);
@@ -63,7 +66,7 @@ export function HeartButton({
       <button
         onClick={handleClick}
         aria-label={hearted ? "Remove from favorites" : "Add to favorites"}
-        className={`p-1.5 rounded-full bg-[rgba(18,12,6,0.55)] backdrop-blur-sm shadow-sm transition-transform ${
+        className={`p-1.5 ${size === "touch" ? "max-md:p-3.5" : ""} rounded-full bg-[rgba(18,12,6,0.55)] backdrop-blur-sm shadow-sm transition-transform ${
           isLoggedIn ? "hover:scale-110 cursor-pointer" : "cursor-default opacity-60"
         }`}
       >

@@ -15,6 +15,8 @@ import { GalleryScrollHint } from "./GalleryScrollHint";
 import { ArtistBubble, type ArtistBubbleData } from "./ArtistBubble";
 import { GallerySeeAllGrid } from "./GallerySeeAllGrid";
 import { GalleryEditorCanvas } from "./GalleryEditorCanvas";
+import { GalleryPieceSheet } from "./GalleryPieceSheet";
+import { WALL_CANVAS_H, WALL_CANVAS_W, useWallFitScale } from "./useWallFit";
 import {
   type GalleryLayoutItem,
   type WallArtwork,
@@ -81,6 +83,32 @@ export function GallerySalonWall({
   const [isMobile, setIsMobile] = useState(false);
   const [showAllGrid, setShowAllGrid] = useState(false);
   const [editMode, setEditMode] = useState(false);
+
+  // Owner dock: pieces the owner has but hasn't hung. A custom wall only shows
+  // gallery_pieces, so without this a new upload is invisible to everyone and
+  // nothing says so. Dismissing remembers the current set on this device; a
+  // piece that arrives later brings the dock back.
+  const dockKey = `gc_wall_dock_seen_${profileId}`;
+  const [dockSeen, setDockSeen] = useState<Set<string> | null>(null);
+  useEffect(() => {
+    try {
+      setDockSeen(new Set(JSON.parse(localStorage.getItem(dockKey) ?? "[]")));
+    } catch {
+      setDockSeen(new Set());
+    }
+  }, [dockKey]);
+  const newUnplacedCount = dockSeen
+    ? unplacedInventory.filter((i) => !dockSeen.has(i.inventoryItemId)).length
+    : 0;
+  const dismissDock = useCallback(() => {
+    const ids = unplacedInventory.map((i) => i.inventoryItemId);
+    try {
+      localStorage.setItem(dockKey, JSON.stringify(ids));
+    } catch {
+      // Not persisted; the dock just hides for this visit.
+    }
+    setDockSeen(new Set(ids));
+  }, [dockKey, unplacedInventory]);
 
   const hasMoreOnGrid = totalPieceCount > layout.length;
   const isCustomLayout = layoutMode === "custom";
@@ -298,6 +326,31 @@ export function GallerySalonWall({
             isLoggedIn={isLoggedIn}
             collectableItems={collectableItems}
             collectorCoinBalance={collectorCoinBalance}
+            isMobile={isMobile}
+            dock={
+              isOwner && newUnplacedCount > 0 ? (
+                <div className="fixed inset-x-4 bottom-[88px] z-30 flex items-center gap-2 rounded-xl border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] py-2 pl-4 pr-1 shadow-lg backdrop-blur-md">
+                  <p className="flex-1 text-sm leading-snug text-[#f5e6c8]">
+                    {newUnplacedCount} new {newUnplacedCount === 1 ? "piece isn't" : "pieces aren't"} on your wall yet
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setEditMode(true)}
+                    className="min-h-[44px] shrink-0 rounded-lg bg-[#c8a040] px-4 text-sm font-medium text-[#120c06]"
+                  >
+                    hang {newUnplacedCount === 1 ? "it" : "them"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={dismissDock}
+                    aria-label="Dismiss"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center text-xl text-[#f5e6c8]/60"
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : null
+            }
           />
         ) : layout.length === 0 ? (
           <main className="relative z-10 flex min-h-[100dvh] items-center justify-center px-6 pt-24">
@@ -389,6 +442,8 @@ function CustomLayoutView({
   isLoggedIn = false,
   collectableItems = {},
   collectorCoinBalance = null,
+  isMobile = false,
+  dock = null,
 }: {
   pieces: GalleryPiece[];
   artistName: string;
@@ -397,19 +452,108 @@ function CustomLayoutView({
   isLoggedIn?: boolean;
   collectableItems?: Record<string, string>;
   collectorCoinBalance?: number | null;
+  isMobile?: boolean;
+  /** Owner prompt, hidden while the piece sheet is open (both sit at the bottom). */
+  dock?: React.ReactNode;
 }) {
   const [hoveredId, setHoveredId] = React.useState<string | null>(null);
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  const canvasRef = React.useRef<HTMLDivElement>(null);
   const frameRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
   const wrapperRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
   const [tooltipPos, setTooltipPos] = React.useState<
     Record<string, { left: number; top: number }>
   >({});
 
-  const CANVAS_W = 1400;
-  const CANVAS_H = 1200;
+  // Phone state. A phone opens on the whole wall fitted to its width, with
+  // the layout untouched; "zoomed" is the 1:1 wall that scrolls both ways.
+  // Hover doesn't exist there, so a tap selects a piece and opens the sheet.
+  const fitScale = useWallFitScale();
+  const [zoomed, setZoomed] = React.useState(false);
+  const [selectedId, setSelectedId] = React.useState<string | null>(null);
+  const fit = isMobile && !zoomed;
+
+  const CANVAS_W = WALL_CANVAS_W;
+  const CANVAS_H = WALL_CANVAS_H;
+  const BASE_WIDTH = 220;
   /** Gap in px between the frame's lowest visible edge and the hover card. */
   const TOOLTIP_GAP = 16;
+
+  /** Reading order for ‹ ›: rows top to bottom, then left to right. */
+  const walkOrder = React.useMemo(
+    () =>
+      pieces
+        .filter((p) => p.inventory_item?.artwork)
+        .slice()
+        .sort(
+          (a, b) =>
+            Math.floor(a.position_y / 20) - Math.floor(b.position_y / 20) ||
+            a.position_x - b.position_x
+        ),
+    [pieces]
+  );
+  const selectedIndex = walkOrder.findIndex((p) => p.id === selectedId);
+  const selectedPiece = selectedIndex >= 0 ? walkOrder[selectedIndex] : null;
+
+  /** Centres a piece (or the wall, for null) in the zoomed wall. */
+  const scrollToPiece = React.useCallback(
+    (target: GalleryPiece | null, behavior: ScrollBehavior) => {
+      const el = scrollRef.current;
+      const canvas = canvasRef.current;
+      if (!el || !canvas) return;
+      const half = (BASE_WIDTH * (target?.scale ?? 1)) / 2;
+      const x = target ? (target.position_x / 100) * CANVAS_W + half : CANVAS_W / 2;
+      const y = target ? (target.position_y / 100) * CANVAS_H + half : CANVAS_H / 2;
+      el.scrollTo({ left: x - el.clientWidth / 2, behavior });
+      const canvasTop = canvas.getBoundingClientRect().top + window.scrollY;
+      // Aim above centre: the sheet covers the bottom of the screen.
+      window.scrollTo({ top: canvasTop + y - window.innerHeight * 0.35, behavior });
+    },
+    [CANVAS_W, CANVAS_H]
+  );
+
+  // Switching modes remounts the wall, so position it once it's laid out.
+  const zoomRan = React.useRef(false);
+  React.useLayoutEffect(() => {
+    if (!zoomRan.current) {
+      zoomRan.current = true;
+      return;
+    }
+    if (!isMobile) return;
+    if (zoomed) scrollToPiece(selectedPiece, "auto");
+    else window.scrollTo({ top: 0 });
+    // Only on a mode switch; walking while zoomed scrolls on its own.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoomed]);
+
+  const walkTo = (index: number) => {
+    const next = walkOrder[index];
+    if (!next) return;
+    setSelectedId(next.id);
+    if (zoomed) scrollToPiece(next, "smooth");
+  };
+
+  const byLineFor = (piece: GalleryPiece) =>
+    (piece.inventory_item?.artwork as any)?.artist_display_name || artistName;
+
+  const linkHrefFor = (piece: GalleryPiece) => {
+    const art = piece.inventory_item?.artwork as any;
+    return art?.artist_handle?.toLowerCase() !== handle?.toLowerCase()
+      ? `https://${art?.artist_handle}.galleryclub.online`
+      : null;
+  };
+
+  const collectFor = (piece: GalleryPiece): CollectConfig | null => {
+    const art = piece.inventory_item?.artwork;
+    return !isOwner && art && piece.inventory_item?.artwork_id && collectableItems[piece.inventory_item.artwork_id] && art.for_sale && art.price_coins != null
+      ? {
+          inventoryItemId: collectableItems[piece.inventory_item.artwork_id],
+          priceCoins: art.price_coins,
+          editionsRemaining: art.editions_remaining ?? 0,
+          collectorCoinBalance: collectorCoinBalance ?? 0,
+        }
+      : null;
+  };
 
   /**
    * The tooltip lives in the piece's unrotated wrapper, so it can't inherit the
@@ -447,22 +591,27 @@ function CustomLayoutView({
     );
   }
 
-  return (
-    <>
-      <div
-        ref={scrollRef}
-        className="relative z-10 w-full pt-14"
-        style={{ overflowX: "auto", overflowY: "auto", WebkitOverflowScrolling: "touch" }}
-      >
-        <div style={{ position: "relative", width: `${CANVAS_W}px`, height: `${CANVAS_H}px`, margin: "0 auto" }}>
+  const canvas = (
+        <div
+          ref={canvasRef}
+          style={{
+            position: "relative",
+            width: `${CANVAS_W}px`,
+            height: `${CANVAS_H}px`,
+            margin: fit ? 0 : "0 auto",
+            ...(fit ? { transform: `scale(${fitScale})`, transformOrigin: "top left" } : null),
+          }}
+          onClick={isMobile ? () => setSelectedId(null) : undefined}
+        >
           {pieces.map((piece, i) => {
             const art = piece.inventory_item?.artwork;
             if (!art) return null;
             const rotation = piece.rotation ?? 0;
             const scale = piece.scale ?? 1;
             const zIndex = piece.z_index ?? i + 1;
-            const baseWidth = 220;
+            const baseWidth = BASE_WIDTH;
             const tip = tooltipPos[piece.id];
+            const dimmed = isMobile && selectedId !== null && selectedId !== piece.id;
 
             return (
               <div
@@ -485,9 +634,11 @@ function CustomLayoutView({
                   // visible overlay take pointer events; their events bubble
                   // up here, so the handlers below still fire.
                   pointerEvents: "none",
+                  opacity: dimmed ? 0.4 : 1,
+                  transition: "opacity 0.2s",
                 }}
-                onMouseEnter={() => handleMouseEnter(piece.id)}
-                onMouseLeave={handleMouseLeave}
+                onMouseEnter={isMobile ? undefined : () => handleMouseEnter(piece.id)}
+                onMouseLeave={isMobile ? undefined : handleMouseLeave}
               >
                 <div
                   ref={(el) => { frameRefs.current[piece.id] = el; }}
@@ -502,24 +653,30 @@ function CustomLayoutView({
                     // rendered corners at any rotation or scale.
                     pointerEvents: "auto",
                   }}
+                  onClick={
+                    isMobile
+                      ? (e) => {
+                          e.stopPropagation();
+                          setSelectedId(piece.id);
+                        }
+                      : undefined
+                  }
                 >
                 <GalleryPieceFrame
                   wrapper="block"
-                  linkHref={
-                    (art as any).artist_handle?.toLowerCase() !== handle?.toLowerCase()
-                      ? `https://${(art as any).artist_handle}.galleryclub.online`
-                      : null
-                  }
+                  // On a phone the tap selects the piece; the sheet carries the link.
+                  linkHref={isMobile ? null : linkHrefFor(piece)}
                   frameFile={art.frame_file || DEFAULT_FRAME_FILE}
                   artSrc={art.file_url}
                   width={baseWidth}
                   priority={piece.position_y < 40}
                   title={art.title}
                   medium={art.medium}
-                  artistName={(art as any).artist_display_name || artistName}
+                  artistName={byLineFor(piece)}
                   fileType={art.file_type}
                 />
                 </div>
+                {!isMobile && (
                 <GalleryPieceOverlay
                   placement={{
                     mode: "anchored",
@@ -554,28 +711,89 @@ function CustomLayoutView({
                   artworkId={art.id}
                   title={art.title}
                   medium={art.medium}
-                  byLine={(art as any).artist_display_name || artistName}
+                  byLine={byLineFor(piece)}
                   heartCount={art.heart_count ?? 0}
                   isOwner={isOwner}
                   isLoggedIn={isLoggedIn}
-                  collect={
-                    !isOwner && piece.inventory_item?.artwork_id && collectableItems[piece.inventory_item.artwork_id] && art.for_sale && art.price_coins != null
-                      ? {
-                          inventoryItemId: collectableItems[piece.inventory_item.artwork_id],
-                          priceCoins: art.price_coins,
-                          editionsRemaining: art.editions_remaining ?? 0,
-                          collectorCoinBalance: collectorCoinBalance ?? 0,
-                        }
-                      : null
-                  }
+                  collect={collectFor(piece)}
                 />
+                )}
               </div>
             );
           })}
         </div>
-      </div>
-      <GalleryScrollHint scrollRef={scrollRef} />
-      <GalleryMinimap pieces={pieces} scrollRef={scrollRef} />
+  );
+
+  const selectedArt = selectedPiece?.inventory_item?.artwork;
+
+  return (
+    <>
+      {fit ? (
+        <div
+          ref={scrollRef}
+          className="relative z-10 flex min-h-[100dvh] w-full flex-col items-center justify-center pb-36 pt-20"
+        >
+          <div
+            style={{
+              width: CANVAS_W * fitScale,
+              height: CANVAS_H * fitScale,
+              overflow: "hidden",
+            }}
+          >
+            {canvas}
+          </div>
+          <p className="mt-4 text-center font-serif text-sm text-[#f5e6c8]/70">
+            tap any piece to see it up close
+          </p>
+        </div>
+      ) : (
+        <div
+          ref={scrollRef}
+          className="relative z-10 w-full pt-14"
+          style={{ overflowX: "auto", overflowY: "auto", WebkitOverflowScrolling: "touch" }}
+        >
+          {canvas}
+        </div>
+      )}
+
+      {!fit && <GalleryScrollHint scrollRef={scrollRef} />}
+      {!fit && !(isMobile && selectedPiece) && (
+        <GalleryMinimap pieces={pieces} scrollRef={scrollRef} />
+      )}
+
+      {isMobile && !selectedPiece && (
+        <>
+          {dock}
+          <button
+            type="button"
+            onClick={() => setZoomed((z) => !z)}
+            className="fixed bottom-5 left-1/2 z-30 min-h-[44px] -translate-x-1/2 rounded-full border border-[#c8a040]/50 bg-[rgba(18,12,6,0.85)] px-5 text-sm text-[#f5e6c8] shadow-lg backdrop-blur-sm"
+          >
+            {zoomed ? "see whole wall" : "zoom in"}
+          </button>
+        </>
+      )}
+
+      {isMobile && selectedPiece && selectedArt && (
+        <GalleryPieceSheet
+          artworkId={selectedArt.id}
+          title={selectedArt.title}
+          medium={selectedArt.medium}
+          byLine={byLineFor(selectedPiece)}
+          heartCount={selectedArt.heart_count ?? 0}
+          linkHref={linkHrefFor(selectedPiece)}
+          collect={collectFor(selectedPiece)}
+          isOwner={isOwner}
+          isLoggedIn={isLoggedIn}
+          index={selectedIndex}
+          total={walkOrder.length}
+          zoomed={zoomed}
+          onPrev={() => walkTo(selectedIndex - 1)}
+          onNext={() => walkTo(selectedIndex + 1)}
+          onClose={() => setSelectedId(null)}
+          onToggleZoom={() => setZoomed((z) => !z)}
+        />
+      )}
     </>
   );
 }
