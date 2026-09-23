@@ -105,6 +105,8 @@ export interface GalleryPieceOverlayProps {
   medium: string;
   /** Renders the "by …" line when set. Auto layout omits it. */
   byLine?: string | null;
+  /** Makes the artist's name a link. Only the phone wall passes it. */
+  byLineHref?: string | null;
   heartCount: number;
   isOwner: boolean;
   isLoggedIn: boolean;
@@ -123,6 +125,7 @@ export function GalleryPieceOverlay({
   title,
   medium,
   byLine,
+  byLineHref,
   heartCount,
   isOwner,
   isLoggedIn,
@@ -142,7 +145,16 @@ export function GalleryPieceOverlay({
           <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{medium}</p>
         )}
         {byLine && (
-          <p className="mt-0.5 text-xs text-[#c8a040]/60">by {byLine}</p>
+          <p className="mt-0.5 text-xs text-[#c8a040]/60">
+            by{" "}
+            {byLineHref ? (
+              <a href={byLineHref} className="text-[#d8b04a] underline underline-offset-2">
+                {byLine}
+              </a>
+            ) : (
+              byLine
+            )}
+          </p>
         )}
       </div>
       {isLoggedIn && (
@@ -151,12 +163,13 @@ export function GalleryPieceOverlay({
           isOwner={isOwner}
           initialHeartCount={heartCount}
           isLoggedIn={isLoggedIn}
-          size={isFlow ? "touch" : "default"}
+          // Touch sizing only applies under 768px, so desktop is unaffected.
+          size="touch"
         />
       )}
       {collect && (
         <CollectButton
-          size={isFlow ? "touch" : "default"}
+          size="touch"
           inventoryItemId={collect.inventoryItemId}
           priceCoins={collect.priceCoins}
           editionsRemaining={collect.editionsRemaining}

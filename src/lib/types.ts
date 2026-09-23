@@ -54,6 +54,12 @@ export interface InventoryItem {
   artwork?: Artwork;
 }
 
+/** An artwork as get_gallery_pieces returns it, joined to its artist's profile. */
+export interface GalleryPieceArtwork extends Artwork {
+  artist_handle: string;
+  artist_display_name: string | null;
+}
+
 export interface GalleryPiece {
   id: string;
   gallery_id: string;
@@ -63,7 +69,7 @@ export interface GalleryPiece {
   rotation: number;
   scale: number;
   z_index: number;
-  inventory_item: InventoryItem & { artwork: Artwork };
+  inventory_item: InventoryItem & { artwork: GalleryPieceArtwork };
 }
 
 export interface InventoryTrayItem {

@@ -15,7 +15,6 @@ import { GalleryScrollHint } from "./GalleryScrollHint";
 import { ArtistBubble, type ArtistBubbleData } from "./ArtistBubble";
 import { GallerySeeAllGrid } from "./GallerySeeAllGrid";
 import { GalleryEditorCanvas } from "./GalleryEditorCanvas";
-import { GalleryPieceSheet } from "./GalleryPieceSheet";
 import { WALL_CANVAS_H, WALL_CANVAS_W, useWallFitScale } from "./useWallFit";
 import {
   type GalleryLayoutItem,
@@ -453,7 +452,7 @@ function CustomLayoutView({
   collectableItems?: Record<string, string>;
   collectorCoinBalance?: number | null;
   isMobile?: boolean;
-  /** Owner prompt, hidden while the piece sheet is open (both sit at the bottom). */
+  /** Owner prompt, shown on phones. */
   dock?: React.ReactNode;
 }) {
   const [hoveredId, setHoveredId] = React.useState<string | null>(null);
@@ -467,10 +466,16 @@ function CustomLayoutView({
 
   // Phone state. A phone opens on the whole wall fitted to its width, with
   // the layout untouched; "zoomed" is the 1:1 wall that scrolls both ways.
-  // Hover doesn't exist there, so a tap selects a piece and opens the sheet.
+  // Hover doesn't exist there, so a tap selects a piece and shows the desktop
+  // hover row under it; a double-tap on another artist's piece opens their
+  // gallery.
   const fitScale = useWallFitScale();
   const [zoomed, setZoomed] = React.useState(false);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
+  const [rowPos, setRowPos] = React.useState<{ left: number; top: number } | null>(null);
+  const [toast, setToast] = React.useState<string | null>(null);
+  const rowRef = React.useRef<HTMLDivElement>(null);
+  const lastTapRef = React.useRef<{ id: string; t: number } | null>(null);
   const fit = isMobile && !zoomed;
 
   const CANVAS_W = WALL_CANVAS_W;
@@ -478,22 +483,15 @@ function CustomLayoutView({
   const BASE_WIDTH = 220;
   /** Gap in px between the frame's lowest visible edge and the hover card. */
   const TOOLTIP_GAP = 16;
+  /** Phone row: gap under the piece, and minimum distance from screen edges. */
+  const ROW_GAP = 12;
+  const ROW_EDGE = 12;
+  /** Screen kept clear at the bottom for the bubble, zoom pill and minimap (and the owner dock). */
+  const ROW_BOTTOM_RESERVE = dock ? 160 : 100;
+  const DOUBLE_TAP_MS = 350;
 
-  /** Reading order for ‹ ›: rows top to bottom, then left to right. */
-  const walkOrder = React.useMemo(
-    () =>
-      pieces
-        .filter((p) => p.inventory_item?.artwork)
-        .slice()
-        .sort(
-          (a, b) =>
-            Math.floor(a.position_y / 20) - Math.floor(b.position_y / 20) ||
-            a.position_x - b.position_x
-        ),
-    [pieces]
-  );
-  const selectedIndex = walkOrder.findIndex((p) => p.id === selectedId);
-  const selectedPiece = selectedIndex >= 0 ? walkOrder[selectedIndex] : null;
+  const selectedPiece =
+    pieces.find((p) => p.id === selectedId && p.inventory_item?.artwork) ?? null;
 
   /** Centres a piece (or the wall, for null) in the zoomed wall. */
   const scrollToPiece = React.useCallback(
@@ -506,7 +504,7 @@ function CustomLayoutView({
       const y = target ? (target.position_y / 100) * CANVAS_H + half : CANVAS_H / 2;
       el.scrollTo({ left: x - el.clientWidth / 2, behavior });
       const canvasTop = canvas.getBoundingClientRect().top + window.scrollY;
-      // Aim above centre: the sheet covers the bottom of the screen.
+      // Aim above centre, leaving room for the row under the piece.
       window.scrollTo({ top: canvasTop + y - window.innerHeight * 0.35, behavior });
     },
     [CANVAS_W, CANVAS_H]
@@ -522,7 +520,7 @@ function CustomLayoutView({
     if (!isMobile) return;
     if (zoomed) scrollToPiece(selectedPiece, "auto");
     else window.scrollTo({ top: 0 });
-    // Only on a mode switch; walking while zoomed scrolls on its own.
+    // Only on a mode switch, not when the selection changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zoomed]);
 
@@ -544,21 +542,104 @@ function CustomLayoutView({
     };
   }, [fit, fitScale]);
 
-  const walkTo = (index: number) => {
-    const next = walkOrder[index];
-    if (!next) return;
-    setSelectedId(next.id);
-    if (zoomed) scrollToPiece(next, "smooth");
-  };
+  /**
+   * Places the phone row under the selected frame, in screen coordinates. The
+   * fitted wall is scaled down and clipped, so the row can't live inside it
+   * the way the desktop card does. It's fixed over the page instead, centred
+   * on the frame's post-transform box (true at any rotation), kept off the
+   * screen edges, and flipped above the piece when it would run into the
+   * controls at the bottom.
+   */
+  const placeRow = React.useCallback(() => {
+    const frameEl = selectedId ? frameRefs.current[selectedId] : null;
+    const rowEl = rowRef.current;
+    if (!frameEl || !rowEl) return;
+    const f = frameEl.getBoundingClientRect();
+    const vw = document.documentElement.clientWidth;
+    const left = Math.min(
+      Math.max(f.left + f.width / 2 - rowEl.offsetWidth / 2, ROW_EDGE),
+      vw - ROW_EDGE - rowEl.offsetWidth
+    );
+    const below = f.bottom + ROW_GAP;
+    const top =
+      below + rowEl.offsetHeight > window.innerHeight - ROW_BOTTOM_RESERVE
+        ? Math.max(ROW_EDGE, f.top - ROW_GAP - rowEl.offsetHeight)
+        : below;
+    setRowPos({ left, top });
+  }, [selectedId, ROW_BOTTOM_RESERVE]);
+
+  // Measure before paint, so the row never shows in the wrong place. Declared
+  // after the zoom effect so a mode switch scrolls first and measures second.
+  React.useLayoutEffect(() => {
+    if (!isMobile || !selectedId) {
+      setRowPos(null);
+      return;
+    }
+    placeRow();
+  }, [isMobile, selectedId, zoomed, fitScale, placeRow]);
+
+  // The zoomed wall scrolls (window vertically, the wall horizontally); keep
+  // the row attached to its piece while it does.
+  React.useEffect(() => {
+    if (!isMobile || !selectedId) return;
+    let frame = 0;
+    const onMove = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(placeRow);
+    };
+    const scroller = scrollRef.current;
+    window.addEventListener("scroll", onMove, { passive: true });
+    window.addEventListener("resize", onMove);
+    scroller?.addEventListener("scroll", onMove, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onMove);
+      window.removeEventListener("resize", onMove);
+      scroller?.removeEventListener("scroll", onMove);
+    };
+  }, [isMobile, selectedId, zoomed, placeRow]);
+
+  // Clears the "opening …" message if the page comes back (back button, or a
+  // navigation that never happened).
+  React.useEffect(() => {
+    if (!toast) return;
+    const clear = () => setToast(null);
+    const timer = setTimeout(clear, 4000);
+    window.addEventListener("pageshow", clear);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("pageshow", clear);
+    };
+  }, [toast]);
 
   const byLineFor = (piece: GalleryPiece) =>
-    (piece.inventory_item?.artwork as any)?.artist_display_name || artistName;
+    piece.inventory_item?.artwork?.artist_display_name || artistName;
 
+  /** Another artist's gallery. Null for the wall owner's own work. */
   const linkHrefFor = (piece: GalleryPiece) => {
-    const art = piece.inventory_item?.artwork as any;
-    return art?.artist_handle?.toLowerCase() !== handle?.toLowerCase()
-      ? `https://${art?.artist_handle}.galleryclub.online`
+    const artistHandle = piece.inventory_item?.artwork?.artist_handle;
+    return artistHandle && artistHandle.toLowerCase() !== handle.toLowerCase()
+      ? `https://${artistHandle}.galleryclub.online`
       : null;
+  };
+
+  /**
+   * A tap selects the piece at once (no single-tap delay). A second tap on the
+   * same piece within DOUBLE_TAP_MS opens its artist's gallery, but only when
+   * that's another artist: the owner's own work never links back here.
+   */
+  const handlePhoneTap = (piece: GalleryPiece) => {
+    const now = Date.now();
+    const last = lastTapRef.current;
+    lastTapRef.current = { id: piece.id, t: now };
+    const href = linkHrefFor(piece);
+    if (href && last?.id === piece.id && now - last.t < DOUBLE_TAP_MS) {
+      lastTapRef.current = null;
+      setToast(`opening ${byLineFor(piece)}'s gallery…`);
+      window.location.href = href;
+      return;
+    }
+    setSelectedId(piece.id);
   };
 
   const collectFor = (piece: GalleryPiece): CollectConfig | null => {
@@ -619,7 +700,6 @@ function CustomLayoutView({
             margin: fit ? 0 : "0 auto",
             ...(fit ? { transform: `scale(${fitScale})`, transformOrigin: "top left" } : null),
           }}
-          onClick={isMobile ? () => setSelectedId(null) : undefined}
         >
           {pieces.map((piece, i) => {
             const art = piece.inventory_item?.artwork;
@@ -629,7 +709,6 @@ function CustomLayoutView({
             const zIndex = piece.z_index ?? i + 1;
             const baseWidth = BASE_WIDTH;
             const tip = tooltipPos[piece.id];
-            const dimmed = isMobile && selectedId !== null && selectedId !== piece.id;
 
             return (
               <div
@@ -652,8 +731,6 @@ function CustomLayoutView({
                   // visible overlay take pointer events; their events bubble
                   // up here, so the handlers below still fire.
                   pointerEvents: "none",
-                  opacity: dimmed ? 0.4 : 1,
-                  transition: "opacity 0.2s",
                 }}
                 onMouseEnter={isMobile ? undefined : () => handleMouseEnter(piece.id)}
                 onMouseLeave={isMobile ? undefined : handleMouseLeave}
@@ -670,19 +747,22 @@ function CustomLayoutView({
                     // the transform above, so it tracks the frame's real
                     // rendered corners at any rotation or scale.
                     pointerEvents: "auto",
+                    // Stops iOS reading a double-tap as "zoom the page".
+                    touchAction: isMobile ? "manipulation" : undefined,
                   }}
                   onClick={
                     isMobile
                       ? (e) => {
                           e.stopPropagation();
-                          setSelectedId(piece.id);
+                          handlePhoneTap(piece);
                         }
                       : undefined
                   }
                 >
                 <GalleryPieceFrame
                   wrapper="block"
-                  // On a phone the tap selects the piece; the sheet carries the link.
+                  // On a phone a tap selects the piece; the row's artist name
+                  // and a double-tap carry the link instead.
                   linkHref={isMobile ? null : linkHrefFor(piece)}
                   frameFile={art.frame_file || DEFAULT_FRAME_FILE}
                   artSrc={art.file_url}
@@ -750,6 +830,7 @@ function CustomLayoutView({
         <div
           ref={scrollRef}
           className="relative z-10 flex min-h-[100dvh] w-full flex-col items-center justify-center pb-36 pt-20"
+          onClick={() => setSelectedId(null)}
         >
           <div
             style={{
@@ -761,7 +842,7 @@ function CustomLayoutView({
             {canvas}
           </div>
           <p className="mt-4 text-center font-serif text-sm text-[#f5e6c8]/70">
-            tap any piece to see it up close
+            tap a piece to see it
           </p>
         </div>
       ) : (
@@ -769,17 +850,16 @@ function CustomLayoutView({
           ref={scrollRef}
           className="relative z-10 w-full pt-14"
           style={{ overflowX: "auto", overflowY: "auto", WebkitOverflowScrolling: "touch" }}
+          onClick={isMobile ? () => setSelectedId(null) : undefined}
         >
           {canvas}
         </div>
       )}
 
       {!fit && <GalleryScrollHint scrollRef={scrollRef} />}
-      {!fit && !(isMobile && selectedPiece) && (
-        <GalleryMinimap pieces={pieces} scrollRef={scrollRef} />
-      )}
+      {!fit && <GalleryMinimap pieces={pieces} scrollRef={scrollRef} />}
 
-      {isMobile && !selectedPiece && (
+      {isMobile && (
         <>
           {dock}
           <button
@@ -792,25 +872,51 @@ function CustomLayoutView({
         </>
       )}
 
+      {/* Phone: the desktop hover row, under the tapped piece */}
       {isMobile && selectedPiece && selectedArt && (
-        <GalleryPieceSheet
-          artworkId={selectedArt.id}
-          title={selectedArt.title}
-          medium={selectedArt.medium}
-          byLine={byLineFor(selectedPiece)}
-          heartCount={selectedArt.heart_count ?? 0}
-          linkHref={linkHrefFor(selectedPiece)}
-          collect={collectFor(selectedPiece)}
-          isOwner={isOwner}
-          isLoggedIn={isLoggedIn}
-          index={selectedIndex}
-          total={walkOrder.length}
-          zoomed={zoomed}
-          onPrev={() => walkTo(selectedIndex - 1)}
-          onNext={() => walkTo(selectedIndex + 1)}
-          onClose={() => setSelectedId(null)}
-          onToggleZoom={() => setZoomed((z) => !z)}
-        />
+        <div
+          ref={rowRef}
+          style={{
+            position: "fixed",
+            left: rowPos?.left ?? 0,
+            top: rowPos?.top ?? 0,
+            zIndex: 35,
+            maxWidth: `calc(100vw - ${ROW_EDGE * 2}px)`,
+            // Laid out but unseen until placeRow has measured it.
+            visibility: rowPos ? "visible" : "hidden",
+          }}
+        >
+          <GalleryPieceOverlay
+            placement={{
+              mode: "anchored",
+              style: {
+                display: "flex",
+                flexWrap: "wrap",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: "8px",
+              },
+            }}
+            artworkId={selectedArt.id}
+            title={selectedArt.title}
+            medium={selectedArt.medium}
+            byLine={byLineFor(selectedPiece)}
+            byLineHref={linkHrefFor(selectedPiece)}
+            heartCount={selectedArt.heart_count ?? 0}
+            isOwner={isOwner}
+            isLoggedIn={isLoggedIn}
+            collect={collectFor(selectedPiece)}
+          />
+        </div>
+      )}
+
+      {toast && (
+        <div
+          role="status"
+          className="fixed left-1/2 top-[4.5rem] z-[45] -translate-x-1/2 whitespace-nowrap rounded-full border border-[#c8a040]/50 bg-[rgba(18,12,6,0.95)] px-4 py-2.5 text-sm text-[#f5e6c8] shadow-lg"
+        >
+          {toast}
+        </div>
       )}
     </>
   );
