@@ -7,6 +7,7 @@ import type { Artwork, GalleryPiece, InventoryTrayItem } from "@/lib/types";
 import {
   GalleryPieceCard,
   GalleryPieceFrame,
+  GalleryPieceLabel,
   GalleryPieceOverlay,
   type CollectConfig,
 } from "./GalleryPieceCard";
@@ -466,9 +467,8 @@ function CustomLayoutView({
 
   // Phone state. A phone opens on the whole wall fitted to its width, with
   // the layout untouched; "zoomed" is the 1:1 wall that scrolls both ways.
-  // Hover doesn't exist there, so a tap selects a piece and shows the desktop
-  // hover row under it; a double-tap on another artist's piece opens their
-  // gallery.
+  // Hover doesn't exist there, so a tap selects a piece and shows a wall label
+  // card under it; a double-tap on another artist's piece opens their gallery.
   const fitScale = useWallFitScale();
   const [zoomed, setZoomed] = React.useState(false);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
@@ -483,7 +483,7 @@ function CustomLayoutView({
   const BASE_WIDTH = 220;
   /** Gap in px between the frame's lowest visible edge and the hover card. */
   const TOOLTIP_GAP = 16;
-  /** Phone row: gap under the piece, and minimum distance from screen edges. */
+  /** Phone label: gap under the piece, and minimum distance from screen edges. */
   const ROW_GAP = 12;
   const ROW_EDGE = 12;
   /** Screen kept clear at the bottom for the bubble, zoom pill and minimap (and the owner dock). */
@@ -504,7 +504,7 @@ function CustomLayoutView({
       const y = target ? (target.position_y / 100) * CANVAS_H + half : CANVAS_H / 2;
       el.scrollTo({ left: x - el.clientWidth / 2, behavior });
       const canvasTop = canvas.getBoundingClientRect().top + window.scrollY;
-      // Aim above centre, leaving room for the row under the piece.
+      // Aim above centre, leaving room for the label under the piece.
       window.scrollTo({ top: canvasTop + y - window.innerHeight * 0.35, behavior });
     },
     [CANVAS_W, CANVAS_H]
@@ -543,8 +543,8 @@ function CustomLayoutView({
   }, [fit, fitScale]);
 
   /**
-   * Places the phone row under the selected frame, in screen coordinates. The
-   * fitted wall is scaled down and clipped, so the row can't live inside it
+   * Places the phone label under the selected frame, in screen coordinates. The
+   * fitted wall is scaled down and clipped, so the label can't live inside it
    * the way the desktop card does. It's fixed over the page instead, centred
    * on the frame's post-transform box (true at any rotation), kept off the
    * screen edges, and flipped above the piece when it would run into the
@@ -568,7 +568,7 @@ function CustomLayoutView({
     setRowPos({ left, top });
   }, [selectedId, ROW_BOTTOM_RESERVE]);
 
-  // Measure before paint, so the row never shows in the wrong place. Declared
+  // Measure before paint, so the label never shows in the wrong place. Declared
   // after the zoom effect so a mode switch scrolls first and measures second.
   React.useLayoutEffect(() => {
     if (!isMobile || !selectedId) {
@@ -579,7 +579,7 @@ function CustomLayoutView({
   }, [isMobile, selectedId, zoomed, fitScale, placeRow]);
 
   // The zoomed wall scrolls (window vertically, the wall horizontally); keep
-  // the row attached to its piece while it does.
+  // the label attached to its piece while it does.
   React.useEffect(() => {
     if (!isMobile || !selectedId) return;
     let frame = 0;
@@ -761,7 +761,7 @@ function CustomLayoutView({
                 >
                 <GalleryPieceFrame
                   wrapper="block"
-                  // On a phone a tap selects the piece; the row's artist name
+                  // On a phone a tap selects the piece; the label's artist name
                   // and a double-tap carry the link instead.
                   linkHref={isMobile ? null : linkHrefFor(piece)}
                   frameFile={art.frame_file || DEFAULT_FRAME_FILE}
@@ -872,7 +872,7 @@ function CustomLayoutView({
         </>
       )}
 
-      {/* Phone: the desktop hover row, under the tapped piece */}
+      {/* Phone: the wall label card, under the tapped piece */}
       {isMobile && selectedPiece && selectedArt && (
         <div
           ref={rowRef}
@@ -886,17 +886,8 @@ function CustomLayoutView({
             visibility: rowPos ? "visible" : "hidden",
           }}
         >
-          <GalleryPieceOverlay
-            placement={{
-              mode: "anchored",
-              style: {
-                display: "flex",
-                flexWrap: "wrap",
-                justifyContent: "center",
-                alignItems: "center",
-                gap: "8px",
-              },
-            }}
+          <GalleryPieceLabel
+            key={selectedArt.id}
             artworkId={selectedArt.id}
             title={selectedArt.title}
             medium={selectedArt.medium}
