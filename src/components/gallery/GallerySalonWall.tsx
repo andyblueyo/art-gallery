@@ -578,16 +578,26 @@ function CustomLayoutView({
     placeRow();
   }, [isMobile, selectedId, zoomed, fitScale, placeRow]);
 
-  // The zoomed wall scrolls (window vertically, the wall horizontally); keep
-  // the label attached to its piece while it does.
+  // The zoomed wall scrolls (window vertically, the wall horizontally). Moving
+  // it past SCROLL_CLOSE_PX means the visitor has moved on, so the label
+  // closes; smaller slips (a shaky tap) keep it attached to its piece.
   React.useEffect(() => {
     if (!isMobile || !selectedId) return;
+    const SCROLL_CLOSE_PX = 10;
+    const scroller = scrollRef.current;
+    const startX = scroller?.scrollLeft ?? 0;
+    const startY = window.scrollY;
     let frame = 0;
     const onMove = () => {
+      const dx = Math.abs((scroller?.scrollLeft ?? 0) - startX);
+      const dy = Math.abs(window.scrollY - startY);
+      if (dx > SCROLL_CLOSE_PX || dy > SCROLL_CLOSE_PX) {
+        setSelectedId(null);
+        return;
+      }
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(placeRow);
     };
-    const scroller = scrollRef.current;
     window.addEventListener("scroll", onMove, { passive: true });
     window.addEventListener("resize", onMove);
     scroller?.addEventListener("scroll", onMove, { passive: true });
@@ -598,6 +608,21 @@ function CustomLayoutView({
       scroller?.removeEventListener("scroll", onMove);
     };
   }, [isMobile, selectedId, zoomed, placeRow]);
+
+  // A tap anywhere that isn't the label or a piece (pieces stop propagation)
+  // closes the label: header, margins, empty wall, the dock. The zoom toggle
+  // opts out, since zooming keeps the selected piece in view.
+  React.useEffect(() => {
+    if (!isMobile || !selectedId) return;
+    const onClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (rowRef.current?.contains(target)) return;
+      if (target instanceof Element && target.closest("[data-keep-card]")) return;
+      setSelectedId(null);
+    };
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, [isMobile, selectedId]);
 
   // Clears the "opening …" message if the page comes back (back button, or a
   // navigation that never happened).
@@ -625,21 +650,25 @@ function CustomLayoutView({
 
   /**
    * A tap selects the piece at once (no single-tap delay). A second tap on the
-   * same piece within DOUBLE_TAP_MS opens its artist's gallery, but only when
-   * that's another artist: the owner's own work never links back here.
+   * same piece within DOUBLE_TAP_MS is a double-tap: it opens its artist's
+   * gallery, but only when that's another artist (the owner's own work never
+   * links back here, so there it does nothing). A later tap on the selected
+   * piece closes its card.
    */
   const handlePhoneTap = (piece: GalleryPiece) => {
     const now = Date.now();
     const last = lastTapRef.current;
     lastTapRef.current = { id: piece.id, t: now };
-    const href = linkHrefFor(piece);
-    if (href && last?.id === piece.id && now - last.t < DOUBLE_TAP_MS) {
-      lastTapRef.current = null;
-      setToast(`opening ${byLineFor(piece)}'s gallery…`);
-      window.location.href = href;
+    if (last?.id === piece.id && now - last.t < DOUBLE_TAP_MS) {
+      const href = linkHrefFor(piece);
+      if (href) {
+        lastTapRef.current = null;
+        setToast(`opening ${byLineFor(piece)}'s gallery…`);
+        window.location.href = href;
+      }
       return;
     }
-    setSelectedId(piece.id);
+    setSelectedId((id) => (id === piece.id ? null : piece.id));
   };
 
   const collectFor = (piece: GalleryPiece): CollectConfig | null => {
@@ -830,7 +859,6 @@ function CustomLayoutView({
         <div
           ref={scrollRef}
           className="relative z-10 flex min-h-[100dvh] w-full flex-col items-center justify-center pb-36 pt-20"
-          onClick={() => setSelectedId(null)}
         >
           <div
             style={{
@@ -850,7 +878,6 @@ function CustomLayoutView({
           ref={scrollRef}
           className="relative z-10 w-full pt-14"
           style={{ overflowX: "auto", overflowY: "auto", WebkitOverflowScrolling: "touch" }}
-          onClick={isMobile ? () => setSelectedId(null) : undefined}
         >
           {canvas}
         </div>
@@ -864,6 +891,7 @@ function CustomLayoutView({
           {dock}
           <button
             type="button"
+            data-keep-card
             onClick={() => setZoomed((z) => !z)}
             className="fixed bottom-5 left-1/2 z-30 min-h-[44px] -translate-x-1/2 rounded-full border border-[#c8a040]/50 bg-[rgba(18,12,6,0.85)] px-5 text-sm text-[#f5e6c8] shadow-lg backdrop-blur-sm"
           >
