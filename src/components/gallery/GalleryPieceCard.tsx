@@ -87,7 +87,7 @@ export function GalleryPieceFrame({
   return framed;
 }
 
-// ── Overlay (tooltip + heart + collect) ──────────────────────────
+// ── Overlay (seal card placed under a frame) ─────────────────────
 
 /**
  * How the overlay is positioned relative to the frame.
@@ -99,90 +99,54 @@ export type OverlayPlacement =
   | { mode: "flow" }
   | { mode: "anchored"; style: React.CSSProperties };
 
-export interface GalleryPieceOverlayProps {
+export interface GalleryPieceOverlayProps extends GalleryPieceSealCardProps {
+  placement: OverlayPlacement;
+}
+
+// Phones have no hover, so under 768px the flow overlay is always shown.
+const FLOW_CLASS =
+  "mt-4 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200 max-md:opacity-100 max-md:pointer-events-auto";
+
+export function GalleryPieceOverlay({ placement, ...card }: GalleryPieceOverlayProps) {
+  const isFlow = placement.mode === "flow";
+
+  return (
+    <div
+      className={isFlow ? FLOW_CLASS : undefined}
+      style={isFlow ? undefined : placement.style}
+    >
+      <GalleryPieceSealCard {...card} />
+    </div>
+  );
+}
+
+// ── Seal card (title card + heart seal + collect) ────────────────
+
+export interface GalleryPieceSealCardProps {
   artworkId: string;
   title: string;
   medium: string;
   /** Renders the "by …" line when set. Auto layout omits it. */
   byLine?: string | null;
+  /** Makes the artist's name a link; null for the wall owner's own work. */
+  byLineHref?: string | null;
   heartCount: number;
   isOwner: boolean;
   isLoggedIn: boolean;
   collect?: CollectConfig | null;
-  placement: OverlayPlacement;
-}
-
-// Phones have no hover, so under 768px the flow overlay is always shown and
-// wraps instead of running off a narrow screen.
-const FLOW_CLASS =
-  "mt-3 flex items-center gap-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200 [&_.opacity-0]:opacity-100 max-md:opacity-100 max-md:pointer-events-auto max-md:flex-wrap max-md:justify-center";
-const ANCHORED_CLASS = "[&_.opacity-0]:opacity-100";
-
-export function GalleryPieceOverlay({
-  artworkId,
-  title,
-  medium,
-  byLine,
-  heartCount,
-  isOwner,
-  isLoggedIn,
-  collect,
-  placement,
-}: GalleryPieceOverlayProps) {
-  const isFlow = placement.mode === "flow";
-
-  return (
-    <div
-      className={isFlow ? FLOW_CLASS : ANCHORED_CLASS}
-      style={isFlow ? undefined : placement.style}
-    >
-      <div className="whitespace-nowrap max-md:whitespace-normal max-md:max-w-[280px] rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-3 py-2 text-center shadow-lg">
-        <p className="font-serif text-sm text-[#f5e6c8]">{title}</p>
-        {medium && (
-          <p className="mt-0.5 text-xs capitalize text-[#c8a040]/80">{medium}</p>
-        )}
-        {byLine && (
-          <p className="mt-0.5 text-xs text-[#c8a040]/60">by {byLine}</p>
-        )}
-      </div>
-      {isLoggedIn && (
-        <HeartButton
-          pieceId={artworkId}
-          isOwner={isOwner}
-          initialHeartCount={heartCount}
-          isLoggedIn={isLoggedIn}
-          // Touch sizing only applies under 768px, so desktop is unaffected.
-          size="touch"
-        />
-      )}
-      {collect && (
-        <CollectButton
-          size="touch"
-          inventoryItemId={collect.inventoryItemId}
-          priceCoins={collect.priceCoins}
-          editionsRemaining={collect.editionsRemaining}
-          collectorCoinBalance={collect.collectorCoinBalance}
-        />
-      )}
-    </div>
-  );
-}
-
-// ── Wall label (phone tap card) ──────────────────────────────────
-
-export interface GalleryPieceLabelProps
-  extends Omit<GalleryPieceOverlayProps, "placement"> {
-  /** Makes the artist's name a link; null for the wall owner's own work. */
-  byLineHref?: string | null;
 }
 
 /**
- * The phone wall's card for a tapped piece, styled as a cream gallery wall
- * label: caption on the left, heart top right, and Collect across the foot
- * only when the piece is for sale, so a label for a piece that isn't simply
- * ends after the medium. Positioning is the caller's job.
+ * The card under a gallery piece, shared by the desktop hover, the auto
+ * layout and the phone tap: a dark, centred title card with the heart as a
+ * round seal on its top edge, and a full-width Collect button below it only
+ * when the piece is for sale. Positioning is the caller's job.
+ *
+ * The seal overhangs the card by half its height; that overhang is padding on
+ * the wrapper (not a margin) so callers that measure this element, like the
+ * phone label, get its full height.
  */
-export function GalleryPieceLabel({
+export function GalleryPieceSealCard({
   artworkId,
   title,
   medium,
@@ -192,38 +156,43 @@ export function GalleryPieceLabel({
   isOwner,
   isLoggedIn,
   collect,
-}: GalleryPieceLabelProps) {
+}: GalleryPieceSealCardProps) {
   return (
-    <div className="w-60 rounded-[3px] bg-[#f7f0e1] px-3.5 pb-3 pt-3.5 text-[#2a1d10] shadow-[0_1px_0_#d9ccb0,0_10px_22px_rgba(30,20,10,0.35)]">
-      <div className="flex items-start gap-2">
-        <div className="min-w-0 flex-1">
-          <p className="font-serif text-lg italic leading-snug text-[#1f150b]">{title}</p>
-          {byLine && (
-            <p className="mt-1 text-xs text-[#5c4a33]">
-              by{" "}
-              {byLineHref ? (
-                <a href={byLineHref} className="text-[#8a5f12] underline underline-offset-2">
-                  {byLine}
-                </a>
-              ) : (
-                byLine
-              )}
-            </p>
-          )}
-          {medium && <p className="mt-px text-xs capitalize text-[#5c4a33]">{medium}</p>}
-        </div>
+    <div className={`flex w-[248px] max-w-full flex-col gap-3 whitespace-normal ${isLoggedIn ? "pt-[22px]" : ""}`}>
+      <div
+        className={`relative rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-3.5 pb-3 text-center shadow-[0_6px_14px_rgba(0,0,0,0.25)] ${
+          isLoggedIn ? "pt-[26px]" : "pt-3"
+        }`}
+      >
         {isLoggedIn && (
-          // Pulled into the corner so the 44px target doesn't pad the card.
-          <div className="-mr-2.5 -mt-2.5 shrink-0">
+          <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2">
             <HeartButton
               pieceId={artworkId}
               isOwner={isOwner}
               initialHeartCount={heartCount}
               isLoggedIn={isLoggedIn}
-              size="touch"
-              tone="light"
             />
           </div>
+        )}
+        <p className="text-balance font-serif text-lg italic leading-[1.3] text-[#f5e6c8] [overflow-wrap:anywhere]">
+          {title}
+        </p>
+        {byLine && (
+          <p className="mt-1 text-xs text-[#c8a040]/70">
+            by{" "}
+            {byLineHref ? (
+              <a href={byLineHref} className="text-[#c8a040] underline underline-offset-2 hover:text-[#e9c877]">
+                {byLine}
+              </a>
+            ) : (
+              byLine
+            )}
+          </p>
+        )}
+        {medium && (
+          <p className="mt-px text-balance text-xs capitalize leading-[1.35] text-[#c8a040]/85 [overflow-wrap:anywhere]">
+            {medium}
+          </p>
         )}
       </div>
       {collect && (
@@ -232,7 +201,6 @@ export function GalleryPieceLabel({
           priceCoins={collect.priceCoins}
           editionsRemaining={collect.editionsRemaining}
           collectorCoinBalance={collect.collectorCoinBalance}
-          variant="label"
         />
       )}
     </div>
@@ -243,7 +211,7 @@ export function GalleryPieceLabel({
 
 export interface GalleryPieceCardProps
   extends GalleryPieceFrameProps,
-    Omit<GalleryPieceOverlayProps, "placement"> {}
+    GalleryPieceSealCardProps {}
 
 /**
  * Frame + flow-positioned overlay inside a `group` wrapper. Used by both

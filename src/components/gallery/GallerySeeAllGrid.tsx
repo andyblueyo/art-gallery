@@ -2,8 +2,7 @@
 
 import Image from "next/image";
 import type { Artwork } from "@/lib/types";
-import { HeartButton } from "@/components/ui/HeartButton";
-import { CollectButton } from "@/components/gallery/CollectButton";
+import { GalleryPieceSealCard } from "./GalleryPieceCard";
 import { artworkImageUrl } from "@/lib/artwork-image";
 
 interface GallerySeeAllGridProps {
@@ -35,13 +34,10 @@ export function GallerySeeAllGrid({
           back to wall
         </button>
       </header>
-      <div className="mx-auto max-w-5xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-6 pb-16">
+      <div className="mx-auto max-w-5xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10 p-6 pb-16">
         {artworks.map((art) => (
-          <article
-            key={art.id}
-            className="rounded-xl border border-[#d8ceb8] bg-white/50 overflow-hidden"
-          >
-            <div className="relative aspect-square bg-[#ede7da]">
+          <article key={art.id} className="flex flex-col items-center gap-4">
+            <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-[#d8ceb8] bg-[#ede7da]">
               {art.file_type === "pdf" ? (
                 <div className="flex h-full flex-col items-center justify-center p-4">
                   <span className="text-3xl text-[#c8a040]">📄</span>
@@ -68,33 +64,25 @@ export function GallerySeeAllGrid({
                   sizes="300px"
                 />
               )}
-              {isLoggedIn && (
-                <div className="absolute bottom-2 right-2 z-10">
-                  <HeartButton
-                    pieceId={art.id}
-                    isOwner={isOwner}
-                    initialHeartCount={art.heart_count ?? 0}
-                    isLoggedIn={isLoggedIn}
-                  />
-                </div>
-              )}
             </div>
-            <div className="p-3">
-              <p className="font-medium text-sm text-brown">{art.title}</p>
-              {art.medium && (
-                <p className="text-xs text-brown-muted capitalize">{art.medium}</p>
-              )}
-              {!isOwner && collectableItems[art.id] && art.for_sale && art.price_coins != null && (
-                <div className="mt-2">
-                  <CollectButton
-                    inventoryItemId={collectableItems[art.id]}
-                    priceCoins={art.price_coins}
-                    editionsRemaining={art.editions_remaining ?? 0}
-                    collectorCoinBalance={collectorCoinBalance}
-                  />
-                </div>
-              )}
-            </div>
+            <GalleryPieceSealCard
+              artworkId={art.id}
+              title={art.title}
+              medium={art.medium}
+              heartCount={art.heart_count ?? 0}
+              isOwner={isOwner}
+              isLoggedIn={isLoggedIn}
+              collect={
+                !isOwner && collectableItems[art.id] && art.for_sale && art.price_coins != null
+                  ? {
+                      inventoryItemId: collectableItems[art.id],
+                      priceCoins: art.price_coins,
+                      editionsRemaining: art.editions_remaining ?? 0,
+                      collectorCoinBalance,
+                    }
+                  : null
+              }
+            />
           </article>
         ))}
       </div>

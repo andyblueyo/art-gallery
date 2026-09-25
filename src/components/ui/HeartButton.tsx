@@ -8,21 +8,18 @@ interface HeartButtonProps {
   isOwner?: boolean;
   initialHeartCount?: number;
   isLoggedIn?: boolean;
-  /** "touch" grows the tap target to 44px under 768px; desktop is unchanged. */
-  size?: "default" | "touch";
-  /** "light" drops the dark disc and darkens the outline, for use on a cream card. */
-  tone?: "dark" | "light";
 }
 
+/**
+ * The heart "seal": a round badge that sits on the top edge of a gallery
+ * piece's title card. The owner's count goes inside it, widening it to a pill.
+ */
 export function HeartButton({
   pieceId,
   isOwner = false,
   initialHeartCount = 0,
   isLoggedIn = false,
-  size = "default",
-  tone = "dark",
 }: HeartButtonProps) {
-  const onLight = tone === "light";
   const [hearted, setHearted] = useState(false);
   const [count, setCount] = useState(initialHeartCount);
   const [userId, setUserId] = useState<string | null>(null);
@@ -66,30 +63,28 @@ export function HeartButton({
   }
 
   return (
-    <div className="flex items-center gap-1.5">
-      <button
-        onClick={handleClick}
-        aria-label={hearted ? "Remove from favorites" : "Add to favorites"}
-        className={`p-1.5 ${size === "touch" ? "max-md:p-3.5" : ""} rounded-full ${onLight ? "" : "bg-[rgba(18,12,6,0.55)] backdrop-blur-sm shadow-sm"} transition-transform ${
-          isLoggedIn ? "hover:scale-110 cursor-pointer" : "cursor-default opacity-60"
-        }`}
+    <button
+      type="button"
+      onClick={handleClick}
+      aria-label={hearted ? "Remove from favorites" : "Add to favorites"}
+      className={`flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-full border border-[#c8a040]/60 bg-[#1a120a] shadow-[0_4px_10px_rgba(0,0,0,0.3)] transition-colors ${
+        isOwner ? "px-3.5" : ""
+      } ${isLoggedIn ? "cursor-pointer hover:border-[#c8a040]" : "cursor-default"}`}
+    >
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill={hearted ? "#e05c4a" : "none"}
+        stroke={hearted ? "#e05c4a" : "rgba(245,230,200,0.8)"}
+        strokeWidth="2"
+        strokeLinejoin="round"
       >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill={hearted ? "#e05c4a" : "none"}
-          stroke={hearted ? "#e05c4a" : onLight ? "#5c4a33" : "rgba(245,230,200,0.75)"}
-          strokeWidth="2"
-        >
-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-        </svg>
-      </button>
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+      </svg>
       {isOwner && (
-        <span className={`text-xs ${onLight ? "text-[#5c4a33]" : "text-[#f5e6c8]/80"} tabular-nums font-medium leading-none`}>
-          {count}
-        </span>
+        <span className="text-xs font-medium tabular-nums leading-none text-[#f5e6c8]/80">{count}</span>
       )}
-    </div>
+    </button>
   );
 }

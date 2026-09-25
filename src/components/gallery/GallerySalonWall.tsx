@@ -7,7 +7,7 @@ import type { Artwork, GalleryPiece, InventoryTrayItem } from "@/lib/types";
 import {
   GalleryPieceCard,
   GalleryPieceFrame,
-  GalleryPieceLabel,
+  GalleryPieceSealCard,
   GalleryPieceOverlay,
   type CollectConfig,
 } from "./GalleryPieceCard";
@@ -467,8 +467,8 @@ function CustomLayoutView({
 
   // Phone state. A phone opens on the whole wall fitted to its width, with
   // the layout untouched; "zoomed" is the 1:1 wall that scrolls both ways.
-  // Hover doesn't exist there, so a tap selects a piece and shows a wall label
-  // card under it; a double-tap on another artist's piece opens their gallery.
+  // Hover doesn't exist there, so a tap selects a piece and shows its seal card
+  // under it; a double-tap on another artist's piece opens their gallery.
   const fitScale = useWallFitScale();
   const [zoomed, setZoomed] = React.useState(false);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
@@ -797,13 +797,9 @@ function CustomLayoutView({
                       left: tip ? `${tip.left}px` : "50%",
                       transform: "translateX(-50%)",
                       zIndex: 20,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
                       opacity: hoveredId === piece.id ? 1 : 0,
                       transition: "opacity 0.15s",
                       pointerEvents: hoveredId === piece.id ? "auto" : "none",
-                      whiteSpace: "nowrap",
                     },
                   }}
                   artworkId={art.id}
@@ -872,7 +868,7 @@ function CustomLayoutView({
         </>
       )}
 
-      {/* Phone: the wall label card, under the tapped piece */}
+      {/* Phone: the seal card, under the tapped piece */}
       {isMobile && selectedPiece && selectedArt && (
         <div
           ref={rowRef}
@@ -886,7 +882,7 @@ function CustomLayoutView({
             visibility: rowPos ? "visible" : "hidden",
           }}
         >
-          <GalleryPieceLabel
+          <GalleryPieceSealCard
             key={selectedArt.id}
             artworkId={selectedArt.id}
             title={selectedArt.title}
