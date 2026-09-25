@@ -796,6 +796,10 @@ function CustomLayoutView({
                       paddingTop: `${TOOLTIP_GAP}px`,
                       left: tip ? `${tip.left}px` : "50%",
                       transform: "translateX(-50%)",
+                      // The card sizes to its text. Anchored at the frame's
+                      // centre inside a frame-wide box, it would otherwise
+                      // only get the right half of that box to fit in.
+                      width: "max-content",
                       zIndex: 20,
                       opacity: hoveredId === piece.id ? 1 : 0,
                       transition: "opacity 0.15s",

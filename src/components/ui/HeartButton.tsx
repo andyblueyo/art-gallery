@@ -7,25 +7,23 @@ interface HeartButtonProps {
   pieceId: string;
   isOwner?: boolean;
   initialHeartCount?: number;
-  isLoggedIn?: boolean;
 }
 
 /**
  * The heart "seal": a round badge that sits on the top edge of a gallery
  * piece's title card. The owner's count goes inside it, widening it to a pill.
+ * Only rendered for signed-in visitors.
  */
 export function HeartButton({
   pieceId,
   isOwner = false,
   initialHeartCount = 0,
-  isLoggedIn = false,
 }: HeartButtonProps) {
   const [hearted, setHearted] = useState(false);
   const [count, setCount] = useState(initialHeartCount);
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isLoggedIn) return;
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
@@ -38,12 +36,12 @@ export function HeartButton({
         .maybeSingle()
         .then(({ data }) => setHearted(!!data));
     });
-  }, [pieceId, isLoggedIn]);
+  }, [pieceId]);
 
   async function handleClick(e: React.MouseEvent) {
     e.stopPropagation();
     e.preventDefault();
-    if (!isLoggedIn || !userId) return;
+    if (!userId) return;
     const supabase = createClient();
     if (hearted) {
       setHearted(false);
@@ -67,9 +65,9 @@ export function HeartButton({
       type="button"
       onClick={handleClick}
       aria-label={hearted ? "Remove from favorites" : "Add to favorites"}
-      className={`flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-full border border-[#c8a040]/60 bg-[#1a120a] shadow-[0_4px_10px_rgba(0,0,0,0.3)] transition-colors ${
+      className={`flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-full border border-[#c8a040]/60 bg-[#1a120a] shadow-[0_4px_10px_rgba(0,0,0,0.3)] cursor-pointer transition-colors hover:border-[#c8a040] ${
         isOwner ? "px-3.5" : ""
-      } ${isLoggedIn ? "cursor-pointer hover:border-[#c8a040]" : "cursor-default"}`}
+      }`}
     >
       <svg
         width="16"

@@ -138,9 +138,14 @@ export interface GalleryPieceSealCardProps {
 
 /**
  * The card under a gallery piece, shared by the desktop hover, the auto
- * layout and the phone tap: a dark, centred title card with the heart as a
- * round seal on its top edge, and a full-width Collect button below it only
- * when the piece is for sale. Positioning is the caller's job.
+ * layout, the phone tap and the "see all" grid: a dark, centred title card
+ * with the heart as a round seal on its top edge, and a full-width Collect
+ * button below it only when the piece is for sale. Positioning is the
+ * caller's job.
+ *
+ * It hugs its text: 160px for a short title, growing to 224px before long
+ * titles wrap. Collect shares the card's width, so a for-sale card is at
+ * least as wide as the button's label.
  *
  * The seal overhangs the card by half its height; that overhang is padding on
  * the wrapper (not a margin) so callers that measure this element, like the
@@ -158,10 +163,10 @@ export function GalleryPieceSealCard({
   collect,
 }: GalleryPieceSealCardProps) {
   return (
-    <div className={`flex w-[248px] max-w-full flex-col gap-3 whitespace-normal ${isLoggedIn ? "pt-[22px]" : ""}`}>
+    <div className={`flex w-fit min-w-[160px] max-w-[224px] flex-col gap-3 ${isLoggedIn ? "pt-[22px]" : ""}`}>
       <div
-        className={`relative rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-3.5 pb-3 text-center shadow-[0_6px_14px_rgba(0,0,0,0.25)] ${
-          isLoggedIn ? "pt-[26px]" : "pt-3"
+        className={`relative rounded-md border border-[#c8a040]/40 bg-[rgba(18,12,6,0.92)] px-4 pb-2.5 text-center shadow-[0_6px_14px_rgba(0,0,0,0.25)] ${
+          isLoggedIn ? "pt-6" : "pt-2.5"
         }`}
       >
         {isLoggedIn && (
@@ -170,11 +175,10 @@ export function GalleryPieceSealCard({
               pieceId={artworkId}
               isOwner={isOwner}
               initialHeartCount={heartCount}
-              isLoggedIn={isLoggedIn}
             />
           </div>
         )}
-        <p className="text-balance font-serif text-lg italic leading-[1.3] text-[#f5e6c8] [overflow-wrap:anywhere]">
+        <p className="text-balance font-serif text-base italic leading-[1.3] text-[#f5e6c8] [overflow-wrap:anywhere]">
           {title}
         </p>
         {byLine && (
