@@ -465,12 +465,12 @@ function CustomLayoutView({
     Record<string, { left: number; top: number }>
   >({});
 
-  // Phone state. A phone opens on the whole wall fitted to its width, with
-  // the layout untouched; "zoomed" is the 1:1 wall that scrolls both ways.
+  // Phone state. A phone opens zoomed in, on the 1:1 wall that scrolls both
+  // ways; "see whole wall" fits it to the screen width, layout untouched.
   // Hover doesn't exist there, so a tap selects a piece and shows its seal card
   // under it; a double-tap on another artist's piece opens their gallery.
   const fitScale = useWallFitScale();
-  const [zoomed, setZoomed] = React.useState(false);
+  const [zoomed, setZoomed] = React.useState(true);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [rowPos, setRowPos] = React.useState<{ left: number; top: number } | null>(null);
   const [toast, setToast] = React.useState<string | null>(null);
@@ -504,8 +504,8 @@ function CustomLayoutView({
       const y = target ? (target.position_y / 100) * CANVAS_H + half : CANVAS_H / 2;
       el.scrollTo({ left: x - el.clientWidth / 2, behavior });
       const canvasTop = canvas.getBoundingClientRect().top + window.scrollY;
-      // Aim above centre, leaving room for the label under the piece.
-      window.scrollTo({ top: canvasTop + y - window.innerHeight * 0.35, behavior });
+      // A piece aims above centre, leaving room for the label under it.
+      window.scrollTo({ top: canvasTop + y - window.innerHeight * (target ? 0.35 : 0.5), behavior });
     },
     [CANVAS_W, CANVAS_H]
   );
@@ -523,6 +523,16 @@ function CustomLayoutView({
     // Only on a mode switch, not when the selection changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zoomed]);
+
+  // A phone opens zoomed in, centred on the wall. isMobile only turns true
+  // after mount, so this waits for it, and runs once.
+  const centredRef = React.useRef(false);
+  React.useLayoutEffect(() => {
+    if (!isMobile || !zoomed || centredRef.current) return;
+    centredRef.current = true;
+    scrollToPiece(null, "auto");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMobile]);
 
   // The fitted wall is one screen tall (100dvh), but <body> is min-h-screen
   // (100vh, the height with iOS toolbars hidden), so the page could scroll a

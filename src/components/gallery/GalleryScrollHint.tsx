@@ -83,19 +83,18 @@ export function GalleryScrollHint({
     rememberHintShown();
     setPhase("visible");
 
-    const scroller = scrollRef.current;
     const dismiss = () => setPhase("fading");
     const timer = setTimeout(dismiss, VISIBLE_MS);
 
-    window.addEventListener("scroll", dismiss, { passive: true });
-    window.addEventListener("touchstart", dismiss, { passive: true });
-    scroller?.addEventListener("scroll", dismiss, { passive: true });
+    // The visitor's own input, not scroll events: the phone wall centres
+    // itself on load, and that scroll isn't the visitor having scrolled.
+    // Wheel covers trackpads, pointerdown the scrollbars and minimap.
+    const inputs = ["wheel", "touchstart", "pointerdown", "keydown"] as const;
+    inputs.forEach((type) => window.addEventListener(type, dismiss, { passive: true }));
 
     return () => {
       clearTimeout(timer);
-      window.removeEventListener("scroll", dismiss);
-      window.removeEventListener("touchstart", dismiss);
-      scroller?.removeEventListener("scroll", dismiss);
+      inputs.forEach((type) => window.removeEventListener(type, dismiss));
     };
   }, [scrollRef]);
 
