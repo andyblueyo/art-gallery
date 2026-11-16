@@ -25,7 +25,10 @@ function shuffle<T>(list: T[]): T[] {
 // own order), then a random pick of the rest, shuffled together. Empty walls
 // are left out.
 function pickFeatured(directory: GalleryDirectoryEntry[]): GalleryDirectoryEntry[] {
-  const filled = directory.filter((g) => g.pieceCount > 0 && g.wall.pieces.length > 0);
+  const HIDDEN = ["01893586134"];
+const filled = directory.filter(
+  (g) => g.pieceCount > 0 && g.wall.pieces.length > 0 && !HIDDEN.includes(g.handle)
+);
   const pinned = filled.filter((g) => FEATURED_PINNED.includes(g.handle));
   const rest = filled.filter((g) => !FEATURED_PINNED.includes(g.handle));
   const recent = rest.slice(0, FEATURED_RECENT);
